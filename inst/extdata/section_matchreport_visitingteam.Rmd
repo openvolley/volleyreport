@@ -1,0 +1,96 @@
+```{r mr2_visiting, warning = FALSE, results = "asis"}
+visP_sum <- vsx$meta$players_v %>% dplyr::select(player_id,number, name, starting_position_set1, starting_position_set2, starting_position_set3, starting_position_set4, starting_position_set5, role)  %>% add_row(player_id = "Team total", name = "Team total") %>%
+    mutate(starting_position_set1 = case_when(!is.na(.data$starting_position_set1) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set1, '\\*', '.')),
+           starting_position_set2 = case_when(!is.na(.data$starting_position_set2) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set2, '\\*', '.')),
+           starting_position_set3 = case_when(!is.na(.data$starting_position_set3) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set3, '\\*', '.')),
+           starting_position_set4 = case_when(!is.na(.data$starting_position_set4) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set4, '\\*', '.')),
+           starting_position_set5 = case_when(!is.na(.data$starting_position_set5) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set5, '\\*', '.'))) %>%
+    dplyr::select(-"role") %>%
+    left_join(volleyreport::vr_points(vsx$x, datavolley::visiting_team(vsx$x), vote = vsx$vote) %>% dplyr::select_at(c("player_id", if (vsx$vote) "vote", "Tot", "BP", "W-L")), by = "player_id") %>%
+    left_join(volleyreport::vr_serve(vsx$x, datavolley::visiting_team(vsx$x)), by = "player_id", suffix = c(".pts", ".ser") ) %>%
+    left_join(volleyreport::vr_reception(vsx$x, datavolley::visiting_team(vsx$x)), by = "player_id", suffix = c(".ser", ".rec") ) %>%
+    left_join(volleyreport::vr_attack(vsx$x, datavolley::visiting_team(vsx$x)), by = "player_id", suffix = c(".rec", ".att") ) %>%
+    left_join(volleyreport::vr_block(vsx$x, datavolley::visiting_team(vsx$x)), by = "player_id")
+visP_sum <- visP_sum %>% mutate(starting_position_set1 = 
+               case_when(!is.na(starting_position_set1) & starting_position_set1 %in% c("1","2","3","4","5","6") ~ cell_spec(starting_position_set1, kable_format, color = "white", align = "c", 
+                    background = "#444444", bold = TRUE), 
+                    !is.na(starting_position_set1) & starting_position_set1 %in% c(".", "L") ~ cell_spec(starting_position_set1, kable_format, color = "white", align = "c", 
+                    background = "#999999"), 
+                    TRUE ~ NA_character_)) %>%
+    mutate(starting_position_set2 = 
+               case_when(!is.na(starting_position_set2) & starting_position_set2 %in% c("1","2","3","4","5","6") ~ cell_spec(starting_position_set2, kable_format, color = "white", align = "c", 
+                    background = "#444444", bold = TRUE), 
+                    !is.na(starting_position_set2) & starting_position_set2 %in% c(".", "L") ~ cell_spec(starting_position_set2, kable_format, color = "white", align = "c", 
+                    background = "#999999"), 
+                    TRUE ~ NA_character_)) %>%
+    mutate(starting_position_set3 = 
+               case_when(!is.na(starting_position_set3) & starting_position_set3 %in% c("1","2","3","4","5","6") ~ cell_spec(starting_position_set3, kable_format, color = "white", align = "c", 
+                    background = "#444444", bold = TRUE), 
+                    !is.na(starting_position_set3) & starting_position_set3 %in% c(".", "L") ~ cell_spec(starting_position_set3, kable_format, color = "white", align = "c", 
+                    background = "#999999"), 
+                    TRUE ~ NA_character_)) %>%
+    mutate(starting_position_set4 = 
+               case_when(!is.na(starting_position_set4) & starting_position_set4 %in% c("1","2","3","4","5","6") ~ cell_spec(starting_position_set4, kable_format, color = "white", align = "c", 
+                    background = "#444444", bold = TRUE), 
+                    !is.na(starting_position_set4) & starting_position_set4 %in% c(".", "L") ~ cell_spec(starting_position_set4, kable_format, color = "white", align = "c", 
+                    background = "#999999"), 
+                    TRUE ~ NA_character_)) %>% 
+    mutate(starting_position_set5 = 
+               case_when(!is.na(starting_position_set5) & starting_position_set5 %in% c("1","2","3","4","5","6") ~ cell_spec(starting_position_set5, kable_format, color = "white", align = "c", 
+                    background = "#444444", bold = TRUE), 
+                    !is.na(starting_position_set5) & starting_position_set5 %in% c(".", "L") ~ cell_spec(starting_position_set5, kable_format, color = "white", align = "c", 
+                    background = "#999999"), 
+                    TRUE ~ NA_character_))
+
+visP_sum <- visP_sum %>% dplyr::select(-player_id) %>% purrr::discard(~all(is.na(.))) %>% 
+    na_if(0)
+```
+
+```{r mr2_visiting_html, results = "asis"}
+cat("<div class=\"row\">\n")
+cat("<div class=\"col-sm-12 col\">")
+kable(visP_sum, format = "html", escape = F, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", "BP", "W-L", "Tot", "Err","Pts", 
+                                                           "Tot", "Err", "Pos%", "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts")) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 11) %>%
+    column_spec(2, width = "1.8in") %>%
+    add_header_above(c(setNames(2,datavolley::visiting_team(vsx$x)), "Set" = nrow(vsx$meta$result), "Points" = 3 + vsx$vote, "Serve" = 3, "Reception" = 4, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE) %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
+    column_spec(1, border_left = vsx$css$border) %>% 
+    column_spec(ncol(homeP_sum), border_right = vsx$css$border) %>%
+    row_spec(which(visP_sum$name == "Team total"), background = "lightgrey")
+cat("</div>\n")
+cat("</div>\n")
+```
+
+```{r mr3_visiting, warning = FALSE, results = "asis"}
+visitingC <- vsx$meta$teams %>% dplyr::filter(team %eq% datavolley::visiting_team(vsx$x)) %>% dplyr::select(coach, assistant) %>% pivot_longer(1:2) %>%
+    mutate(name = str_to_title(name))
+visitingSS <- vr_points(vsx$x, datavolley::visiting_team(vsx$x), by = "set") %>%
+    left_join(volleyreport::vr_serve(vsx$x, datavolley::visiting_team(vsx$x), by = "set"), by = "set_number", suffix = c(".pts", ".ser") ) %>%
+    left_join(volleyreport::vr_reception(vsx$x, datavolley::visiting_team(vsx$x), by = "set"), by = "set_number", suffix = c(".ser", ".rec") ) %>%
+    left_join(volleyreport::vr_attack(vsx$x, datavolley::visiting_team(vsx$x), by = "set"), by = "set_number", suffix = c(".rec", ".att") ) %>%
+    left_join(volleyreport::vr_block(vsx$x, datavolley::visiting_team(vsx$x), by = "set"), by = "set_number") %>%
+    mutate(set_number = paste("Set", set_number)) %>%
+    purrr::discard(~all(is.na(.))) %>% 
+    na_if(0)
+```
+
+```{r mr3_visiting_html, results = "asis"}
+cat("<div class=\"row\">\n")
+cat("<div class=\"col-sm-3 col\">")
+kable(visitingC, format = "html", escape = F, col.names = c("Staff", "")) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 10) %>%
+    row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background)  %>%
+    column_spec(1, border_left = vsx$css$border) %>% 
+    column_spec(2, border_right = vsx$css$border)
+cat("</div>\n")
+cat("<div class=\"col-sm-9 col\">")
+kable(visitingSS, format = kable_format, escape = TRUE, col.names = c("","Ser", "Atk", "Blo","Op.Err", "Tot", "Err","Pts", "Tot", "Err", "Pos%", "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts")) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 11)  %>%
+    add_header_above(c(" " = 1,"Points" = 4, "Serve" = 3, "Reception" = 4, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
+    row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
+    column_spec(1, border_left = vsx$css$border) %>% 
+    column_spec(18, border_right = vsx$css$border)
+cat("</div>\n")
+cat("</div>\n")
+
+```

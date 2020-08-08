@@ -1,0 +1,29 @@
+Package: volleyreport
+Title: Reports from Volleyball Match Files
+Version: 0.1.2
+Authors@R: c(person("Adrien", "Ickowicz", email = "ickowicz.adrien@gmail.com", role = c("aut", "cre")),
+             person("Ben", "Raymond", role = "aut"))
+Description: Functions for generating reports from volleyball match files.
+Depends: R (>= 3.3.0)
+Imports:
+  assertthat,
+  datavolley,
+  dplyr,
+  ggplot2,
+  htmltools,
+  kableExtra,
+  knitr,
+  methods,
+  rlang,
+  rmarkdown,
+  rmdformats,
+  stringr,
+  tidyr,
+  webshot (>= 0.5.2)
+Suggests:
+  shiny,
+  testthat
+License: MIT + file LICENSE
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.1.0
