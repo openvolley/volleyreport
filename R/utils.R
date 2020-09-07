@@ -14,3 +14,8 @@ guess_data_type <- function(x) {
     }
 }
 
+to_char_noNA <- function(z) {
+    out <- as.character(z)
+    out[is.na(out) | out %in% "NA"] <- ""
+    out
+}

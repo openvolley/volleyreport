@@ -24,7 +24,7 @@ vsx$meta$teams %>% dplyr::select(team, sets_won) %>%
 cat("</div>\n")
 
 cat("<div class=\"col-sm-2 col\">")
-kable(vsx$meta$match %>% dplyr::select(date, time, season, league) %>% mutate_all(as.character) %>% pivot_longer(cols = 1:4) %>% 
+kable(vsx$meta$match %>% dplyr::select(date, time, season, league) %>% mutate_all(to_char_noNA) %>% pivot_longer(cols = 1:4) %>% 
             mutate(name = str_to_title(name)),
             format = kable_format, escape = FALSE, align = "l",col.names = NULL) %>%
       kable_styling(bootstrap_options = c("condensed"), full_width = TRUE, font_size = 9) %>%
@@ -32,7 +32,7 @@ kable(vsx$meta$match %>% dplyr::select(date, time, season, league) %>% mutate_al
 cat("</div>\n")
 
 cat("<div class=\"col-sm-2 col\">")
-kable(vsx$meta$more %>% dplyr::select(referees, city, arena, scout) %>% mutate_all(as.character) %>% pivot_longer(cols = 1:4) %>%
+kable(vsx$meta$more %>% dplyr::select(referees, city, arena, scout) %>% mutate_all(to_char_noNA) %>% pivot_longer(cols = 1:4) %>%
             mutate(name = str_to_title(name)),
             format = kable_format, escape = FALSE, align = "l",col.names = NULL) %>%
       kable_styling(bootstrap_options = c("condensed"), full_width = TRUE, font_size = 9) %>%
