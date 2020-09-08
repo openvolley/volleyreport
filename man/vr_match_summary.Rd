@@ -18,7 +18,7 @@ vr_match_summary(
 vr_css()
 }
 \arguments{
-\item{x}{datavolley: as returned by \code{datavolley::read_dv}}
+\item{x}{datavolley or string: as returned by \code{datavolley::dv_read}, or the path to such a file}
 
 \item{outfile}{string: path to file to produce (if not specified, will create a file in the temporary directory)}
 

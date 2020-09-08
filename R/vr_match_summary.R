@@ -1,6 +1,6 @@
 #' Generate single-page match summary report
 #'
-#' @param x datavolley: as returned by \code{datavolley::read_dv}
+#' @param x datavolley or string: as returned by \code{datavolley::dv_read}, or the path to such a file
 #' @param outfile string: path to file to produce (if not specified, will create a file in the temporary directory)
 #' @param vote logical: include vote report component?
 #' @param format string: "pdf", "png", or "html"
@@ -11,6 +11,9 @@
 #'
 #' @export
 vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NULL, css = vr_css(), shiny_progress = FALSE) {
+    if (is.string(x) && file.exists(x) && grepl("\\.dvw$", x, ignore.case = TRUE)) {
+        x <- datavolley::dv_read(x, skill_evaluation_decode = "guess")
+    }
     assert_that(inherits(x, "datavolley"))
     assert_that(is.string(format))
     assert_that(is.flag(shiny_progress), !is.na(shiny_progress))
