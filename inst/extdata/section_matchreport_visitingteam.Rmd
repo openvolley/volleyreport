@@ -42,7 +42,7 @@ visP_sum <- visP_sum %>% mutate(starting_position_set1 =
                     background = "#999999"), 
                     TRUE ~ NA_character_))
 
-visP_sum <- visP_sum %>% dplyr::select(-player_id) %>% purrr::discard(~all(is.na(.))) %>% 
+visP_sum <- visP_sum %>% dplyr::select(-player_id) %>% dplyr::arrange(.data$number) %>% purrr::discard(~all(is.na(.))) %>% 
     na_if(0)
 ```
 

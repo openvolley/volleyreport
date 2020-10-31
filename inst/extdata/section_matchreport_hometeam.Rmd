@@ -34,7 +34,7 @@ homeP_sum <- homeP_sum %>%  mutate(starting_position_set1 =
                          TRUE ~ NA_character_))
 
 
-homeP_sum <- homeP_sum %>% dplyr::select(-player_id) %>% purrr::discard(~all(is.na(.))) %>% na_if(0)
+homeP_sum <- homeP_sum %>% dplyr::select(-player_id) %>% dplyr::arrange(.data$number) %>% purrr::discard(~all(is.na(.))) %>% na_if(0)
 
 ```
 
