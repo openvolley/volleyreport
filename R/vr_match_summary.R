@@ -137,23 +137,23 @@ vr_points <- function(x, team, by = "player", vote = FALSE, as_for_datavolley = 
     if (by == "player") {
         vr_pts <- x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player") %>% group_by(.data$player_id) %>%
             dplyr::summarize(Tot = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block")),
-                      BP = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block") & .data$serving_team == team_select),
-                      Nerr = sum((.data$evaluation %eq% "Error" & .data$skill %in% c("Serve", "Reception", "Attack", if (!as_for_datavolley) "Set", if (!as_for_datavolley) "Freeball")) | (!as_for_datavolley & .data$evaluation %eq% "Invasion" & .data$skill %eq% "Block") | (.data$evaluation %eq% "Blocked" & .data$skill %eq% "Attack")),
-                      'W-L' = .data$Tot - .data$Nerr) %>%
+                             BP = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block") & .data$serving_team == team_select),
+                             Nerr = sum((.data$evaluation %eq% "Error" & .data$skill %in% c("Serve", "Reception", "Attack", if (!as_for_datavolley) "Set", if (!as_for_datavolley) "Freeball")) | (!as_for_datavolley & .data$evaluation %eq% "Invasion" & .data$skill %eq% "Block") | (.data$evaluation %eq% "Blocked" & .data$skill %eq% "Attack")),
+                             'W-L' = .data$Tot - .data$Nerr) %>%
             dplyr::select(-"Nerr") 
         if (vote) {
             vr_pts <- left_join(vr_pts, vr_vote(x = x, team = team_select) %>% dplyr::select(-"Nskills"), by = "player_id")
         }
-       vr_pts <- vr_pts %>%
+        vr_pts <- vr_pts %>%
             bind_rows(
                 x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player") %>%
-                    mutate(player_id = "Team total") %>% 
-                    group_by(.data$player_id) %>%
-                    dplyr::summarize(Tot = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block")),
-                              BP = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block")),
-                              Nerr = sum((.data$evaluation %eq% "Error" & .data$skill %in% c("Serve", "Reception", "Attack", if (!as_for_datavolley) "Set", if (!as_for_datavolley) "Freeball")) | (!as_for_datavolley & .data$evaluation %eq% "Invasion" & .data$skill %eq% "Block") | (.data$evaluation %eq% "Blocked" & .data$skill %eq% "Attack")),
-                              'W-L' = .data$Tot - .data$Nerr) %>%
-                    dplyr::select(-"Nerr"))
+                mutate(player_id = "Team total") %>% 
+                group_by(.data$player_id) %>%
+                dplyr::summarize(Tot = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block")),
+                                 BP = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block") & .data$serving_team == team_select),
+                                 Nerr = sum((.data$evaluation %eq% "Error" & .data$skill %in% c("Serve", "Reception", "Attack", if (!as_for_datavolley) "Set", if (!as_for_datavolley) "Freeball")) | (!as_for_datavolley & .data$evaluation %eq% "Invasion" & .data$skill %eq% "Block") | (.data$evaluation %eq% "Blocked" & .data$skill %eq% "Attack")),
+                                 'W-L' = .data$Tot - .data$Nerr) %>%
+                dplyr::select(-"Nerr"))
     } else if (by == "set") {
         vr_pts <- x %>% group_by(.data$set_number) %>%
             dplyr::summarize(Ser = sum(.data$evaluation_code == "#" & .data$skill == "Serve" & .data$team %in% team_select, na.rm = TRUE),
