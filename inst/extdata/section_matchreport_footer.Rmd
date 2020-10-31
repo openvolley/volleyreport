@@ -6,40 +6,35 @@ if (vsx$shiny_progress) try(shiny::setProgress(value = 0.3, message = "Generatin
 cat("<div class=\"row\">\n")
 
 cat("<div class=\"col-sm-1 col\" style=\"border-right:1px solid #aaa;\">")
-vsx$x %>% dplyr::select(point_won_by, home_team, home_setter_position, visiting_setter_position, point_id, visiting_team) %>% distinct() %>%
+##vsx$x %>% dplyr::select(point_won_by, home_team, home_setter_position, visiting_setter_position, point_id, visiting_team) %>% distinct() %>% na.omit %>%
+vsx$x %>% dplyr::filter(skill == "Serve") %>%
     group_by(home_setter_position) %>% 
-    dplyr::summarize(Diff = sum(point_won_by == home_team, na.rm=TRUE) - sum(point_won_by == visiting_team, na.rm=TRUE)) %>%
+    dplyr::summarize(Diff = sum(point_won_by == home_team, na.rm = TRUE) - sum(point_won_by == visiting_team, na.rm = TRUE)) %>%
+    dplyr::arrange(desc(home_setter_position)) %>%
     dplyr::rename(`S in` = home_setter_position) %>% na.omit() %>%
     kable(format = vsx$format, escape = FALSE, align = "r") %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),font_size = 11) %>%
-row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),font_size = 11) %>%
+    row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
     add_header_above(c("Points" = 2), color = vsx$css$header_colour, background = vsx$css$header_background) 
 cat("</div>\n")
 
 cat("<div class=\"col-sm-2 col\">")
 cat("<div class=\"row\">")
-rhome <- vsx$x %>%
-    dplyr::filter((skill %in% c("Serve", "Reception")) | (lead(point == TRUE,2)), team == datavolley::home_team(vsx$x)) %>% 
-    dplyr::summarize(Reception = sum(skill == "Reception", na.rm=TRUE),
-        'Points SO' = sum(serving_team == datavolley::visiting_team(vsx$x) & 
-                          point_won_by == datavolley::home_team(vsx$x) &
-                          evaluation_code == "#", na.rm=TRUE)) %>%
+rhome <- vsx$x %>% dplyr::summarize(Receptions = sum(skill == "Reception" & team == datavolley::home_team(vsx$x), na.rm = TRUE),
+                                    'Points SO' = sum(serving_team == datavolley::visiting_team(vsx$x) & .data$skill %in% c("Attack", "Block") & evaluation_code == "#" & team == datavolley::home_team(vsx$x), na.rm = TRUE)) %>%
     pivot_longer(cols = 1:2)
 
 kable(rhome, format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>%
-  kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
+    kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
 kable(paste0("Each ",round(rhome$value[1]/rhome$value[2],2)," receptions 1 Point"),format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
 cat("</div>\n")
 cat("<div class=\"row\">")
-shome <- vsx$x %>%
-    dplyr::filter((skill %in% c("Serve", "Reception")) | (lead(point == TRUE,2)), team == datavolley::home_team(vsx$x)) %>% 
+shome <- vsx$x %>% dplyr::filter(team == datavolley::home_team(vsx$x)) %>%
     dplyr::summarize(Serve = sum(skill == "Serve", na.rm=TRUE),
-        'Points BP' = sum(serving_team == datavolley::home_team(vsx$x)  & 
-                              point_won_by == datavolley::home_team(vsx$x) &
-                              evaluation_code == "#", na.rm=TRUE)) %>%
+                     'Points BP' = sum(serving_team == datavolley::home_team(vsx$x)  & .data$skill %in% c("Serve", "Attack", "Block") & evaluation_code == "#", na.rm=TRUE)) %>%
     pivot_longer(cols = 1:2)
 kable(shome, format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>%
-  kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
+    kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
 kable(paste0("Each ",round(shome$value[1]/shome$value[2],2)," serves 1 Break point"),format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
 cat("</div>\n")
 cat("</div>\n")
@@ -47,18 +42,18 @@ cat("</div>\n")
 cat("<div class=\"col-sm-4 col\" style=\"border-right:1px solid #aaa; border-left:1px solid #aaa;\">")
 cat("<div class=\"row\">")
 KoRhome <- vsx$x %>% dplyr::filter(skill == "Attack" & ts_pass_evaluation_code %in% c("#", "+", "#+") & phase == "Reception",
-                            team == datavolley::home_team(vsx$x)) %>%
+                                   team == datavolley::home_team(vsx$x)) %>%
     dplyr::summarize(Errors = sum(evaluation_code == "="),
-              Blo = sum(evaluation_code == "/"),
-              'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-              Tot = n())
+                     Blo = sum(evaluation_code == "/"),
+                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
+                     Tot = n())
 
 KoRvis <- vsx$x %>% dplyr::filter(skill == "Attack" & ts_pass_evaluation_code %in% c("#", "+", "#+") & phase == "Reception",
-                            team == datavolley::visiting_team(vsx$x)) %>%
+                                  team == datavolley::visiting_team(vsx$x)) %>%
     dplyr::summarize(Errors = sum(evaluation_code == "="),
-              Blo = sum(evaluation_code == "/"),
-              'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-              Tot = n())
+                     Blo = sum(evaluation_code == "/"),
+                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
+                     Tot = n())
 
 kable(cbind(KoRhome, KoRvis[4:1]),format = vsx$format, escape = FALSE, align = "c") %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) %>%
     column_spec(4, border_right = TRUE) %>%
@@ -67,18 +62,18 @@ cat("</div>\n")
 
 cat("<div class=\"row\">")
 KoRhome <- vsx$x %>% dplyr::filter(skill == "Attack" & ts_pass_evaluation_code %in% c("-", "!", "-/") & phase == "Reception",
-                            team == datavolley::home_team(vsx$x)) %>%
+                                   team == datavolley::home_team(vsx$x)) %>%
     dplyr::summarize(Errors = sum(evaluation_code == "="),
-              Blo = sum(evaluation_code == "/"),
-              'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-              Tot = n())
+                     Blo = sum(evaluation_code == "/"),
+                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
+                     Tot = n())
 
 KoRvis <- vsx$x %>% dplyr::filter(skill == "Attack" & ts_pass_evaluation_code %in% c("-", "!", "-/") & phase == "Reception",
-                            team == datavolley::visiting_team(vsx$x)) %>%
+                                  team == datavolley::visiting_team(vsx$x)) %>%
     dplyr::summarize(Errors = sum(evaluation_code == "="),
-              Blo = sum(evaluation_code == "/"),
-              'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-              Tot = n())
+                     Blo = sum(evaluation_code == "/"),
+                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
+                     Tot = n())
 
 kable(cbind(KoRhome, KoRvis[4:1]),format = vsx$format, escape = FALSE, align = "c") %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) %>%
     column_spec(4, border_right = TRUE) %>%
@@ -88,18 +83,18 @@ cat("</div>\n")
 
 cat("<div class=\"row\">")
 KoRhome <- vsx$x %>% dplyr::filter(skill == "Attack" & phase != "Reception",
-                            team == datavolley::home_team(vsx$x)) %>%
+                                   team == datavolley::home_team(vsx$x)) %>%
     dplyr::summarize(Errors = sum(evaluation_code == "="),
-              Blo = sum(evaluation_code == "/"),
-              'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-              Tot = n())
+                     Blo = sum(evaluation_code == "/"),
+                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
+                     Tot = n())
 
 KoRvis <- vsx$x %>% dplyr::filter(skill == "Attack" & phase != "Reception",
-                            team == datavolley::visiting_team(vsx$x)) %>%
+                                  team == datavolley::visiting_team(vsx$x)) %>%
     dplyr::summarize(Errors = sum(evaluation_code == "="),
-              Blo = sum(evaluation_code == "/"),
-              'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-              Tot = n())
+                     Blo = sum(evaluation_code == "/"),
+                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
+                     Tot = n())
 
 kable(cbind(KoRhome, KoRvis[4:1]),format = vsx$format, escape = FALSE, align = "c") %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) %>%
     column_spec(4, border_right = TRUE) %>%
@@ -111,47 +106,42 @@ cat("</div>\n")
 ```{r fr2, warning = FALSE, results = "asis"}
 cat("<div class=\"col-sm-2 col\" style=\"border-right:1px solid #aaa;\">")
 cat("<div class=\"row\">")
-rvis <- vsx$x %>%
-    dplyr::filter((skill %in% c("Serve", "Reception")) | (lead(point == TRUE,2)), team == datavolley::visiting_team(vsx$x)) %>% 
-    dplyr::summarize(Reception = sum(skill == "Reception", na.rm=TRUE),
-        'Points SO' = sum(serving_team == datavolley::home_team(vsx$x) & 
-                              point_won_by == datavolley::visiting_team(vsx$x) &
-                              evaluation_code == "#", na.rm=TRUE)) %>%
+rvis <- vsx$x %>% dplyr::summarize(Receptions = sum(skill == "Reception" & team == datavolley::visiting_team(vsx$x), na.rm=TRUE),
+                                   'Points SO' = sum(serving_team == datavolley::home_team(vsx$x) & .data$skill %in% c("Attack", "Block") & evaluation_code == "#" & team == datavolley::visiting_team(vsx$x), na.rm=TRUE)) %>%
     pivot_longer(cols = 1:2)
 kable(rvis, format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>%
-  kable_styling(bootstrap_options = c("condensed"),font_size = 11)
+    kable_styling(bootstrap_options = c("condensed"),font_size = 11)
 kable(paste0("Each ",round(rvis$value[1]/rvis$value[2],2)," receptions 1 Point"),format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
 cat("</div>\n")
 cat("<div class=\"row\">")
-svis <- vsx$x %>%
-    dplyr::filter((skill %in% c("Serve", "Reception")) | (lead(point == TRUE,2)), team == datavolley::visiting_team(vsx$x)) %>% 
-    dplyr::summarize(Reception = sum(skill == "Serve", na.rm=TRUE),
-        'Points BP' = sum(serving_team == datavolley::visiting_team(vsx$x)  & 
-                              point_won_by == datavolley::visiting_team(vsx$x) &
-                              evaluation_code == "#", na.rm=TRUE)) %>%
+svis <- vsx$x %>% dplyr::filter(team == datavolley::visiting_team(vsx$x)) %>% 
+    dplyr::summarize(Serves = sum(skill == "Serve", na.rm=TRUE),
+                     'Points BP' = sum(serving_team == datavolley::visiting_team(vsx$x) & .data$skill %in% c("Serve", "Attack", "Block") & evaluation_code == "#", na.rm=TRUE)) %>%
     pivot_longer(cols = 1:2)
 kable(svis, format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>%
-  kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
+    kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
 kable(paste0("Each ",round(svis$value[1]/svis$value[2],2)," serves 1 Break point"),format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
 cat("</div>\n")
 cat("</div>\n")
 
 cat("<div class=\"col-sm-1 col\" style=\"border-right:1px solid #aaa;\">")
-vsx$x %>% dplyr::select(point_won_by, home_team, home_setter_position, visiting_setter_position, point_id, visiting_team) %>% distinct() %>%
+##vsx$x %>% dplyr::select(point_won_by, home_team, home_setter_position, visiting_setter_position, point_id, visiting_team) %>% distinct() %>% na.omit %>%
+vsx$x %>% dplyr::filter(skill == "Serve") %>%
     group_by(visiting_setter_position) %>% 
-    dplyr::summarize(Diff = -sum(point_won_by == home_team, na.rm=TRUE) + sum(point_won_by == visiting_team, na.rm=TRUE)) %>%
+    dplyr::summarize(Diff = sum(point_won_by == visiting_team, na.rm = TRUE) - sum(point_won_by == home_team, na.rm = TRUE)) %>%
+    dplyr::arrange(desc(visiting_setter_position)) %>%
     dplyr::rename(`S in` = visiting_setter_position) %>% na.omit() %>%
     kable(format = vsx$format, escape = FALSE, align = "r") %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"),font_size = 11) %>%
-row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),font_size = 11) %>%
+    row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
     add_header_above(c("Points" = 2), color = vsx$css$header_colour, background = vsx$css$header_background) 
 cat("</div>\n")
 
 cat("<div class=\"col-sm-2 col\">")
 data.frame(Label = c("BP", "Err", "Pos%", "W-L", "Pts", "Blo", "Exc", ".", "n"),
-                              Description = c("Break point", "Errors", "Positive +#", "Won-Lost", "Points", "Blocked", "Excellent", "Substitute", "Starting lineup")) %>% 
+           Description = c("Break point", "Errors", "Positive +#", "Won-Lost", "Points", "Blocked", "Excellent", "Substitute", "Starting lineup")) %>% 
     kable(format = vsx$format,align = c("r", "l"), escape = FALSE, col.names = NULL) %>%
-  kable_styling(font_size = 9)
+    kable_styling(font_size = 9)
 cat("</div>\n")
 
 cat("</div>\n")
