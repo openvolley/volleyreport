@@ -234,15 +234,15 @@ vr_vote <- function(x, team) {
             group_by_at("player_id") %>%
             dplyr::summarize(skill = "Attack", N = n(), vote = pmax(5.5, sum(.data$vote_per_skill*.data$factor)/n())) %>%
             mutate(vote = case_when(.data$N >= 0.07*sum(team_totals$skill == "Attack", na.rm = TRUE) ~ .data$vote))
-        block_grade <- team_totals %>% dplyr::filter(skill == "Block" & evaluation == "Winning block") %>%
-            dplyr::count(.data$player_id)
+        block_grade <- team_totals %>% dplyr::filter(.data$skill == "Block" & .data$evaluation == "Winning block") %>% dplyr::count(.data$player_id)
         player_nsets <- bind_rows(lapply(block_grade$player_id, function(id) {
-            tibble(player_id = id, n_sets_played = length(unique(na.omit(x$set_number[rowSums(x[, c(paste0("home_player_id", 1:6), paste0("visiting_player_id", 1:6))] == id) > 0]))))
+            ## count number of sets each player was listed as on court
+            dplyr::tibble(player_id = id, n_sets_played = length(unique(na.omit(x$set_number[rowSums(x[, c(paste0("home_player_id", 1:6), paste0("visiting_player_id", 1:6))] == id) > 0]))))
         }))
         block_grade <- left_join(block_grade, player_nsets, by = "player_id") %>%
-            mutate(skill = "Block",vote = case_when(n >= n_sets_played ~ 8.5,
-                                                    n >= n_sets_played*0.8 ~ 8.0,
-                                                    n >= n_sets_played*0.5 ~ 7.0)) %>%
+            mutate(skill = "Block", vote = case_when(.data$n >= .data$n_sets_played ~ 8.5,
+                                                     .data$n >= .data$n_sets_played*0.8 ~ 8.0,
+                                                     .data$n >= .data$n_sets_played*0.5 ~ 7.0)) %>%
             dplyr::select_at(c("player_id", "skill", "vote"))
         ## TODO setter, also include attacks after positive reception with weights error/blocked = 0, neg/pos = 5, kill = 10; only when those attacks are > 30% of number of team attacks
         bind_rows(serve_grade, rec_grade, att_grade, block_grade) %>% group_by_at("player_id") %>%
