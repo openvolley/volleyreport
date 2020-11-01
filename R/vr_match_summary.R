@@ -128,7 +128,8 @@ vr_css <- function() {
 #' @param by string: "player" or "set"
 #' @param vote logical: if \code{TRUE}, include vote detail
 #' @export
-vr_points <- function(x, team, by = "player", vote = FALSE, as_for_datavolley = TRUE) {
+vr_points <- function(x, team, by = "player", vote = FALSE) {
+    as_for_datavolley <- TRUE
     assert_that(is.string(by))
     by <- match.arg(tolower(by), c("player", "set"))
     assert_that(is.string(team))
@@ -142,7 +143,7 @@ vr_points <- function(x, team, by = "player", vote = FALSE, as_for_datavolley = 
                              'W-L' = .data$Tot - .data$Nerr) %>%
             dplyr::select(-"Nerr") 
         if (vote) {
-            vr_pts <- left_join(vr_pts, vr_vote(x = x, team = team_select) %>% dplyr::select(-"Nskills"), by = "player_id")
+            vr_pts <- left_join(vr_pts, vr_vote(x = x, team = team_select), by = "player_id")
         }
         vr_pts <- vr_pts %>%
             bind_rows(
@@ -169,35 +170,36 @@ vr_points <- function(x, team, by = "player", vote = FALSE, as_for_datavolley = 
 #' @param team string: team name
 #' @export
 vr_vote <- function(x, team) {
+    as_for_datavolley <- TRUE
     assert_that(is.string(team))
     team_select <- team
     vote.df <- x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player") %>%
         mutate(vote_per_skill = case_when(.data$skill == "Serve" ~ case_when(.data$evaluation_code == "#" ~ 10,
                                                                              .data$evaluation_code == "+" ~ 7,
-                                                                             .data$evaluation_code == "!" ~ 5,
+                                                                             .data$evaluation_code == "!" ~ if (as_for_datavolley) 0 else 5,
                                                                              .data$evaluation_code == "-" ~ 4,
                                                                              .data$evaluation_code == "/" ~ 8,
                                                                              .data$evaluation_code == "=" ~ 0),
                                           .data$skill == "Reception" ~ case_when(.data$evaluation_code == "#" ~ 10,
                                                                                  .data$evaluation_code == "+" ~ 7,
-                                                                                 .data$evaluation_code == "!" ~ 5,
-                                                                                 .data$evaluation_code == "-" ~ 1,
-                                                                                 .data$evaluation_code == "/" ~ -1,
+                                                                                 .data$evaluation_code == "!" ~ if (as_for_datavolley) 0 else 5,
+                                                                                 .data$evaluation_code == "-" ~ if (as_for_datavolley) -1 else 1,
+                                                                                 .data$evaluation_code == "/" ~ if (as_for_datavolley) -3 else -1,
                                                                                  .data$evaluation_code == "=" ~ -3),
                                           .data$skill == "Attack" ~ case_when(.data$evaluation_code == "#" ~ 10,
-                                                                              .data$evaluation_code == "+" ~ 7,
-                                                                              .data$evaluation_code == "!" ~ 5,
-                                                                              .data$evaluation_code == "-" ~ 3,
+                                                                              .data$evaluation_code == "+" ~ if (as_for_datavolley) 5 else 7,
+                                                                              .data$evaluation_code == "!" ~ if (as_for_datavolley) 0 else 5,
+                                                                              .data$evaluation_code == "-" ~ if (as_for_datavolley) 5 else 3,
                                                                               .data$evaluation_code == "/" ~ 0,
                                                                               .data$evaluation_code == "=" ~ 0),
                                           .data$skill == "Block" ~ case_when(.data$evaluation_code == "#" ~ 10,
                                                                              .data$evaluation_code == "+" ~ 0,
-                                                                             .data$evaluation_code == "!" ~ 2,
+                                                                             .data$evaluation_code == "!" ~ if (as_for_datavolley) 0 else 2,
                                                                              .data$evaluation_code == "-" ~ 0,
                                                                              .data$evaluation_code == "/" ~ 0,
                                                                              .data$evaluation_code == "=" ~ 0),
                                           .data$skill == "Dig" ~ case_when(.data$evaluation_code == "#" ~ 10,
-                                                                           .data$evaluation_code == "+" ~ 8,
+                                                                           .data$evaluation_code == "+" ~ if (as_for_datavolley) 0 else 8,
                                                                            .data$evaluation_code == "!" ~ 0,
                                                                            .data$evaluation_code == "-" ~ 0,
                                                                            .data$evaluation_code == "/" ~ 0,
@@ -209,17 +211,47 @@ vr_vote <- function(x, team) {
                                                                            .data$evaluation_code == "/" ~ 0,
                                                                            .data$evaluation_code == "=" ~ 0),
                                           .data$skill == "Freeball" ~ case_when(.data$evaluation_code == "#" ~ 10,
-                                                                                .data$evaluation_code == "+" ~ 5,
+                                                                                .data$evaluation_code == "+" ~ if (as_for_datavolley) 0 else 5,
                                                                                 .data$evaluation_code == "!" ~ 0,
                                                                                 .data$evaluation_code == "-" ~ 0,
                                                                                 .data$evaluation_code == "/" ~ 0,
-                                                                                .data$evaluation_code == "=" ~ -5)),
-               max_vote_per_skill = case_when(.data$skill %in% c("Serve", "Reception", "Attack", "Block", "Dig", "Set", "Freeball") ~ 10,
-                                              TRUE ~ NA_real_)) %>% dplyr::select("team", "player_id", "skill", "evaluation_code", "vote_per_skill", "max_vote_per_skill") %>% na.omit()
+                                                                                .data$evaluation_code == "=" ~ if (as_for_datavolley) 0 else -5)),
+               max_vote_per_skill = case_when(.data$skill %in% c("Serve", "Reception", "Attack", "Block", "Dig", "Set", "Freeball") ~ 10)) %>%
+        dplyr::select("team", "player_id", "skill", "evaluation_code", "vote_per_skill", "max_vote_per_skill") %>% na.omit()
 
-    vote.df %>% group_by_at("player_id") %>% dplyr::summarize(vote = round(sum(.data$vote_per_skill)/sum(.data$max_vote_per_skill)*10, 1), Nskills = n()) %>%
-        mutate(vote = case_when(.data$Nskills < 10 ~ NA_real_,
-                                TRUE ~ .data$vote))
+    if (as_for_datavolley) {
+        vote.df$factor <- 1.0
+        team_totals <- dplyr::filter(x, .data$team %in% team_select)
+        serve_grade <- vote.df %>% dplyr::filter(.data$skill == "Serve") %>%
+            group_by_at("player_id") %>%
+            dplyr::summarize(skill = "Serve", N = n(), vote = pmax(5.5, sum(.data$vote_per_skill*.data$factor)/n())) %>%
+            mutate(vote = case_when(.data$N >= 0.05*sum(team_totals$skill == "Serve", na.rm = TRUE) ~ .data$vote))
+        rec_grade <- vote.df %>% dplyr::filter(.data$skill == "Reception") %>%
+            group_by_at("player_id") %>%
+            dplyr::summarize(skill = "Reception", N = n(), vote = pmax(5.5, sum(.data$vote_per_skill*.data$factor)/n())) %>%
+            mutate(vote = case_when(.data$N >= 0.12*sum(team_totals$skill == "Reception", na.rm = TRUE) ~ .data$vote))
+        att_grade <- vote.df %>% dplyr::filter(.data$skill == "Attack") %>%
+            group_by_at("player_id") %>%
+            dplyr::summarize(skill = "Attack", N = n(), vote = pmax(5.5, sum(.data$vote_per_skill*.data$factor)/n())) %>%
+            mutate(vote = case_when(.data$N >= 0.07*sum(team_totals$skill == "Attack", na.rm = TRUE) ~ .data$vote))
+        block_grade <- team_totals %>% dplyr::filter(skill == "Block" & evaluation == "Winning block") %>%
+            dplyr::count(.data$player_id)
+        player_nsets <- bind_rows(lapply(block_grade$player_id, function(id) {
+            tibble(player_id = id, n_sets_played = length(unique(na.omit(x$set_number[rowSums(x[, c(paste0("home_player_id", 1:6), paste0("visiting_player_id", 1:6))] == id) > 0]))))
+        }))
+        block_grade <- left_join(block_grade, player_nsets, by = "player_id") %>%
+            mutate(skill = "Block",vote = case_when(n >= n_sets_played ~ 8.5,
+                                                    n >= n_sets_played*0.8 ~ 8.0,
+                                                    n >= n_sets_played*0.5 ~ 7.0)) %>%
+            dplyr::select_at(c("player_id", "skill", "vote"))
+        ## TODO setter, also include attacks after positive reception with weights error/blocked = 0, neg/pos = 5, kill = 10; only when those attacks are > 30% of number of team attacks
+        bind_rows(serve_grade, rec_grade, att_grade, block_grade) %>% group_by_at("player_id") %>%
+            dplyr::summarize(vote = round(mean(.data$vote, na.rm = TRUE), 1))
+    } else {
+        vote.df %>% group_by_at("player_id") %>%
+            dplyr::summarize(vote = round(sum(.data$vote_per_skill)/sum(.data$max_vote_per_skill)*10, 1), Nskills = n()) %>%
+            mutate(vote = case_when(.data$Nskills < 10 ~ NA_real_, TRUE ~ .data$vote)) %>% dplyr::select(-"Nskills")
+    }
 }
 
 

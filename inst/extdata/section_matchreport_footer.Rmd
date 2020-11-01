@@ -13,7 +13,7 @@ vsx$x %>% dplyr::filter(skill == "Serve") %>%
     dplyr::arrange(desc(home_setter_position)) %>%
     dplyr::rename(`S in` = home_setter_position) %>% na.omit() %>%
     kable(format = vsx$format, escape = FALSE, align = "r") %>%
-    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),font_size = 11) %>%
+    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 11) %>%
     row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
     add_header_above(c("Points" = 2), color = vsx$css$header_colour, background = vsx$css$header_background) 
 cat("</div>\n")
