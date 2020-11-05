@@ -42,15 +42,17 @@ visP_sum <- visP_sum %>% mutate(starting_position_set1 =
                     background = "#999999"), 
                     TRUE ~ NA_character_))
 
-visP_sum <- visP_sum %>% dplyr::select(-player_id) %>% dplyr::arrange(.data$number) %>% purrr::discard(~all(is.na(.))) %>% 
-    na_if(0)
+visP_sum <- visP_sum %>% dplyr::select(-player_id) %>% dplyr::arrange(.data$number) %>% purrr::discard(~all(is.na(.))) %>% na_if(0)
+## note that in some cases the dvw file can contain starting positions for players in a set that doesn't have a result
+notsets <- setdiff(1:5, seq_len(nrow(vsx$meta$result)))
+visP_sum <- visP_sum[, setdiff(colnames(visP_sum), paste0("starting_position_set", notsets))]
+
 ```
 
 ```{r mr2_visiting_html, results = "asis"}
 cat("<div class=\"row\">\n")
 cat("<div class=\"col-sm-12 col\">")
-kable(visP_sum, format = "html", escape = F, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", "BP", "W-L", "Tot", "Err","Pts", 
-                                                           "Tot", "Err", "Pos%", "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts")) %>%
+kable(visP_sum, format = "html", escape = F, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", "BP", "W-L", "Tot", "Err","Pts", "Tot", "Err", "Pos%", "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts")) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 11) %>%
     column_spec(2, width = "1.8in") %>%
     add_header_above(c(setNames(2,datavolley::visiting_team(vsx$x)), "Set" = nrow(vsx$meta$result), "Points" = 3 + vsx$vote, "Serve" = 3, "Reception" = 4, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE) %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%

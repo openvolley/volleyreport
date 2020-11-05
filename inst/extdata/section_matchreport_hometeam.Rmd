@@ -36,6 +36,10 @@ homeP_sum <- homeP_sum %>%  mutate(starting_position_set1 =
 
 homeP_sum <- homeP_sum %>% dplyr::select(-player_id) %>% dplyr::arrange(.data$number) %>% purrr::discard(~all(is.na(.))) %>% na_if(0)
 
+## note that in some cases the dvw file can contain starting positions for players in a set that doesn't have a result
+notsets <- setdiff(1:5, seq_len(nrow(vsx$meta$result)))
+homeP_sum <- homeP_sum[, setdiff(colnames(homeP_sum), paste0("starting_position_set", notsets))]
+
 ```
 
 ```{r mr2_home_html, results = "asis"}
