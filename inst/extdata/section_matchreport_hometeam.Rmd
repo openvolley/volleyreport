@@ -76,7 +76,8 @@ kable(homeC, format = "html", escape = F, col.names = c("Staff", "")) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 10) %>%
     row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background)  %>%
     column_spec(1, border_left = vsx$css$border) %>% 
-    column_spec(2, border_right = vsx$css$border)
+    column_spec(2, border_right = vsx$css$border) %>%
+    row_spec(nrow(homeC), extra_css = paste0("border-bottom:", vsx$css$border))
 cat("</div>\n")
 cat("<div class=\"col-sm-9 col\">")
 kable(homeSS,format = "html", escape = TRUE, col.names = c("","Ser", "Atk", "Blo","Op.Err", "Tot", "Err","Pts", 
@@ -85,7 +86,8 @@ kable(homeSS,format = "html", escape = TRUE, col.names = c("","Ser", "Atk", "Blo
     add_header_above(c(" " = 1,"Points" = 4, "Serve" = 3, "Reception" = 4, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
     row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
     column_spec(1, border_left = vsx$css$border) %>% 
-    column_spec(18, border_right = vsx$css$border)
+    column_spec(18, border_right = vsx$css$border) %>%
+    row_spec(nrow(homeSS), extra_css = paste0("border-bottom:", vsx$css$border))
 cat("</div>\n")
 cat("</div>\n")
 

@@ -19,3 +19,5 @@ to_char_noNA <- function(z) {
     out[is.na(out) | out %in% "NA"] <- ""
     out
 }
+
+cat0 <- function(...) cat(..., sep = "")
