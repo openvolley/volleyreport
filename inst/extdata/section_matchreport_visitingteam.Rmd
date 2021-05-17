@@ -8,7 +8,7 @@ visP_sum <- vsx$meta$players_v %>% dplyr::select(player_id,number, name, startin
     dplyr::select(-"role") %>%
     left_join(volleyreport::vr_points(vsx$x, datavolley::visiting_team(vsx$x), vote = vsx$vote) %>% dplyr::select_at(c("player_id", if (vsx$vote) "vote", "Tot", "BP", "W-L")), by = "player_id") %>%
     left_join(volleyreport::vr_serve(vsx$x, datavolley::visiting_team(vsx$x)), by = "player_id", suffix = c(".pts", ".ser") ) %>%
-    left_join(volleyreport::vr_reception(vsx$x, datavolley::visiting_team(vsx$x)), by = "player_id", suffix = c(".ser", ".rec") ) %>%
+    left_join(volleyreport::vr_reception(vsx$x, datavolley::visiting_team(vsx$x), file_type = x$file_meta$file_type), by = "player_id", suffix = c(".ser", ".rec") ) %>%
     left_join(volleyreport::vr_attack(vsx$x, datavolley::visiting_team(vsx$x)), by = "player_id", suffix = c(".rec", ".att") ) %>%
     left_join(volleyreport::vr_block(vsx$x, datavolley::visiting_team(vsx$x)), by = "player_id")
 visP_sum <- visP_sum %>% mutate(starting_position_set1 = 
@@ -52,10 +52,12 @@ visP_sum <- visP_sum[, setdiff(colnames(visP_sum), paste0("starting_position_set
 ```{r mr2_visiting_html, results = "asis"}
 cat("<div class=\"row\">\n")
 cat("<div class=\"col-sm-12 col\">")
-kable(visP_sum, format = "html", escape = F, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", "BP", "W-L", "Tot", "Err","Pts", "Tot", "Err", "Pos%", "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts")) %>%
+Rexc <- !isTRUE(grepl("perana", x$file_meta$file_type)) ## perana have only R#+, not R#
+if (!Rexc) visP_sum <- dplyr::select(visP_sum, -"(Exc%)")
+kable(visP_sum, format = "html", escape = F, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", "BP", "W-L", "Tot", "Err","Pts", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts")) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 11) %>%
     column_spec(2, width = "1.8in") %>%
-    add_header_above(c(setNames(2,datavolley::visiting_team(vsx$x)), "Set" = nrow(vsx$meta$result), "Points" = 3 + vsx$vote, "Serve" = 3, "Reception" = 4, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE) %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
+    add_header_above(c(setNames(2,datavolley::visiting_team(vsx$x)), "Set" = nrow(vsx$meta$result), "Points" = 3 + vsx$vote, "Serve" = 3, "Reception" = 3 + Rexc, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE) %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
     column_spec(1, border_left = vsx$css$border) %>% 
     column_spec(ncol(homeP_sum), border_right = vsx$css$border) %>%
     row_spec(which(visP_sum$name == "Team total"), background = "lightgrey")
@@ -68,7 +70,7 @@ visitingC <- vsx$meta$teams %>% dplyr::filter(team %eq% datavolley::visiting_tea
     mutate(name = str_to_title(name))
 visitingSS <- vr_points(vsx$x, datavolley::visiting_team(vsx$x), by = "set") %>%
     left_join(volleyreport::vr_serve(vsx$x, datavolley::visiting_team(vsx$x), by = "set"), by = "set_number", suffix = c(".pts", ".ser") ) %>%
-    left_join(volleyreport::vr_reception(vsx$x, datavolley::visiting_team(vsx$x), by = "set"), by = "set_number", suffix = c(".ser", ".rec") ) %>%
+    left_join(volleyreport::vr_reception(vsx$x, datavolley::visiting_team(vsx$x), by = "set", file_type = x$file_meta$file_type), by = "set_number", suffix = c(".ser", ".rec") ) %>%
     left_join(volleyreport::vr_attack(vsx$x, datavolley::visiting_team(vsx$x), by = "set"), by = "set_number", suffix = c(".rec", ".att") ) %>%
     left_join(volleyreport::vr_block(vsx$x, datavolley::visiting_team(vsx$x), by = "set"), by = "set_number") %>%
     mutate(set_number = paste("Set", set_number)) %>%
@@ -87,12 +89,13 @@ kable(visitingC, format = "html", escape = F, col.names = c("Staff", "")) %>%
     row_spec(nrow(visitingC), extra_css = paste0("border-bottom:", vsx$css$border))
 cat("</div>\n")
 cat("<div class=\"col-sm-9 col\">")
-kable(visitingSS, format = kable_format, escape = TRUE, col.names = c("","Ser", "Atk", "Blo","Op.Err", "Tot", "Err","Pts", "Tot", "Err", "Pos%", "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts")) %>%
+if (!Rexc) visitingSS <- dplyr::select(visitingSS, -"(Exc%)")
+kable(visitingSS, format = "html", escape = TRUE, col.names = c("","Ser", "Atk", "Blo","Op.Err", "Tot", "Err","Pts", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts")) %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 11)  %>%
-    add_header_above(c(" " = 1,"Points" = 4, "Serve" = 3, "Reception" = 4, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
+    add_header_above(c(" " = 1,"Points" = 4, "Serve" = 3, "Reception" = 3 + Rexc, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
     row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
     column_spec(1, border_left = vsx$css$border) %>% 
-    column_spec(18, border_right = vsx$css$border) %>%
+    column_spec(ncol(homeSS), border_right = vsx$css$border) %>%
     row_spec(nrow(visitingSS), extra_css = paste0("border-bottom:", vsx$css$border))
 cat("</div>\n")
 cat("</div>\n")

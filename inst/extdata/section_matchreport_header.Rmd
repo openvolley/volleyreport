@@ -45,18 +45,23 @@ cat("</div>\n")
 
 cat("<div class=\"col-sm-5 col\">")
 this <- vsx$meta$result
-this$score_intermediate1 <- gsub("[[:space:]]+", "", this$score_intermediate1)
-this$score_intermediate2 <- gsub("[[:space:]]+", "", this$score_intermediate2)
-this$score_intermediate3 <- gsub("[[:space:]]+", "", this$score_intermediate3)
-this %>% mutate(Set = dplyr::row_number(),
-                "Partial score" = paste(score_intermediate1, score_intermediate2, score_intermediate3, sep = " / ")) %>%
-    dplyr::select(Set, Duration = "duration", "Partial score", Score = "score") %>% 
+have_partial <- "score_intermediate1" %in% names(this)
+if (have_partial) {
+    this$score_intermediate1 <- gsub("[[:space:]]+", "", this$score_intermediate1)
+    this$score_intermediate2 <- gsub("[[:space:]]+", "", this$score_intermediate2)
+    this$score_intermediate3 <- gsub("[[:space:]]+", "", this$score_intermediate3)
+    this <- this %>% mutate(Set = dplyr::row_number(),
+                            "Partial score" = paste(score_intermediate1, score_intermediate2, score_intermediate3, sep = " / "))
+} else {
+    this <- this %>% mutate(Set = dplyr::row_number())
+}
+this <- this %>% dplyr::select(Set, Duration = "duration", if (have_partial) "Partial score", Score = "score") %>% 
     kable(format = kable_format, escape = FALSE, align = "r") %>%
     kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 11) %>%
     row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
     column_spec(2, width = "0.5in") %>%
     column_spec(1, width = "0.25in", border_left = vsx$css$border) %>%
-    column_spec(4, border_right = vsx$css$border, bold = TRUE) %>%
+    column_spec(3 + have_partial, border_right = vsx$css$border, bold = TRUE) %>%
     row_spec(nrow(this), extra_css = paste0("border-bottom:", vsx$css$border))
 cat("</div>\n")
 cat("</div>\n")

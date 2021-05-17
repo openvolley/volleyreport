@@ -14,7 +14,7 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
     if (is.string(x) && file.exists(x) && grepl("\\.dvw$", x, ignore.case = TRUE)) {
         x <- datavolley::dv_read(x, skill_evaluation_decode = "guess")
     }
-    assert_that(inherits(x, "datavolley"))
+    assert_that(inherits(x, c("datavolley", "peranavolley")))
     assert_that(is.string(format))
     assert_that(is.flag(shiny_progress), !is.na(shiny_progress))
     format <- match.arg(tolower(format), c("html", "pdf", "png"))
@@ -156,11 +156,13 @@ vr_points <- function(x, team, by = "player", vote = FALSE) {
                                  'W-L' = .data$Tot - .data$Nerr) %>%
                 dplyr::select(-"Nerr"))
     } else if (by == "set") {
+        x$team_points <- if (team_select %eq% datavolley::home_team(x)) x$home_team_score else if (team_select %eq% datavolley::visiting_team(x)) x$visiting_team_score else NA_integer_
         vr_pts <- x %>% group_by(.data$set_number) %>%
             dplyr::summarize(Ser = sum(.data$evaluation_code == "#" & .data$skill == "Serve" & .data$team %in% team_select, na.rm = TRUE),
                              Atk = sum(.data$evaluation_code == "#" & .data$skill == "Attack" & .data$team %in% team_select, na.rm = TRUE),
                              Blo = sum(.data$evaluation_code == "#" & .data$skill == "Block" & .data$team %in% team_select, na.rm = TRUE),
-                             'Op.Er' = sum(.data$point & .data$team %in% team_select, na.rm = TRUE) - .data$Ser - .data$Atk - .data$Blo)
+                             ##'Op.Er' = sum(.data$point & .data$team %in% team_select, na.rm = TRUE) - .data$Ser - .data$Atk - .data$Blo)
+                             'Op.Er' = max(.data$team_points, na.rm = TRUE) - .data$Ser - .data$Atk - .data$Blo)
     }
     vr_pts
 }
@@ -290,34 +292,32 @@ vr_serve <- function(x, team, by = "player"){
 #' @param team string: team name
 #' @param by string: "player" or "set"
 #' @export
-vr_reception <- function(x, team, by = "player"){
+vr_reception <- function(x, team, by = "player", file_type = "indoor"){
     assert_that(is.string(by))
     by <- match.arg(tolower(by), c("player", "set"))
     assert_that(is.string(team))
     team_select <- team
     if (by == "player"){
-    x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% group_by(.data$player_id) %>%
-        dplyr::summarize(Tot = n(),
-                  Err = sum(.data$evaluation %eq% "Error"),
-                  'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#")), 2)*100, "%"),
-                  '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)")
-        ) %>%
+        x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% group_by(.data$player_id) %>%
+            dplyr::summarize(Tot = n(),
+                             Err = sum(.data$evaluation %eq% "Error"),
+                             'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
+                             '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)")) %>%
             bind_rows(
                 x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% 
-                    mutate(player_id = "Team total") %>%
-                    group_by(.data$player_id) %>%
-                    dplyr::summarize(Tot = n(),
-                              Err = sum(.data$evaluation %eq% "Error"),
-                              'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#")), 2)*100, "%"),
-                              '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)")
-                    )
+                mutate(player_id = "Team total") %>%
+                group_by(.data$player_id) %>%
+                dplyr::summarize(Tot = n(),
+                                 Err = sum(.data$evaluation %eq% "Error"),
+                                 'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
+                                 '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"))
             )
     } else if (by == "set") {
         x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% group_by(.data$set_number) %>%
             dplyr::summarize(Tot = n(),
-                      Err = sum(.data$evaluation %eq% "Error"),
-                      'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#")), 2)*100, "%"),
-                      '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"))
+                             Err = sum(.data$evaluation %eq% "Error"),
+                             'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
+                             '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"))
     }
 }
 
