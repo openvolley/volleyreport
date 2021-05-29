@@ -2,7 +2,8 @@ Package: volleyreport
 Title: Reports from Volleyball Match Files
 Version: 0.2.5
 Authors@R: c(person("Adrien", "Ickowicz", email = "ickowicz.adrien@gmail.com", role = c("aut", "cre")),
-             person("Ben", "Raymond", role = "aut"))
+             person("Ben", "Raymond", role = "aut"),
+             person("openvolley.org", role = "org"))
 Description: Functions for generating reports from volleyball match files.
 Depends: R (>= 3.3.0)
 Imports:
