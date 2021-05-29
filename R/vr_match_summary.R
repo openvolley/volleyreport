@@ -161,8 +161,8 @@ vr_points <- function(x, team, by = "player", vote = FALSE) {
             dplyr::summarize(Ser = sum(.data$evaluation_code == "#" & .data$skill == "Serve" & .data$team %in% team_select, na.rm = TRUE),
                              Atk = sum(.data$evaluation_code == "#" & .data$skill == "Attack" & .data$team %in% team_select, na.rm = TRUE),
                              Blo = sum(.data$evaluation_code == "#" & .data$skill == "Block" & .data$team %in% team_select, na.rm = TRUE),
-                             ##'Op.Er' = sum(.data$point & .data$team %in% team_select, na.rm = TRUE) - .data$Ser - .data$Atk - .data$Blo)
-                             'Op.Er' = max(.data$team_points, na.rm = TRUE) - .data$Ser - .data$Atk - .data$Blo)
+                             ## "Op.Er" = sum(.data$point & .data$team %in% team_select, na.rm = TRUE) - .data$Ser - .data$Atk - .data$Blo)
+                             "Op.Er" = max(.data$team_points, na.rm = TRUE) - .data$Ser - .data$Atk - .data$Blo)
     }
     vr_pts
 }
@@ -291,6 +291,7 @@ vr_serve <- function(x, team, by = "player"){
 #' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
 #' @param team string: team name
 #' @param by string: "player" or "set"
+#' @param file_type string: "indoor", "perana_indoor"
 #' @export
 vr_reception <- function(x, team, by = "player", file_type = "indoor"){
     assert_that(is.string(by))
