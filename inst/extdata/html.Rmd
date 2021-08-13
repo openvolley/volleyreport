@@ -60,6 +60,9 @@ a { color:#18348E; /*#060F6A;*/
   border: 1px solid grey;
 }
 
+thead > tr { border: 1px solid `r vsx$css$header_colour` }
+
+.table { margin-bottom: 8px; }
 </style>
 
 ```{r child=tf_abs("section_matchreport_header.Rmd")}
