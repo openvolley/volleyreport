@@ -1,158 +1,55 @@
 ```{r}
-if (vsx$shiny_progress) try(shiny::setProgress(value = 0.3, message = "Generating footer"), silent = TRUE)
+if (vsx$shiny_progress) try(shiny::setProgress(value = 0.8, message = "Generating footer"), silent = TRUE)
 ```
 
 ```{r fr0, warning = FALSE, results = "asis"}
 cat("<div class=\"row\">\n")
-cat0("<div class=\"col-sm-5\" style=\"font-size:11px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, ";\">", vsx$meta$teams$team[1], "</div>\n")
-cat0("<div class=\"col-sm-5\" style=\"font-size:11px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, "; border-right:", vsx$css$border, ";\">", vsx$meta$teams$team[2], "</div>\n")
+cat0("<div class=\"col-sm-5\" style=\"padding-left:2px; padding-right:2px; font-size:11px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, ";\">", vsx$meta$teams$team[1], "</div>\n")
+cat0("<div class=\"col-sm-5\" style=\"padding-left:2px; padding-right:2px; font-size:11px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, "; border-right:", vsx$css$border, ";\">", vsx$meta$teams$team[2], "</div>\n")
 cat("</div>\n")
 ```
 
 ```{r fr1, warning = FALSE, results = "asis"}
 cat("<div class=\"row\">\n")
 
-cat0("<div class=\"col-sm-1 col\" style=\"border-right:", vsx$css$border, ";\">")
-##vsx$x %>% dplyr::select(point_won_by, home_team, home_setter_position, visiting_setter_position, point_id, visiting_team) %>% distinct() %>% na.omit %>%
-vsx$x %>% dplyr::filter(skill == "Serve") %>%
-    group_by(home_setter_position) %>% 
-    dplyr::summarize(Diff = sum(point_won_by == home_team, na.rm = TRUE) - sum(point_won_by == visiting_team, na.rm = TRUE)) %>%
-    dplyr::arrange(desc(home_setter_position)) %>%
-    dplyr::rename(`S in` = home_setter_position) %>% na.omit() %>%
-    kable(format = vsx$format, escape = FALSE, align = "r") %>%
-    kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 11) %>%
-    row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
-    add_header_above(c("Points" = 2), color = vsx$css$header_colour, background = vsx$css$header_background) 
+cat0("<div style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, ";\" class=\"col-sm-1 col\">")
+volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
 cat("</div>\n")
 
-cat("<div class=\"col-sm-2 col\">")
-cat("<div class=\"row\">")
-rhome <- vsx$x %>% dplyr::summarize(Receptions = sum(skill == "Reception" & team == datavolley::home_team(vsx$x), na.rm = TRUE),
-                                    'Points SO' = sum(serving_team == datavolley::visiting_team(vsx$x) & .data$skill %in% c("Attack", "Block") & evaluation_code == "#" & team == datavolley::home_team(vsx$x), na.rm = TRUE)) %>%
-    pivot_longer(cols = 1:2)
+cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-2 col\">")
+hteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "home")
+hteach[[1]]
+hteach[[2]]
 
-kable(rhome, format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>%
-    kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
-kable(paste0("Each ",round(rhome$value[1]/rhome$value[2],2)," receptions 1 Point"),format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
-cat("</div>\n")
-cat("<div class=\"row\">")
-shome <- vsx$x %>% dplyr::filter(team == datavolley::home_team(vsx$x)) %>%
-    dplyr::summarize(Serve = sum(skill == "Serve", na.rm = TRUE),
-                     'Points BP' = sum(serving_team == datavolley::home_team(vsx$x)  & .data$skill %in% c("Serve", "Attack", "Block") & evaluation_code == "#", na.rm = TRUE)) %>%
-    pivot_longer(cols = 1:2)
-kable(shome, format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>%
-    kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
-kable(paste0("Each ",round(shome$value[1]/shome$value[2],2)," serves 1 Break point"),format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
-cat("</div>\n")
+hteach[[3]]
+hteach[[4]]
 cat("</div>\n")
 
-cat0("<div class=\"col-sm-4 col\" style=\"border-right:", vsx$css$border, "; border-left:", vsx$css$border, ";\">")
-cat("<div class=\"row\">")
-KoRhome <- vsx$x %>% dplyr::filter(skill == "Attack" & ts_pass_evaluation_code %in% c("#", "+", "#+") & phase == "Reception",
-                                   team == datavolley::home_team(vsx$x)) %>%
-    dplyr::summarize(Errors = sum(evaluation_code == "="),
-                     Blo = sum(evaluation_code == "/"),
-                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-                     Tot = n())
+cat0("<div class=\"col-sm-4 col\" style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, "; border-left:", vsx$css$border, ";\">")
+volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st Attack AFTER POSITIVE RECEPTION (+#)")
 
-KoRvis <- vsx$x %>% dplyr::filter(skill == "Attack" & ts_pass_evaluation_code %in% c("#", "+", "#+") & phase == "Reception",
-                                  team == datavolley::visiting_team(vsx$x)) %>%
-    dplyr::summarize(Errors = sum(evaluation_code == "="),
-                     Blo = sum(evaluation_code == "/"),
-                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-                     Tot = n())
-
-kable(cbind(KoRhome, KoRvis[4:1]),format = vsx$format, escape = FALSE, align = "c") %>% kable_styling(bootstrap_options = c("condensed"), font_size = 11) %>%
-    column_spec(4, border_right = vsx$css$border) %>%
-    add_header_above(c("1st Attack AFTER POSITIVE RECEPTION (+#)" = 8), color = vsx$css$header_colour, background = vsx$css$header_background) 
-cat("</div>\n")
-
-cat("<div class=\"row\">")
-KoRhome <- vsx$x %>% dplyr::filter(skill == "Attack" & ts_pass_evaluation_code %in% c("-", "!", "-/") & phase == "Reception",
-                                   team == datavolley::home_team(vsx$x)) %>%
-    dplyr::summarize(Errors = sum(evaluation_code == "="),
-                     Blo = sum(evaluation_code == "/"),
-                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-                     Tot = n())
-
-KoRvis <- vsx$x %>% dplyr::filter(skill == "Attack" & ts_pass_evaluation_code %in% c("-", "!", "-/") & phase == "Reception",
-                                  team == datavolley::visiting_team(vsx$x)) %>%
-    dplyr::summarize(Errors = sum(evaluation_code == "="),
-                     Blo = sum(evaluation_code == "/"),
-                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-                     Tot = n())
-
-kable(cbind(KoRhome, KoRvis[4:1]),format = vsx$format, escape = FALSE, align = "c") %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) %>%
-    column_spec(4, border_right = vsx$css$border) %>%
-    add_header_above(c("1st Attack AFTER NEGATIVE RECEPTION (-!)" = 8), color = vsx$css$header_colour, background = vsx$css$header_background) 
-cat("</div>\n")
+volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("-", "!", "-/"), hdr = "1st Attack AFTER NEGATIVE RECEPTION (-!)")
 
 
-cat("<div class=\"row\">")
-KoRhome <- vsx$x %>% dplyr::filter(skill == "Attack" & phase != "Reception",
-                                   team == datavolley::home_team(vsx$x)) %>%
-    dplyr::summarize(Errors = sum(evaluation_code == "="),
-                     Blo = sum(evaluation_code == "/"),
-                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-                     Tot = n())
-
-KoRvis <- vsx$x %>% dplyr::filter(skill == "Attack" & phase != "Reception",
-                                  team == datavolley::visiting_team(vsx$x)) %>%
-    dplyr::summarize(Errors = sum(evaluation_code == "="),
-                     Blo = sum(evaluation_code == "/"),
-                     'Pts%' = round(mean(evaluation_code == "#"),2)*100, 
-                     Tot = n())
-
-kable(cbind(KoRhome, KoRvis[4:1]),format = vsx$format, escape = FALSE, align = "c") %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) %>%
-    column_spec(4, border_right = vsx$css$border) %>%
-    add_header_above(c("Attack on dig" = 8), color = vsx$css$header_colour, background = vsx$css$header_background) 
-cat("</div>\n")
+volleyreport:::vr_content_kill_in_trans(vsx, kable_format)
 cat("</div>\n")
 ```
 
 ```{r fr2, warning = FALSE, results = "asis"}
-cat0("<div class=\"col-sm-2 col\" style=\"border-right:", vsx$css$border, ";\">")
-cat("<div class=\"row\">")
-rvis <- vsx$x %>% dplyr::summarize(Receptions = sum(skill == "Reception" & team == datavolley::visiting_team(vsx$x), na.rm = TRUE),
-                                   'Points SO' = sum(serving_team == datavolley::home_team(vsx$x) & .data$skill %in% c("Attack", "Block") & evaluation_code == "#" & team == datavolley::visiting_team(vsx$x), na.rm = TRUE)) %>%
-    pivot_longer(cols = 1:2)
-kable(rvis, format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>%
-    kable_styling(bootstrap_options = c("condensed"),font_size = 11)
-kable(paste0("Each ",round(rvis$value[1]/rvis$value[2],2)," receptions 1 Point"),format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
-cat("</div>\n")
-cat("<div class=\"row\">")
-svis <- vsx$x %>% dplyr::filter(team == datavolley::visiting_team(vsx$x)) %>% 
-    dplyr::summarize(Serves = sum(skill == "Serve", na.rm = TRUE),
-                     'Points BP' = sum(serving_team == datavolley::visiting_team(vsx$x) & .data$skill %in% c("Serve", "Attack", "Block") & evaluation_code == "#", na.rm = TRUE)) %>%
-    pivot_longer(cols = 1:2)
-kable(svis, format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>%
-    kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
-kable(paste0("Each ",round(svis$value[1]/svis$value[2],2)," serves 1 Break point"),format = vsx$format, escape = FALSE, align = "l", col.names = NULL) %>% kable_styling(bootstrap_options = c("condensed"),font_size = 11) 
-cat("</div>\n")
+cat0("<div class=\"col-sm-2 col\" style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, ";\">")
+vteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "visiting")
+vteach[[1]]
+vteach[[2]]
+vteach[[3]]
+vteach[[4]]
 cat("</div>\n")
 
-cat0("<div class=\"col-sm-1\">\n")
-##vsx$x %>% dplyr::select(point_won_by, home_team, home_setter_position, visiting_setter_position, point_id, visiting_team) %>% distinct() %>% na.omit %>%
-vsx$x %>% dplyr::filter(skill == "Serve") %>%
-    group_by(visiting_setter_position) %>% 
-    dplyr::summarize(Diff = sum(point_won_by == visiting_team, na.rm = TRUE) - sum(point_won_by == home_team, na.rm = TRUE)) %>%
-    dplyr::arrange(desc(visiting_setter_position)) %>%
-    dplyr::rename(`S in` = visiting_setter_position) %>% na.omit() %>%
-    kable(format = vsx$format, escape = FALSE, align = "r") %>%
-    kable_styling(bootstrap_options = c("striped", "hover", "condensed"),font_size = 11) %>%
-    row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>% 
-    add_header_above(c("Points" = 2), color = vsx$css$header_colour, background = vsx$css$header_background) 
+cat0("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-1\">\n")
+volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
 cat("</div>\n")
 
-cat("<div class=\"col-sm-2 col\">")
-data.frame(Label = c("BP", "Err", "Pos%", "W-L", "Pts", "Blo", "Exc", ".", "n"),
-           Description = c("Break point", "Errors", "Positive +#", "Won-Lost", "Points", "Blocked", "Excellent", "Substitute", "Starting lineup")) %>% 
-    kable(format = vsx$format, align = c("r", "l"), escape = FALSE, col.names = NULL) %>%
-    kable_styling(font_size = 9) %>%
-    ## add outer framing to make the key visually separate from the content
-    column_spec(1, border_left = vsx$css$border) %>% column_spec(2, border_right = vsx$css$border) %>%
-    row_spec(1, extra_css = paste0("border-top:", vsx$css$border)) %>%
-    row_spec(9, extra_css = paste0("border-bottom:", vsx$css$border)) %>%
+cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-2 col\">")
+volleyreport:::vr_content_key(vsx, kable_format)
 cat("</div>\n")
 
 cat("</div>\n")
