@@ -23,7 +23,16 @@ The volleyreport package provides functions for generating reports from volleyba
 
 ## Installation
 
-```{r eval = FALSE}
+```{r eval=FALSE}
+
+options(repos = c(openvolley = "https://openvolley.r-universe.dev",
+                  CRAN = "https://cloud.r-project.org"))
+
+install.packages("volleyreport")
+
+## or
+
+## install.packages("remotes") ## if needed
 remotes::install_github("openvolley/volleyreport")
 ```
 

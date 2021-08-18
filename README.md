@@ -15,6 +15,14 @@ volleyball match files.
 ## Installation
 
 ``` r
+options(repos = c(openvolley = "https://openvolley.r-universe.dev",
+                  CRAN = "https://cloud.r-project.org"))
+
+install.packages("volleyreport")
+
+## or
+
+## install.packages("remotes") ## if needed
 remotes::install_github("openvolley/volleyreport")
 ```
 
