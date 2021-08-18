@@ -6,18 +6,19 @@
 #' @param format string: "pdf", "png", or "html"
 #' @param icon string: (optional) filename of icon image to use
 #' @param css list: css specifications for some elements, giving (currently fairly limited) control over appearance. See the output of \code{\link{vr_css}} for an example. Note that some styling does not seem to be applied when exporting to PDF
+#' @param remove_nonplaying logical: if \code{TRUE}, remove players from the team summaries that did not take to the court
 #' @param shiny_progress logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope
 #' @return The path to the report file
 #'
 #' @export
-vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NULL, css = vr_css(), shiny_progress = FALSE) {
+vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, shiny_progress = FALSE) {
     if (is.string(x) && file.exists(x) && grepl("\\.dvw$", x, ignore.case = TRUE)) {
         x <- datavolley::dv_read(x, skill_evaluation_decode = "guess")
     }
     assert_that(inherits(x, c("datavolley", "peranavolley")))
     assert_that(is.string(format))
     assert_that(is.flag(shiny_progress), !is.na(shiny_progress))
-    format <- match.arg(tolower(format), c("html", "pdf", "png"))
+    format <- match.arg(tolower(format), c("html", "pdf", "png", "paged_pdf"))
     if (format %in% c("pdf", "png")) {
         ## check that we have phantomjs installed
         if (!webshot::is_phantomjs_installed()) {
@@ -31,8 +32,8 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
     }
     team <- datavolley::home_team(x)
     meta <- x$meta
-    final_format <- format
-    format <- "html" ## even for pdf, treat now as html then webshot to pdf from that
+    final_format <- if (format %in% "paged_pdf") "pdf" else format
+    if (!format %in% "paged_pdf") format <- "html" ## even for pdf, treat now as html then webshot to pdf from that
     working_dir <- tempfile()
     dir.create(working_dir)
     rmd_template <- file.path(working_dir, paste0(format, ".Rmd"))
@@ -99,20 +100,26 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
     ## report icon image
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
     ## cheap and nasty parameterisation
-    vsx <- list(x = x, meta = meta, vote = vote,  format = format, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css)
+    vsx <- list(x = x, meta = meta, vote = vote, format = if (format == "paged_pdf") "html" else format, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying)
 
-    rm(x, meta, vote, format, shiny_progress, file_type, icon)
+    rm(x, meta, vote, shiny_progress, file_type, icon, remove_nonplaying)
 
     ## generate report
     output_options <- NULL
     if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
     blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
-    out <- render(rmd_template, output_file = outfile, output_options = output_options)
-    if (final_format %in% c("pdf", "png")) {
-        webshot::webshot(outfile, file = final_outfile)
-        final_outfile
+    if (format == "paged_pdf") {
+        rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = FALSE, copy_resources = TRUE), clean = TRUE)
+        do.call(rmarkdown::render, rgs)
+        ovpaged::chrome_print(outfile, output = final_outfile, format = final_format) ##, scale = 1)
     } else {
-        out
+        out <- render(rmd_template, output_file = outfile, output_options = output_options)
+        if (final_format %in% c("pdf", "png")) {
+            webshot::webshot(outfile, file = final_outfile)
+            final_outfile
+        } else {
+            out
+        }
     }
 }
 
