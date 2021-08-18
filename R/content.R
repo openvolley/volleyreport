@@ -39,13 +39,12 @@ vr_content_partial_scores <- function(vsx, kable_format) {
     } else {
         this <- this %>% mutate(Set = dplyr::row_number())
     }
-    this %>% dplyr::select("Set", Duration = "duration", if (have_partial) "Partial score", Score = "score") %>%
+    this %>% mutate(Set = paste0(.data$Set, " (", .data$duration, " mins)")) %>% dplyr::select("Set", if (have_partial) "Partial score", Score = "score") %>%
         kable(format = kable_format, escape = FALSE, align = "r", table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 11) %>%
-        row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
-        column_spec(2, width = "0.5in") %>%
-        column_spec(1, width = "0.25in", border_left = vsx$css$border) %>%
-        column_spec(3 + have_partial, border_right = vsx$css$border, bold = TRUE) %>%
+        row_spec(0, align = "l", bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
+        column_spec(1, width = "0.7in", border_left = vsx$css$border) %>%
+        column_spec(2 + have_partial, border_right = vsx$css$border, bold = TRUE) %>%
         row_spec(nrow(this), extra_css = paste0("border-bottom:", vsx$css$border))
 }
 
@@ -85,13 +84,14 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
                starting_position_set5 = case_when(!is.na(.data$starting_position_set5) & .data$starting_position_set5 %in% c("1","2","3","4","5","6") ~ cell_spec(.data$starting_position_set5, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
                                                   !is.na(.data$starting_position_set5) & .data$starting_position_set5 %in% c(".", "L") ~ cell_spec(.data$starting_position_set5, kable_format, color = "white", align = "c", background = "#999999")))
 
-    P_sum <- P_sum %>% dplyr::select(-"player_id") %>% dplyr::arrange(.data$number) %>% ##purrr::discard(~all(is.na(.))) %>%
-        na_if(0)
+    P_sum <- P_sum %>% dplyr::select(-"player_id") %>% dplyr::arrange(.data$number) %>% na_if(0)
 
     ## note that in some cases the dvw file can contain starting positions for players in a set that doesn't have a result
     notsets <- setdiff(1:5, seq_len(nrow(vsx$meta$result)))
     P_sum <- P_sum[, setdiff(colnames(P_sum), paste0("starting_position_set", notsets))]
     if (isTRUE(vsx$remove_nonplaying)) P_sum <- P_sum[rowSums(is.na(P_sum[, c(-1, -2)])) < (ncol(P_sum) - 2), ]
+    ## put 0s back in for W-L
+    P_sum$`W-L`[is.na(P_sum$`W-L`)] <- 0L
     Rexc <- !isTRUE(grepl("perana", vsx$x$file_meta$file_type)) ## perana have only R#+, not R#
     if (!Rexc) P_sum <- dplyr::select(P_sum, -"(Exc%)")
     P_sum
@@ -109,7 +109,7 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     kable(P_sum, format = "html", escape = FALSE, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", "BP", "W-L", "Tot", "Err","Pts", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts"), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 11) %>%
         column_spec(2, width = "1.8in") %>%
-        add_header_above(c(setNames(2, teamfun(vsx$x)), "Set" = nrow(vsx$meta$result), "Points" = 3 + vsx$vote, "Serve" = 3, "Reception" = 3 + Rexc, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE) %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
+        add_header_above(c(setNames(2, teamfun(vsx$x)), "Set" = nrow(vsx$meta$result), "Points" = 3 + vsx$vote, "Serve" = 3, "Reception" = 3 + Rexc, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE) %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = 10) %>%
         column_spec(1, border_left = vsx$css$border) %>% 
         column_spec(ncol(P_sum), border_right = vsx$css$border) %>%
         row_spec(which(P_sum$name == "Team total"), background = "lightgrey")
@@ -146,15 +146,14 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
         left_join(volleyreport::vr_reception(vsx$x, teamfun(vsx$x), by = "set", file_type = vsx$x$file_meta$file_type), by = "set_number", suffix = c(".ser", ".rec") ) %>%
         left_join(volleyreport::vr_attack(vsx$x, teamfun(vsx$x), by = "set"), by = "set_number", suffix = c(".rec", ".att") ) %>%
         left_join(volleyreport::vr_block(vsx$x, teamfun(vsx$x), by = "set"), by = "set_number") %>%
-        mutate(set_number = paste("Set", .data$set_number)) %>%
-        ##purrr::discard(~all(is.na(.))) %>%
+        mutate(set_number = paste("Set", .data$set_number)) %>% ##purrr::discard(~all(is.na(.))) %>%
         na_if(0)
     Rexc <- !isTRUE(grepl("perana", vsx$x$file_meta$file_type)) ## perana have only R#+, not R#
     if (!Rexc) thisSS <- dplyr::select(thisSS, -"(Exc%)")
     kable(thisSS,format = "html", escape = TRUE, col.names = c("","Ser", "Atk", "Blo", "Op.Err", "Tot", "Err","Pts", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts"), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 11) %>%
         add_header_above(c("Set" = 1, "Points" = 4, "Serve" = 3, "Reception" = 3 + Rexc, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background) %>%
-        row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
+        row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = 10) %>%
         column_spec(1, border_left = vsx$css$border) %>%
         column_spec(ncol(thisSS), border_right = vsx$css$border) %>%
         row_spec(nrow(thisSS), extra_css = paste0("border-bottom:", vsx$css$border))
@@ -176,7 +175,7 @@ vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
     }
     kable(na.omit(out), format = kable_format, escape = FALSE, align = "r", table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = 11) %>%
-        row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
+        row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = 10) %>%
         add_header_above(c("Points" = 2), color = vsx$css$header_colour, background = vsx$css$header_background)
 }
 
@@ -202,11 +201,11 @@ vr_content_team_each <- function(vsx, kable_format, which_team = "home") {
 
     list(kable(rthis, format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = 11),
 
-         kable(paste0("Each ", round(rthis$value[1]/rthis$value[2], 2), " receptions 1 Point"), format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = 11),
+         kable(paste0("Each ", round(rthis$value[1]/rthis$value[2], 2), " receptions 1 point"), format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = 11),
 
          kable(sthis, format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = 11),
 
-         kable(paste0("Each ", round(sthis$value[1]/sthis$value[2], 2), " serves 1 Break point"), format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = 11)
+         kable(paste0("Each ", round(sthis$value[1]/sthis$value[2], 2), " serves 1 breakpoint"), format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = 11)
          )
 }
 
@@ -236,7 +235,7 @@ vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "
     names(hd) <- hdr
     kable(cbind(KoRhome, KoRvis[4:1]), format = kable_format, escape = FALSE, align = "c", table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = 11) %>%
         column_spec(4, border_right = vsx$css$border) %>%
-        row_spec(0, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
+        row_spec(0, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = 10) %>%
         add_header_above(hd, color = vsx$css$header_colour, background = vsx$css$header_background)
 }
 
