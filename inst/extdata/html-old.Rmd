@@ -1,0 +1,85 @@
+---
+output:
+  html_document: default
+---
+
+```{r chunkopts, eval = TRUE, echo = FALSE}
+
+knitr::opts_chunk$set(eval = TRUE, echo = FALSE, 
+                      message = TRUE, 
+                      warning = TRUE, 
+                      tidy = FALSE, cache = FALSE, include = TRUE, dpi = 72, fig.width = 12, fig.height = 8, fig.align = "center", results = "markup")
+options(knitr.kable.NA = "")
+
+tf_abs <- function(f) system.file(file.path("extdata", f), package = "volleyreport")
+kable_format <- "html"
+
+```
+
+<style>.main {width: 1100px;}
+
+#main .nav-pills > li > a:hover {
+  background-color: #18348E;
+}
+
+#main .nav-pills > li.active > a,
+#main .nav-pills > li.active > a:hover,
+#main .nav-pills > li.active > a:focus {
+  background-color: #18348E;
+}
+
+h1,h2,h3,h4,h5,h6,legend{ color:#18348E; }
+
+#content{ max-width: 95% }
+
+#content pre { background:#f3f6f6; color:#404040; }
+#content pre.sourceCode{ background-color: #FFF; }
+
+#nav-top span.glyphicon { color:#18348E; }
+a { color:#18348E; /*#060F6A;*/
+}
+
+#main a {
+    background-image: linear-gradient(180deg,#18349e,#18349e);
+    color:#18348e;
+}
+
+#postamble .date {
+    color: #211103; /*#f8e5ee;*/
+}
+
+#content .highlighted{
+    background:#FACB01;
+}
+
+#content .row > div {
+  border: 1px solid grey;
+}
+
+#main .row > div {
+  border: 1px solid grey;
+}
+
+thead > tr { border: 1px solid `r vsx$css$header_colour` }
+
+.table { margin-bottom: 8px; }
+
+.wcol { padding-left: 2px; padding-right: 2px; }
+.widetable { width: 100%; }
+
+</style>
+
+```{r child=tf_abs("section_matchreport_header.Rmd")}
+```
+
+```{r child=tf_abs("section_matchreport_hometeam.Rmd")}
+```
+
+```{r child=tf_abs("section_matchreport_visitingteam.Rmd")}
+```
+
+```{r child=tf_abs("section_matchreport_footer.Rmd")}
+```
+
+`r if (vsx$shiny_progress) try(shiny::setProgress(value = 0.95, message = paste0("Converting to ", toupper(vsx$format))), silent = TRUE)`
+

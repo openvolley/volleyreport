@@ -63,18 +63,145 @@ a { color:#18348E; /*#060F6A;*/
 thead > tr { border: 1px solid `r vsx$css$header_colour` }
 
 .table { margin-bottom: 8px; }
+
+.wcol { padding-left: 2px; padding-right: 2px; }
+.widetable { width: 100%; }
+
+.mtbl { width: 100%; }
+.mtbl > tbody > tr { background: #fff; }
+.mtbl td, .mtbl th { vertical-align: top; padding: 3px; }
 </style>
 
-```{r child=tf_abs("section_matchreport_header.Rmd")}
+```{r}
+if (vsx$shiny_progress) try(shiny::setProgress(value = 0.3, message = "Generating header"), silent = TRUE)
 ```
 
-```{r child=tf_abs("section_matchreport_hometeam.Rmd")}
+```{r mr1html, warning = FALSE, results = "asis"}
+if (!is.null(vsx$icon)) {
+    cat("<table class=\"mtbl\"><tr><td width=\"15%\">\n")
+    cat("<p style=\"margin:0;\"><img src=\"", vsx$icon, "\" style=\"max-width: 90%; max-height: 90%;\" /></p>\n", sep = "")
+    cat("</td>\n")
+    cat("<td width=\"85%\">\n")
+}
+
+cat("<table class=\"mtbl\"><tr>\n")
+
+cat("<td width=\"25%\">")
+volleyreport:::vr_content_match_outcome(vsx, kable_format)
+cat("</td>\n")
+
+cat("<td width=\"17%\">")
+volleyreport:::vr_content_match_date(vsx, kable_format)
+cat("</td>\n")
+
+cat("<td width=\"22%\">")
+volleyreport:::vr_content_match_refs(vsx, kable_format)
+cat("</td>\n")
+
+cat("<td width=\"36%\">")
+volleyreport:::vr_content_partial_scores(vsx, kable_format)
+cat("</td></tr></table>\n")
+if (!is.null(vsx$icon)) {
+    cat("</td></tr></table>\n")
+}
 ```
 
-```{r child=tf_abs("section_matchreport_visitingteam.Rmd")}
+```{r mr2_home_html, warning = FALSE, results = "asis"}
+cat("<table class=\"mtbl\"><tr>\n")
+cat("<td width=\"100%\">")
+volleyreport:::vr_content_team_table(vsx, kable_format, which_team = "home")
+cat("</td>\n")
+cat("</tr></table>\n")
+
 ```
 
-```{r child=tf_abs("section_matchreport_footer.Rmd")}
+```{r mr3_home_html, warning = FALSE, results = "asis"}
+cat("<table class=\"mtbl\"><tr>\n")
+cat("<td width=\"25%\">")
+volleyreport:::vr_content_team_staff(vsx, kable_format, which_team = "home")
+cat("</td>\n")
+
+cat("<td width=\"75%\">")
+volleyreport:::vr_content_team_set_summary(vsx, kable_format, which_team = "home")
+cat("</td>\n")
+cat("</tr></table>\n")
+
+```
+
+```{r mr2_visiting_html, warning = FALSE, results = "asis"}
+cat("<table class=\"mtbl\"><tr>\n")
+cat("<td width=\"100%\">")
+volleyreport:::vr_content_team_table(vsx, kable_format, which_team = "visiting")
+cat("</td>\n")
+cat("</tr></table>\n")
+
+```
+
+```{r mr3_visiting_html, warning = FALSE, results = "asis"}
+cat("<table class=\"mtbl\"><tr>\n")
+cat("<td width=\"25%\">")
+volleyreport:::vr_content_team_staff(vsx, kable_format, which_team = "visiting")
+cat("</td>\n")
+
+cat("<td width=\"75%\">")
+volleyreport:::vr_content_team_set_summary(vsx, kable_format, which_team = "visiting")
+cat("</td>\n")
+cat("</tr></table>\n")
+
+```
+
+```{r}
+if (vsx$shiny_progress) try(shiny::setProgress(value = 0.8, message = "Generating footer"), silent = TRUE)
+```
+
+```{r fr0, warning = FALSE, results = "asis"}
+cat("<table class=\"mtbl\"><tr>\n")
+cat("<td width=\"83%\">\n")
+cat("<table class=\"mtbl\"><tr>\n")
+cat0("<td width=\"50%\" style=\"font-size:11px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, ";\">", vsx$meta$teams$team[1], "</td>\n")
+cat0("<td width=\"50%\" style=\"font-size:11px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, "; border-right:", vsx$css$border, ";\">", vsx$meta$teams$team[2], "</td>\n")
+cat("</tr></table>\n")
+```
+
+```{r fr1, warning = FALSE, results = "asis"}
+cat("<table class=\"mtbl\"><tr>\n")
+cat0("<td width=\"10%\" style=\"border-right:", vsx$css$border, ";\">\n")
+volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
+cat("</td>\n")
+
+cat("<td width=\"17%\">\n")
+hteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "home")
+hteach[[1]]
+hteach[[2]]
+hteach[[3]]
+hteach[[4]]
+cat("</td>\n")
+
+cat0("<td width=\"46%\" style=\"border-right:", vsx$css$border, "; border-left:", vsx$css$border, ";\">\n")
+volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st Attack AFTER POSITIVE RECEPTION (+#)")
+volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("-", "!", "-/"), hdr = "1st Attack AFTER NEGATIVE RECEPTION (-!)")
+volleyreport:::vr_content_kill_in_trans(vsx, kable_format)
+cat("</td>\n")
+```
+
+```{r fr2, warning = FALSE, results = "asis"}
+cat0("<td width=\"17%\" style=\"border-right:", vsx$css$border, ";\">\n")
+vteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "visiting")
+vteach[[1]]
+vteach[[2]]
+vteach[[3]]
+vteach[[4]]
+cat("</td>\n")
+
+cat0("<td width=\"10%\">\n")
+volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
+cat("</td></tr></table>\n")
+
+cat0("<td width=\"16.7%\">\n")
+volleyreport:::vr_content_key(vsx, kable_format)
+cat("</td>\n")
+
+cat("</tr></table>\n")
 ```
 
 `r if (vsx$shiny_progress) try(shiny::setProgress(value = 0.95, message = paste0("Converting to ", toupper(vsx$format))), silent = TRUE)`
