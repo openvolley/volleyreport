@@ -191,12 +191,12 @@ vr_content_team_each <- function(vsx, kable_format, which_team = "home") {
     }
     rthis <- vsx$x %>%
         dplyr::summarize(Receptions = sum(.data$skill == "Reception" & .data$team == teamfun(vsx$x), na.rm = TRUE),
-                         'Points SO' = sum(.data$serving_team == otherteamfun(vsx$x) & .data$skill %in% c("Attack", "Block") & .data$evaluation_code == "#" & .data$team == teamfun(vsx$x), na.rm = TRUE)) %>%
+                         'Earned pts SO' = sum(.data$serving_team == otherteamfun(vsx$x) & .data$skill %in% c("Attack", "Block") & .data$evaluation_code == "#" & .data$team == teamfun(vsx$x), na.rm = TRUE)) %>%
         pivot_longer(cols = 1:2)
 
     sthis <- vsx$x %>% dplyr::filter(.data$team == teamfun(vsx$x)) %>%
         dplyr::summarize(Serves = sum(.data$skill == "Serve", na.rm = TRUE),
-                         'Points BP' = sum(.data$serving_team == teamfun(vsx$x)  & .data$skill %in% c("Serve", "Attack", "Block") & .data$evaluation_code == "#", na.rm = TRUE)) %>%
+                         'Earned pts BP' = sum(.data$serving_team == teamfun(vsx$x)  & .data$skill %in% c("Serve", "Attack", "Block") & .data$evaluation_code == "#", na.rm = TRUE)) %>%
         pivot_longer(cols = 1:2)
 
     list(kable(rthis, format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = 11),
