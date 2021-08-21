@@ -210,14 +210,14 @@ vr_content_team_each <- function(vsx, kable_format, which_team = "home") {
 }
 
 vr_content_key <- function(vsx, kable_format) {
-    data.frame(Label = c("BP", "Err", "Pos%", "W-L", "Pts", "Blo", "Exc", ".", "n"),
-               Description = c("Break point", "Errors", "Positive +#", "Won-Lost", "Points", "Blocked", "Excellent", "Substitute", "Starting lineup")) %>%
+    data.frame(Label = c("BP", "Err", "Pos%", "W-L", "Pts", "Blo", "Exc", "Earned pts", ".", "n"),
+               Description = c("Break point", "Errors", "Positive +#", "Won-Lost", "Points", "Blocked", "Excellent", "Aces, attack and block kills", "Substitute", "Starting lineup")) %>%
         kable(format = kable_format, align = c("r", "l"), escape = FALSE, col.names = NULL, table.attr = "class=\"widetable\"") %>%
         kable_styling(font_size = 9) %>%
         ## add outer framing to make the key visually separate from the content
         column_spec(1, border_left = vsx$css$border) %>% column_spec(2, border_right = vsx$css$border) %>%
         row_spec(1, extra_css = paste0("border-top:", vsx$css$border)) %>%
-        row_spec(9, extra_css = paste0("border-bottom:", vsx$css$border))
+        row_spec(10, extra_css = paste0("border-bottom:", vsx$css$border))
 }
 
 vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st Attack AFTER POSITIVE RECEPTION (+#)") {
