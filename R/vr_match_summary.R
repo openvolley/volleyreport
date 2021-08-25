@@ -18,7 +18,7 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
     assert_that(inherits(x, c("datavolley", "peranavolley")))
     assert_that(is.string(format))
     assert_that(is.flag(shiny_progress), !is.na(shiny_progress))
-    format <- match.arg(tolower(format), c("html", "pdf", "png", "paged_pdf"))
+    format <- match.arg(tolower(format), c("html", "pdf", "png", "paged_pdf", "paged_png"))
     if (format %in% c("pdf", "png")) {
         ## check that we have phantomjs installed
         if (!webshot::is_phantomjs_installed()) {
@@ -32,12 +32,12 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
     }
     team <- datavolley::home_team(x)
     meta <- x$meta
-    final_format <- if (format %in% "paged_pdf") "pdf" else format
-    if (!format %in% "paged_pdf") format <- "html" ## even for pdf, treat now as html then webshot to pdf from that
+    final_format <- sub("paged_", "", format)
+    if (!grepl("paged_", format)) format <- "html" ## even for pdf, treat now as html then webshot to pdf from that
     working_dir <- tempfile()
     dir.create(working_dir)
-    rmd_template <- file.path(working_dir, paste0(format, ".Rmd"))
-    if (!file.copy(from = system.file(file.path("extdata", paste0(format, ".Rmd")), package = "volleyreport"), to = rmd_template))
+    rmd_template <- file.path(working_dir, paste0(if (grepl("paged", format)) "paged_pdf" else format, ".Rmd"))
+    if (!file.copy(from = system.file(file.path("extdata", paste0(if (grepl("paged", format)) "paged_pdf" else format, ".Rmd")), package = "volleyreport"), to = rmd_template))
         stop("cannot copy template file to temporary directory")
 
     if (final_format %in% c("pdf", "png")) {
@@ -100,7 +100,7 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
     ## report icon image
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
     ## cheap and nasty parameterisation
-    vsx <- list(x = x, meta = meta, vote = vote, format = if (format == "paged_pdf") "html" else format, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying)
+    vsx <- list(x = x, meta = meta, vote = vote, format = if (grepl("paged_", format)) "html" else format, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying)
 
     rm(x, meta, vote, shiny_progress, file_type, icon, remove_nonplaying)
 
@@ -108,10 +108,12 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
     output_options <- NULL
     if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
     blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
-    if (format == "paged_pdf") {
+    if (grepl("paged_", format)) {
         rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = FALSE, copy_resources = TRUE), clean = TRUE)
         do.call(rmarkdown::render, rgs)
-        ovpaged::chrome_print(outfile, output = final_outfile, format = final_format) ##, scale = 1)
+        rgs2 <- list(input = outfile, output = final_outfile, format = final_format)
+        if (format == "paged_png") rgs2$scale <- 2
+        do.call(ovpaged::chrome_print, rgs2)
     } else {
         out <- render(rmd_template, output_file = outfile, output_options = output_options)
         if (final_format %in% c("pdf", "png")) {

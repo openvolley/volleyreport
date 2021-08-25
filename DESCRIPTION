@@ -1,6 +1,6 @@
 Package: volleyreport
 Title: Reports from Volleyball Match Files
-Version: 0.2.11
+Version: 0.2.12
 Authors@R: c(person("Adrien", "Ickowicz", email = "ickowicz.adrien@gmail.com", role = c("aut", "cre")),
              person("Ben", "Raymond", role = "aut"),
              person("openvolley.org", role = "org"))
