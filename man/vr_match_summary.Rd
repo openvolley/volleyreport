@@ -14,6 +14,7 @@ vr_match_summary(
   css = vr_css(),
   remove_nonplaying = TRUE,
   shiny_progress = FALSE,
+  chrome_print_extra_args = NULL,
   ...
 )
 
@@ -26,7 +27,7 @@ vr_css()
 
 \item{vote}{logical: include vote report component?}
 
-\item{format}{string: "pdf", "png", or "html"}
+\item{format}{string: "pdf" (using latex-based PDF), "paged_pdf" (using pagedown-based PDF), "png", "paged_png", or "html"}
 
 \item{icon}{string: (optional) filename of icon image to use}
 
@@ -35,6 +36,8 @@ vr_css()
 \item{remove_nonplaying}{logical: if \code{TRUE}, remove players from the team summaries that did not take to the court}
 
 \item{shiny_progress}{logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope}
+
+\item{chrome_print_extra_args}{character: additional parameters to pass as `extra_args` to [pagedown::chrome_print()] (only relevant if using a "paged_*" format)}
 
 \item{...}{: additional parameters passed to the rmarkdown template}
 }

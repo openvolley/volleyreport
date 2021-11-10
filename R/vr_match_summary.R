@@ -3,16 +3,17 @@
 #' @param x datavolley or string: as returned by \code{datavolley::dv_read}, or the path to such a file
 #' @param outfile string: path to file to produce (if not specified, will create a file in the temporary directory)
 #' @param vote logical: include vote report component?
-#' @param format string: "pdf", "png", or "html"
+#' @param format string: "pdf" (using latex-based PDF), "paged_pdf" (using pagedown-based PDF), "png", "paged_png", or "html"
 #' @param icon string: (optional) filename of icon image to use
 #' @param css list: css specifications for some elements, giving (currently fairly limited) control over appearance. See the output of \code{\link{vr_css}} for an example. Note that some styling does not seem to be applied when exporting to PDF
 #' @param remove_nonplaying logical: if \code{TRUE}, remove players from the team summaries that did not take to the court
 #' @param shiny_progress logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope
+#' @param chrome_print_extra_args character: additional parameters to pass as `extra_args` to [pagedown::chrome_print()] (only relevant if using a "paged_*" format)
 #' @param ... : additional parameters passed to the rmarkdown template
 #' @return The path to the report file
 #'
 #' @export
-vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, shiny_progress = FALSE, ...) {
+vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
     if (is.string(x) && file.exists(x) && grepl("\\.dvw$", x, ignore.case = TRUE)) {
         x <- datavolley::dv_read(x, skill_evaluation_decode = "guess")
     }
@@ -115,6 +116,7 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
         do.call(rmarkdown::render, rgs)
         rgs2 <- list(input = outfile, output = final_outfile, format = final_format)
         if (format == "paged_png") rgs2$scale <- 2
+        if (length(chrome_print_extra_args) > 0) rgs2 <- c(rgs2, list(extra_args = chrome_print_extra_args))
         do.call(ovpaged::chrome_print, rgs2)
     } else {
         out <- render(rmd_template, output_file = outfile, output_options = output_options)
