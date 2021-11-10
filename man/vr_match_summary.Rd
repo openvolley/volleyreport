@@ -13,7 +13,8 @@ vr_match_summary(
   icon = NULL,
   css = vr_css(),
   remove_nonplaying = TRUE,
-  shiny_progress = FALSE
+  shiny_progress = FALSE,
+  ...
 )
 
 vr_css()
@@ -34,6 +35,8 @@ vr_css()
 \item{remove_nonplaying}{logical: if \code{TRUE}, remove players from the team summaries that did not take to the court}
 
 \item{shiny_progress}{logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope}
+
+\item{...}{: additional parameters passed to the rmarkdown template}
 }
 \value{
 The path to the report file

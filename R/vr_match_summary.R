@@ -8,10 +8,11 @@
 #' @param css list: css specifications for some elements, giving (currently fairly limited) control over appearance. See the output of \code{\link{vr_css}} for an example. Note that some styling does not seem to be applied when exporting to PDF
 #' @param remove_nonplaying logical: if \code{TRUE}, remove players from the team summaries that did not take to the court
 #' @param shiny_progress logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope
+#' @param ... : additional parameters passed to the rmarkdown template
 #' @return The path to the report file
 #'
 #' @export
-vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, shiny_progress = FALSE) {
+vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, shiny_progress = FALSE, ...) {
     if (is.string(x) && file.exists(x) && grepl("\\.dvw$", x, ignore.case = TRUE)) {
         x <- datavolley::dv_read(x, skill_evaluation_decode = "guess")
     }
@@ -101,6 +102,7 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
     ## cheap and nasty parameterisation
     vsx <- list(x = x, meta = meta, vote = vote, format = if (grepl("paged_", format)) "html" else format, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying)
+    vsx <- c(vsx, list(...)) ## extra parms
 
     rm(x, meta, vote, shiny_progress, file_type, icon, remove_nonplaying)
 
