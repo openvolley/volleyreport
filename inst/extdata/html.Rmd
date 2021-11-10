@@ -77,6 +77,9 @@ if (vsx$shiny_progress) try(shiny::setProgress(value = 0.3, message = "Generatin
 ```
 
 ```{r mr1html, warning = FALSE, results = "asis"}
+
+if (!is.null(vsx$header_extra_pre)) cat(vsx$header_extra_pre, "\n")
+
 if (!is.null(vsx$icon)) {
     cat("<table class=\"mtbl\"><tr><td width=\"15%\">\n")
     cat("<p style=\"margin:0;\"><img src=\"", vsx$icon, "\" style=\"max-width: 90%; max-height: 90%;\" /></p>\n", sep = "")
