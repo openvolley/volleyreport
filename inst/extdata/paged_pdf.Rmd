@@ -5,7 +5,7 @@ output:
   ovpaged::plain:
     toc: false
     number_sections: false
-    auto_table_breaks: true
+    auto_table_breaks: false
 base-font-size: 9pt
 ---
 
@@ -116,7 +116,7 @@ if (vsx$shiny_progress) try(shiny::setProgress(value = 0.8, message = "Generatin
 ```
 
 ```{r fr0, warning = FALSE, results = "asis"}
-cat("<table class=\"mtbl\"><tr>\n")
+cat("<div class=\"sectionblock\">\n<table class=\"mtbl\"><tr>\n")
 cat("<td width=\"83%\">\n")
 cat("<table class=\"mtbl\"><tr>\n")
 cat0("<td width=\"50%\" style=\"font-size:11px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, ";\">", vsx$meta$teams$team[1], "</td>\n")
@@ -162,7 +162,7 @@ cat0("<td width=\"16.7%\">\n")
 volleyreport:::vr_content_key(vsx, kable_format)
 cat("</td>\n")
 
-cat("</tr></table>\n")
+cat("</tr></table>\n</div>\n")
 ```
 
 `r if (vsx$shiny_progress) try(shiny::setProgress(value = 0.95, message = paste0("Converting to ", toupper(vsx$format))), silent = TRUE)`
