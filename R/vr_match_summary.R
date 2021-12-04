@@ -98,6 +98,7 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
 
     ## perana_indoor or beach don't have setter calls
     if (!file_type %eq% "indoor") setter_calls <- NULL
+    if (grepl("beach", file_type)) vote <- FALSE
 
     ## report icon image
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
