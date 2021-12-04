@@ -129,11 +129,15 @@ cat("</tr></table>\n")
 
 ```{r fr1, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
-cat0("<td width=\"10%\" style=\"border-right:", vsx$css$border, ";\">\n")
-volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
-cat("</td>\n")
+if (!grepl("beach", vsx$file_type)) {
+    cat0("<td width=\"10%\" style=\"border-right:", vsx$css$border, ";\">\n")
+    volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
+    cat("</td>\n")
 
-cat("<td width=\"17%\">\n")
+    cat("<td width=\"17%\">\n")
+} else {
+    cat("<td width=\"27%\">\n")
+}
 hteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "home")
 hteach[[1]]
 hteach[[2]]
@@ -149,7 +153,7 @@ cat("</td>\n")
 ```
 
 ```{r fr2, warning = FALSE, results = "asis"}
-cat0("<td width=\"17%\" style=\"border-right:", vsx$css$border, ";\">\n")
+cat0("<td width=\"", if (!grepl("beach", vsx$file_type)) 17 else 27, "%\" style=\"border-right:", vsx$css$border, ";\">\n")
 vteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "visiting")
 vteach[[1]]
 vteach[[2]]
@@ -157,10 +161,12 @@ vteach[[3]]
 vteach[[4]]
 cat("</td>\n")
 
-cat0("<td width=\"10%\">\n")
-volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
-cat("</td></tr></table>\n")
-
+if (!grepl("beach", vsx$file_type)) {
+    cat0("<td width=\"10%\">\n")
+    volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
+    cat("</td>\n")
+}
+cat("</tr></table>\n")
 cat0("<td width=\"16.7%\">\n")
 volleyreport:::vr_content_key(vsx, kable_format)
 cat("</td>\n")

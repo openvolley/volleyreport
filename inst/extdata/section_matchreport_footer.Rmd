@@ -12,11 +12,14 @@ cat("</div>\n")
 ```{r fr1, warning = FALSE, results = "asis"}
 cat("<div class=\"row\">\n")
 
-cat0("<div style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, ";\" class=\"col-sm-1 col\">")
-volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
-cat("</div>\n")
-
-cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-2 col\">")
+if (!grepl("beach", vsx$file_type)) {
+    cat0("<div style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, ";\" class=\"col-sm-1 col\">\n")
+    volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
+    cat("</div>\n")
+    cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-2 col\">\n")
+} else {
+    cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-3 col\">\n")
+}
 hteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "home")
 hteach[[1]]
 hteach[[2]]
@@ -25,7 +28,7 @@ hteach[[3]]
 hteach[[4]]
 cat("</div>\n")
 
-cat0("<div class=\"col-sm-4 col\" style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, "; border-left:", vsx$css$border, ";\">")
+cat0("<div class=\"col-sm-4 col\" style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, "; border-left:", vsx$css$border, ";\">\n")
 volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st Attack AFTER POSITIVE RECEPTION (+#)")
 
 volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("-", "!", "-/"), hdr = "1st Attack AFTER NEGATIVE RECEPTION (-!)")
@@ -36,7 +39,7 @@ cat("</div>\n")
 ```
 
 ```{r fr2, warning = FALSE, results = "asis"}
-cat0("<div class=\"col-sm-2 col\" style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, ";\">")
+cat0("<div class=\"col-sm-", if (!grepl("beach", vsx$file_type)) 2 else 3, " col\" style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, ";\">\n")
 vteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "visiting")
 vteach[[1]]
 vteach[[2]]
@@ -44,11 +47,13 @@ vteach[[3]]
 vteach[[4]]
 cat("</div>\n")
 
-cat0("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-1\">\n")
-volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
-cat("</div>\n")
+if (!grepl("beach", vsx$file_type)) {
+    cat0("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-1\">\n")
+    volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
+    cat("</div>\n")
+}
 
-cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-2 col\">")
+cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-2 col\">\n")
 volleyreport:::vr_content_key(vsx, kable_format)
 cat("</div>\n")
 
