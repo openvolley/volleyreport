@@ -68,7 +68,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
         dplyr::select(-"role") %>%
         left_join(volleyreport::vr_points(vsx$x, teamfun(vsx$x), vote = vsx$vote) %>% dplyr::select("player_id", if (vsx$vote) "vote", "Tot", "BP", "W-L"), by = "player_id") %>%
         left_join(volleyreport::vr_serve(vsx$x, teamfun(vsx$x)), by = "player_id", suffix = c(".pts", ".ser")) %>%
-        left_join(volleyreport::vr_reception(vsx$x, teamfun(vsx$x), file_type = vsx$x$file_meta$file_type), by = "player_id", suffix = c(".ser", ".rec")) %>%
+        left_join(volleyreport::vr_reception(vsx$x, teamfun(vsx$x), file_type = vsx$file_type), by = "player_id", suffix = c(".ser", ".rec")) %>%
         left_join(volleyreport::vr_attack(vsx$x, teamfun(vsx$x)), by = "player_id", suffix = c(".rec", ".att")) %>%
         left_join(volleyreport::vr_block(vsx$x, teamfun(vsx$x)), by = "player_id")
 
@@ -92,7 +92,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
     if (isTRUE(vsx$remove_nonplaying)) P_sum <- P_sum[rowSums(is.na(P_sum[, c(-1, -2)])) < (ncol(P_sum) - 2), ]
     ## put 0s back in for W-L
     P_sum$`W-L`[is.na(P_sum$`W-L`)] <- 0L
-    Rexc <- !isTRUE(grepl("perana", vsx$x$file_meta$file_type)) ## perana have only R#+, not R#
+    Rexc <- !isTRUE(grepl("perana", vsx$file_type)) ## perana have only R#+, not R#
     if (!Rexc) P_sum <- dplyr::select(P_sum, -"(Exc%)")
     P_sum
 }
@@ -100,7 +100,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
 vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     which_team <- match.arg(which_team, c("home", "visiting"))
     P_sum <- vr_content_team_summary(vsx = vsx, kable_format = kable_format, which_team = which_team)
-    Rexc <- !isTRUE(grepl("perana", vsx$x$file_meta$file_type)) ## perana have only R#+, not R#
+    Rexc <- !isTRUE(grepl("perana", vsx$file_type)) ## perana have only R#+, not R#
     if (which_team == "home") {
         teamfun <- datavolley::home_team
     } else {
@@ -143,12 +143,12 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
     }
     thisSS <- vr_points(vsx$x, teamfun(vsx$x), by = "set") %>%
         left_join(volleyreport::vr_serve(vsx$x, teamfun(vsx$x), by = "set"), by = "set_number", suffix = c(".pts", ".ser") ) %>%
-        left_join(volleyreport::vr_reception(vsx$x, teamfun(vsx$x), by = "set", file_type = vsx$x$file_meta$file_type), by = "set_number", suffix = c(".ser", ".rec") ) %>%
+        left_join(volleyreport::vr_reception(vsx$x, teamfun(vsx$x), by = "set", file_type = vsx$file_type), by = "set_number", suffix = c(".ser", ".rec") ) %>%
         left_join(volleyreport::vr_attack(vsx$x, teamfun(vsx$x), by = "set"), by = "set_number", suffix = c(".rec", ".att") ) %>%
         left_join(volleyreport::vr_block(vsx$x, teamfun(vsx$x), by = "set"), by = "set_number") %>%
         mutate(set_number = paste("Set", .data$set_number)) %>% ##purrr::discard(~all(is.na(.))) %>%
         na_if(0)
-    Rexc <- !isTRUE(grepl("perana", vsx$x$file_meta$file_type)) ## perana have only R#+, not R#
+    Rexc <- !isTRUE(grepl("perana", vsx$file_type)) ## perana have only R#+, not R#
     if (!Rexc) thisSS <- dplyr::select(thisSS, -"(Exc%)")
     kable(thisSS,format = "html", escape = TRUE, col.names = c("","Ser", "Atk", "Blo", "Op.Err", "Tot", "Err","Pts", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", "Tot", "Err", "Blo", "Pts", "Pts%", "Pts"), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = 11) %>%
