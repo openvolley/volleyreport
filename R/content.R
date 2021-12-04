@@ -1,7 +1,7 @@
 vr_content_match_outcome <- function(vsx, kable_format) {
     vsx$meta$teams %>% dplyr::select(.data$team, .data$sets_won) %>%
         dplyr::rename(Teams = "team", 'Final score' = "sets_won") %>%
-        kable(format = kable_format, escape = FALSE, col.names = c("MATCH RESULT", ""), table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("striped", "hover"), full_width = TRUE, font_size = 15) %>%
+        kable(format = kable_format, escape = FALSE, col.names = c("MATCH RESULT", ""), table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("striped", "hover"), full_width = TRUE, font_size = 12) %>%
         row_spec(1:2, bold = TRUE) %>%
         row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background ) %>%
         column_spec(1, border_left = vsx$css$border) %>%
