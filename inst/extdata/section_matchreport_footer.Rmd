@@ -12,14 +12,13 @@ cat("</div>\n")
 ```{r fr1, warning = FALSE, results = "asis"}
 cat("<div class=\"row\">\n")
 
-if (!grepl("beach", vsx$file_type)) {
-    cat0("<div style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, ";\" class=\"col-sm-1 col\">\n")
-    volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
-    cat("</div>\n")
-    cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-2 col\">\n")
-} else {
-    cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-3 col\">\n")
-}
+## wtf? this doesn't work if it's an if { ...} else {...} block??
+if (!grepl("beach", vsx$file_type)) cat0("<div style=\"padding-left:2px; padding-right:2px; border-right:", vsx$css$border, ";\" class=\"col-sm-1 col\">\n")
+if (!grepl("beach", vsx$file_type)) volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
+if (!grepl("beach", vsx$file_type)) cat("</div>\n")
+if (!grepl("beach", vsx$file_type)) cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-2 col\">\n")
+if (grepl("beach", vsx$file_type)) cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-3 col\">\n")
+
 hteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "home")
 hteach[[1]]
 hteach[[2]]
@@ -47,11 +46,10 @@ vteach[[3]]
 vteach[[4]]
 cat("</div>\n")
 
-if (!grepl("beach", vsx$file_type)) {
-    cat0("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-1\">\n")
-    volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
-    cat("</div>\n")
-}
+## wtf? this doesn't work if it's an if { ...} block??
+if (!grepl("beach", vsx$file_type)) cat0("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-1\">\n")
+if (!grepl("beach", vsx$file_type)) volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
+if (!grepl("beach", vsx$file_type)) cat("</div>\n")
 
 cat("<div style=\"padding-left:2px; padding-right:2px;\" class=\"col-sm-2 col\">\n")
 volleyreport:::vr_content_key(vsx, kable_format)

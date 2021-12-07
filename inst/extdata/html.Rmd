@@ -168,15 +168,14 @@ cat("</tr></table>\n")
 
 ```{r fr1, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
-if (!grepl("beach", vsx$file_type)) {
-    cat0("<td width=\"10%\" style=\"border-right:", vsx$css$border, ";\">\n")
-    volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
-    cat("</td>\n")
 
-    cat("<td width=\"17%\">\n")
-} else {
-    cat("<td width=\"27%\">\n")
-}    
+## wtf? this doesn't work if it's an if { ...} else {...} block??
+if (!grepl("beach", vsx$file_type)) cat0("<td width=\"10%\" style=\"border-right:", vsx$css$border, ";\">\n")
+if (!grepl("beach", vsx$file_type)) volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
+if (!grepl("beach", vsx$file_type)) cat("</td>\n")
+if (!grepl("beach", vsx$file_type)) cat("<td width=\"17%\">\n")
+if (grepl("beach", vsx$file_type)) cat("<td width=\"27%\">\n")
+
 hteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "home")
 hteach[[1]]
 hteach[[2]]
@@ -200,11 +199,11 @@ vteach[[3]]
 vteach[[4]]
 cat("</td>\n")
 
-if (!grepl("beach", vsx$file_type)) {
-    cat0("<td width=\"10%\">\n")
-    volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
-    cat("</td>\n")
-}
+## wtf? this doesn't work if it's an if { ...} block??
+if (!grepl("beach", vsx$file_type)) cat0("<td width=\"10%\">\n")
+if (!grepl("beach", vsx$file_type)) volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
+if (!grepl("beach", vsx$file_type)) cat("</td>\n")
+
 cat("</tr></table>\n")
 
 cat0("<td width=\"16.7%\">\n")
