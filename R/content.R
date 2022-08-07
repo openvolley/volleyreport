@@ -101,14 +101,14 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     which_team <- match.arg(which_team, c("home", "visiting"))
     P_sum <- vr_content_team_summary(vsx = vsx, kable_format = kable_format, which_team = which_team)
     Rexc <- "(Exc%)" %in% names(P_sum) ## perana have only R#+, not R#
-    expSO <- "expSO" %in% names(P_sum)
-    expBP <- "expBP" %in% names(P_sum)
+    expSO <- "expSO%" %in% names(P_sum)
+    expBP <- "expBP%" %in% names(P_sum)
     if (which_team == "home") {
         teamfun <- datavolley::home_team
     } else {
         teamfun <- datavolley::visiting_team
     }
-    kable(P_sum, format = "html", escape = FALSE, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", if (vsx$style %in% c("default")) c("BP", "W-L"), "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", "Pts"), table.attr = "class=\"widetable\"") %>%
+    kable(P_sum, format = "html", escape = FALSE, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", if (vsx$style %in% c("default")) c("BP", "W-L"), "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", "Pts"), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
         column_spec(2, width = "1.8in") %>%
         add_header_above(c(setNames(2, teamfun(vsx$x)), "Set" = nrow(vsx$meta$result), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP, "Reception" = 3 + Rexc + expSO, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE, line = FALSE, extra_css = "padding-bottom:2px;") %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
@@ -152,9 +152,9 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
         na_if(0)
     Rexc <- !isTRUE(grepl("perana", vsx$file_type)) && "(Exc%)" %in% names(thisSS) ## perana have only R#+, not R#
     if (!Rexc && "(Exc%)" %in% names(thisSS)) thisSS <- dplyr::select(thisSS, -"(Exc%)")
-    expSO <- "expSO" %in% names(thisSS)
-    expBP <- "expBP" %in% names(thisSS)
-    kable(thisSS,format = "html", escape = TRUE, col.names = c("","Ser", "Atk", "Blo", "Op.Err", "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", "Pts"), table.attr = "class=\"widetable\"") %>%
+    expSO <- "expSO%" %in% names(thisSS)
+    expBP <- "expBP%" %in% names(thisSS)
+    kable(thisSS,format = "html", escape = TRUE, col.names = c("","Ser", "Atk", "Blo", "Op.Err", "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", "Pts"), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
         add_header_above(c("Set" = 1, "Points" = 4, "Serve" = 3 + expBP, "Reception" = 3 + Rexc + expSO, "Attack" = 5, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;") %>%
         row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
@@ -242,7 +242,7 @@ vr_content_team_each <- function(vsx, kable_format, which_team = "home") {
 }
 
 vr_content_key <- function(vsx, kable_format) {
-    data.frame(Label = c("BP", "Err", "Pos%", if (vsx$style %in% c("default")) "W-L", if (vsx$style %in% c("ov1")) "K%" else "Pts", "Blo", if (vsx$style %in% c("default")) "Exc", if (vsx$style %in% c("ov1")) c("expSO", "expBP"), if (vsx$style %in% c("ov1")) "P*n*" else "Earned pts", ".", "*n*"),
+    data.frame(Label = c("BP", "Err", "Pos%", if (vsx$style %in% c("default")) "W-L", if (vsx$style %in% c("ov1")) "K%" else "Pts", "Blo", if (vsx$style %in% c("default")) "Exc", if (vsx$style %in% c("ov1")) c("expSO%", "expBP%"), if (vsx$style %in% c("ov1")) "P*n*" else "Earned pts", ".", "*n*"),
                Description = c("Break point", "Errors", "Positive +#", if (vsx$style %in% c("default")) "Won-Lost", if (vsx$style %in% c("ov1")) "Attack kill%" else "Points", "Blocked", if (vsx$style %in% c("default")) "Excellent", if (vsx$style %in% c("ov1")) c("Expected SO%", "Expected BP%"), if (vsx$style %in% c("ov1")) "Setter in *n*" else "Aces, attack and block kills", "Substitute", "Starting position")) %>%
         kable(format = kable_format, align = c("r", "l"), escape = FALSE, col.names = NULL, table.attr = "class=\"widetable\"") %>%
         kable_styling(font_size = vsx$base_font_size * 9/12) %>%

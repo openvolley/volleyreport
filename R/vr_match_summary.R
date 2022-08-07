@@ -38,11 +38,16 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
         }
     }
     style <- check_report_style(style)
+    footnotes <- c()
     if (style %in% c("ov1")) {
         if (missing(vote)) vote <- FALSE
-        if (missing(refx) || is.null(refx) || nrow(refx) < 1) refx <- datavolley::plays(x)
+        if (missing(refx) || is.null(refx) || nrow(refx) < 1) {
+            refx <- datavolley::plays(x)
+            footnotes <- c(footnotes, "Expected SO/BP use this match as reference data.")
+        }
     } else {
-        if (missing(refx) || is.null(refx) || nrow(refx) < 1) refx <- NULL
+        ## refx not used
+        refx <- NULL
     }
     if (!missing(css) && !is.null(css)) {
         css0 <- vr_css()
@@ -133,7 +138,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     ## report icon image
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
     ## cheap and nasty parameterisation
-    vsx <- list(x = x, meta = meta, refx = refx, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = 11)
+    vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = 11)
     vsx <- c(vsx, list(...)) ## extra parms
 
     rm(x, meta, refx, vote, style, shiny_progress, file_type, icon, remove_nonplaying)
@@ -333,25 +338,26 @@ vr_serve <- function(x, team, by = "player", refx, style = "default"){
                    dplyr::summarize(Tot = n(),
                                     Err = sum(.data$evaluation %eq% "Error"),
                                     Pts = sum(.data$evaluation %eq% "Ace"),
-                                    expBP = paste0(round(mean(.data$expBP) * 100), "%")) %>%
+                                    `expBP%` = paste0(round(mean(.data$expBP) * 100), "%")) %>%
                    bind_rows(
-                       x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>% 
+                       x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>%
                        mutate(player_id = "Team total")%>% group_by(.data$player_id) %>%
                        dplyr::summarize(Tot = n(),
                                         Err = sum(.data$evaluation %eq% "Error"),
-                                        Pts = sum(.data$evaluation %eq% "Ace"))
+                                        Pts = sum(.data$evaluation %eq% "Ace"),
+                                        `expBP%` = paste0(round(mean(.data$expBP) * 100), "%"))
                    )
            } else if(by == "set") {
                x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>% group_by(.data$set_number) %>%
                    dplyr::summarize(Tot = n(),
                                     Err = sum(.data$evaluation %eq% "Error"),
                                     Pts = sum(.data$evaluation %eq% "Ace"),
-                                    expBP = paste0(round(mean(.data$expBP) * 100), "%"))
+                                    `expBP%` = paste0(round(mean(.data$expBP) * 100), "%"))
            }
     if (style %in% c("ov1")) {
         dplyr::rename(out, Ace = "Pts")
     } else {
-        dplyr::select(out, -"expBP")
+        dplyr::select(out, -"expBP%")
     }
 }
 
@@ -375,7 +381,7 @@ vr_reception <- function(x, team, by = "player", refx, style = "default", file_t
                              Err = sum(.data$evaluation %eq% "Error"),
                              'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
                              '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"),
-                             expSO = paste0(round(mean(.data$expSO) * 100), "%")) %>%
+                             `expSO%` = paste0(round(mean(.data$expSO) * 100), "%")) %>%
             bind_rows(
                 x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% 
                 mutate(player_id = "Team total") %>%
@@ -384,7 +390,7 @@ vr_reception <- function(x, team, by = "player", refx, style = "default", file_t
                                  Err = sum(.data$evaluation %eq% "Error"),
                                  'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
                                  '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"),
-                                 expSO = paste0(round(mean(.data$expSO) * 100), "%"))
+                                 `expSO%` = paste0(round(mean(.data$expSO) * 100), "%"))
             )
     } else if (by == "set") {
         x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% group_by(.data$set_number) %>%
@@ -392,12 +398,12 @@ vr_reception <- function(x, team, by = "player", refx, style = "default", file_t
                              Err = sum(.data$evaluation %eq% "Error"),
                              'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
                              '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"),
-                             expSO = paste0(round(mean(.data$expSO) * 100), "%"))
+                             `expSO%` = paste0(round(mean(.data$expSO) * 100), "%"))
     }
     if (style %in% c("ov1")) {
         dplyr::select(out, -"(Exc%)")
     } else {
-        dplyr::select(out, -"expSO")
+        dplyr::select(out, -"expSO%")
     }
 }
 
