@@ -35,7 +35,7 @@ library(volleyreport)
 x <- dv_read(dv_example_file())
 
 ## generate the report
-rpt <- vr_match_summary(x, format = "pdf")
+rpt <- vr_match_summary(x, style = "ov1", format = "paged_pdf")
 ```
 
 Which should give you something like:
