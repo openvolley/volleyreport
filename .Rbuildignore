@@ -3,3 +3,4 @@ volleyreport.Rproj
 ^README\.html$
 ^\.github$
 docs/
+^pkgdown$
