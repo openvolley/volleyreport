@@ -1,6 +1,6 @@
 Package: volleyreport
 Title: Reports from Volleyball Match Files
-Version: 0.3.2
+Version: 0.4.0
 Authors@R: c(person("Adrien", "Ickowicz", email = "ickowicz.adrien@gmail.com", role = c("aut", "cre")),
              person("Ben", "Raymond", role = "aut"),
              person("openvolley.org", role = "org"))
@@ -10,6 +10,7 @@ Imports:
   assertthat,
   datavolley,
   dplyr,
+  ggplot2,
   kableExtra,
   knitr,
   methods,
@@ -24,5 +25,6 @@ Suggests:
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
+Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2
 Remotes: openvolley/datavolley, openvolley/ovpaged

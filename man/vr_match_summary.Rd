@@ -8,11 +8,13 @@
 vr_match_summary(
   x,
   outfile,
+  refx,
   vote = TRUE,
   format = "html",
   icon = NULL,
   css = vr_css(),
   remove_nonplaying = TRUE,
+  style = "default",
   shiny_progress = FALSE,
   chrome_print_extra_args = NULL,
   ...
@@ -25,7 +27,9 @@ vr_css()
 
 \item{outfile}{string: path to file to produce (if not specified, will create a file in the temporary directory)}
 
-\item{vote}{logical: include vote report component?}
+\item{refx}{data.frame: some choices of \code{style} require a reference data set to calculate e.g. expected SO. This should be from comparison matches (e.g. all matches from the same league), and should be a data.frame of the plays components from those matches. If missing, the current match will be used as its own reference, but results might not be entirely sensible}
+
+\item{vote}{logical: include vote report component? If not explicitly specified, \code{vote} might be set to FALSE depending on \code{style}}
 
 \item{format}{string: "pdf" (using latex-based PDF), "paged_pdf" (using pagedown-based PDF), "png", "paged_png", or "html"}
 
@@ -35,9 +39,15 @@ vr_css()
 
 \item{remove_nonplaying}{logical: if \code{TRUE}, remove players from the team summaries that did not take to the court}
 
+\item{style}{string: can be
+\itemize{
+\item "default" - the standard FIVB match report
+\item "ov1" - modified version of "default" with score evolution plot, some columns dropped, expected SO and BP added, different breakdown by rotation
+}}
+
 \item{shiny_progress}{logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope}
 
-\item{chrome_print_extra_args}{character: additional parameters to pass as `extra_args` to [pagedown::chrome_print()] (only relevant if using a "paged_*" format)}
+\item{chrome_print_extra_args}{character: additional parameters to pass as \code{extra_args} to \code{\link[pagedown:chrome_print]{pagedown::chrome_print()}} (only relevant if using a "paged_*" format)}
 
 \item{...}{: additional parameters passed to the rmarkdown template}
 }
@@ -46,4 +56,10 @@ The path to the report file
 }
 \description{
 Generate single-page match summary report
+}
+\examples{
+\donttest{
+  f <- vr_match_summary(dv_example_file(), format = "paged_pdf")
+  if (interactive()) browseURL(f)
+}
 }

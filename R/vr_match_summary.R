@@ -2,30 +2,47 @@
 #'
 #' @param x datavolley or string: as returned by \code{datavolley::dv_read}, or the path to such a file
 #' @param outfile string: path to file to produce (if not specified, will create a file in the temporary directory)
-#' @param vote logical: include vote report component?
+#' @param refx data.frame: some choices of `style` require a reference data set to calculate e.g. expected SO. This should be from comparison matches (e.g. all matches from the same league), and should be a data.frame of the plays components from those matches. If missing, the current match will be used as its own reference, but results might not be entirely sensible
+#' @param vote logical: include vote report component? If not explicitly specified, `vote` might be set to FALSE depending on `style`
 #' @param format string: "pdf" (using latex-based PDF), "paged_pdf" (using pagedown-based PDF), "png", "paged_png", or "html"
 #' @param icon string: (optional) filename of icon image to use
 #' @param css list: css specifications for some elements, giving (currently fairly limited) control over appearance. See the output of \code{\link{vr_css}} for an example. Note that some styling does not seem to be applied when exporting to PDF
 #' @param remove_nonplaying logical: if \code{TRUE}, remove players from the team summaries that did not take to the court
+#' @param style string: can be
+#' * "default" - the standard FIVB match report
+#' * "ov1" - modified version of "default" with score evolution plot, some columns dropped, expected SO and BP added, different breakdown by rotation
 #' @param shiny_progress logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope
 #' @param chrome_print_extra_args character: additional parameters to pass as `extra_args` to [pagedown::chrome_print()] (only relevant if using a "paged_*" format)
 #' @param ... : additional parameters passed to the rmarkdown template
 #' @return The path to the report file
 #'
+#' @examples
+#' \donttest{
+#'   f <- vr_match_summary(dv_example_file(), format = "paged_pdf")
+#'   if (interactive()) browseURL(f)
+#' }
 #' @export
-vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
+vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
     if (is.string(x) && file.exists(x) && grepl("\\.dvw$", x, ignore.case = TRUE)) {
         x <- datavolley::dv_read(x, skill_evaluation_decode = "guess")
     }
     assert_that(inherits(x, c("datavolley", "peranavolley")))
     assert_that(is.string(format))
     assert_that(is.flag(shiny_progress), !is.na(shiny_progress))
-    format <- match.arg(tolower(format), c("html", "pdf", "png", "paged_pdf", "paged_png"))
+    format <- tolower(format)
+    format <- match.arg(format, c("html", "pdf", "png", "paged_pdf", "paged_png"))
     if (format %in% c("pdf", "png")) {
         ## check that we have phantomjs installed
         if (!webshot::is_phantomjs_installed()) {
             stop("phantomjs must be installed for pdf/png format. See help('install_phantomjs', 'webshot')")
         }
+    }
+    style <- check_report_style(style)
+    if (style %in% c("ov1")) {
+        if (missing(vote)) vote <- FALSE
+        if (missing(refx) || is.null(refx) || nrow(refx) < 1) refx <- datavolley::plays(x)
+    } else {
+        if (missing(refx) || is.null(refx) || nrow(refx) < 1) refx <- NULL
     }
     if (!missing(css) && !is.null(css)) {
         css0 <- vr_css()
@@ -96,6 +113,16 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
             ungroup %>% dplyr::select(-"team")
         x <- left_join(x, touchsum, by = c("match_id", "team_touch_id"))
     }
+
+    if (!is.null(refx) && nrow(refx) > 0) {
+        lso <- refx %>% dplyr::filter(.data$skill == "Reception") %>% group_by(.data$evaluation) %>% dplyr::summarize(skill = "Reception", expSO = mean(.data$point_won_by == .data$team, na.rm = TRUE)) %>% ungroup
+        x <- left_join(x, lso, by = c("skill", "evaluation"))
+        lbp <- refx %>% dplyr::filter(.data$skill == "Serve") %>% group_by(.data$evaluation) %>% dplyr::summarize(skill = "Serve", expBP = mean(.data$point_won_by == .data$team, na.rm = TRUE)) %>% ungroup
+        x <- left_join(x, lbp, by = c("skill", "evaluation"))
+    } else {
+        x$expBP <- x$expSO <- NA_real_
+    }
+
     if (nrow(x) != starting_nrow)
         warning("data preprocessing has added rows: are there non-unique team or player identifiers?")
 
@@ -106,10 +133,10 @@ vr_match_summary <- function(x, outfile, vote = TRUE, format = "html", icon = NU
     ## report icon image
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
     ## cheap and nasty parameterisation
-    vsx <- list(x = x, meta = meta, vote = vote, format = if (grepl("paged_", format)) "html" else format, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying)
+    vsx <- list(x = x, meta = meta, refx = refx, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = 11)
     vsx <- c(vsx, list(...)) ## extra parms
 
-    rm(x, meta, vote, shiny_progress, file_type, icon, remove_nonplaying)
+    rm(x, meta, refx, vote, style, shiny_progress, file_type, icon, remove_nonplaying)
 
     ## generate report
     output_options <- NULL
@@ -139,24 +166,37 @@ vr_css <- function() {
     list(header_background = "#91A3B0", header_colour = "black", border = "1px solid #91A3B0")
 }
 
+check_report_style <- function(style) {
+    assert_that(is.string(style))
+    style <- tolower(style)
+    styles <- c("default", "ov1")
+    if (!style %in% styles) stop("'style' should be one of: '", paste0(styles, collapse = "', '"), "'")
+    style
+}
+
 #' Generate points table
 #' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
 #' @param team string: team name
 #' @param by string: "player" or "set"
 #' @param vote logical: if \code{TRUE}, include vote detail
+#' @param style string: see [vr_match_summary()]
 #' @export
-vr_points <- function(x, team, by = "player", vote = FALSE) {
-    as_for_datavolley <- TRUE
+vr_points <- function(x, team, by = "player", vote = FALSE, style = "default") {
     assert_that(is.string(by))
-    by <- match.arg(tolower(by), c("player", "set"))
+    by <- tolower(by)
+    by <- match.arg(by, c("player", "set"))
+    style <- check_report_style(style)
     assert_that(is.string(team))
-    assert_that(is.flag(as_for_datavolley), !is.na(as_for_datavolley))
     team_select <- team
+    inc_set_errs <- style %in% c("ov1")
+    inc_freeball_errs <- style %in% c("ov1")
+    inc_block_errs <- style %in% c("ov1")
+    blocked_is_err <- style %in% c("default")
     if (by == "player") {
         vr_pts <- x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player") %>% group_by(.data$player_id) %>%
             dplyr::summarize(Tot = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block")),
                              BP = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block") & .data$serving_team == team_select),
-                             Nerr = sum((.data$evaluation %eq% "Error" & .data$skill %in% c("Serve", "Reception", "Attack", if (!as_for_datavolley) "Set", if (!as_for_datavolley) "Freeball")) | (!as_for_datavolley & .data$evaluation %eq% "Invasion" & .data$skill %eq% "Block") | (.data$evaluation %eq% "Blocked" & .data$skill %eq% "Attack")),
+                             Nerr = sum((.data$evaluation %eq% "Error" & .data$skill %in% c("Serve", "Reception", "Attack", if (inc_set_errs) "Set", if (inc_freeball_errs) "Freeball")) | (inc_block_errs & .data$evaluation %eq% "Invasion" & .data$skill %eq% "Block") | (blocked_is_err & .data$evaluation %eq% "Blocked" & .data$skill %eq% "Attack")),
                              'W-L' = .data$Tot - .data$Nerr) %>%
             dplyr::select(-"Nerr") 
         if (vote) {
@@ -169,9 +209,10 @@ vr_points <- function(x, team, by = "player", vote = FALSE) {
                 group_by(.data$player_id) %>%
                 dplyr::summarize(Tot = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block")),
                                  BP = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block") & .data$serving_team == team_select),
-                                 Nerr = sum((.data$evaluation %eq% "Error" & .data$skill %in% c("Serve", "Reception", "Attack", if (!as_for_datavolley) "Set", if (!as_for_datavolley) "Freeball")) | (!as_for_datavolley & .data$evaluation %eq% "Invasion" & .data$skill %eq% "Block") | (.data$evaluation %eq% "Blocked" & .data$skill %eq% "Attack")),
+                                 Nerr = sum((.data$evaluation %eq% "Error" & .data$skill %in% c("Serve", "Reception", "Attack", if (inc_set_errs) "Set", if (inc_freeball_errs) "Freeball")) | (inc_block_errs & .data$evaluation %eq% "Invasion" & .data$skill %eq% "Block") | (blocked_is_err & .data$evaluation %eq% "Blocked" & .data$skill %eq% "Attack")),
                                  'W-L' = .data$Tot - .data$Nerr) %>%
                 dplyr::select(-"Nerr"))
+        if (style %in% c("ov1")) vr_pts <- dplyr::select(vr_pts, -"BP", -"W-L")
     } else if (by == "set") {
         x$team_points <- if (team_select %eq% datavolley::home_team(x)) x$home_team_score else if (team_select %eq% datavolley::visiting_team(x)) x$visiting_team_score else NA_integer_
         vr_pts <- x %>% group_by(.data$set_number) %>%
@@ -278,29 +319,39 @@ vr_vote <- function(x, team) {
 #' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
 #' @param team string: team name
 #' @param by string: "player" or "set"
+#' @param refx data.frame: see [vr_match_summary()]
+#' @param style string: see [vr_match_summary()]
 #' @export
-vr_serve <- function(x, team, by = "player"){
+vr_serve <- function(x, team, by = "player", refx, style = "default"){
     assert_that(is.string(by))
     by <- match.arg(tolower(by), c("player", "set"))
     assert_that(is.string(team))
     team_select <- team
-    if (by == "player") {
-        x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>% group_by(.data$player_id) %>%
-            dplyr::summarize(Tot = n(),
-                      Err = sum(.data$evaluation %eq% "Error"),
-                      Pts = sum(.data$evaluation %eq% "Ace")) %>%
-            bind_rows(
-                x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>% 
-                    mutate(player_id = "Team total")%>% group_by(.data$player_id) %>%
-                    dplyr::summarize(Tot = n(),
-                              Err = sum(.data$evaluation %eq% "Error"),
-                              Pts = sum(.data$evaluation %eq% "Ace"))
-            )
-    } else if(by == "set") {
-        x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>% group_by(.data$set_number) %>%
-            dplyr::summarize(Tot = n(),
-                      Err = sum(.data$evaluation %eq% "Error"),
-                      Pts = sum(.data$evaluation %eq% "Ace"))
+    style <- check_report_style(style)
+    out <- if (by == "player") {
+               x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>% group_by(.data$player_id) %>%
+                   dplyr::summarize(Tot = n(),
+                                    Err = sum(.data$evaluation %eq% "Error"),
+                                    Pts = sum(.data$evaluation %eq% "Ace"),
+                                    expBP = paste0(round(mean(.data$expBP) * 100), "%")) %>%
+                   bind_rows(
+                       x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>% 
+                       mutate(player_id = "Team total")%>% group_by(.data$player_id) %>%
+                       dplyr::summarize(Tot = n(),
+                                        Err = sum(.data$evaluation %eq% "Error"),
+                                        Pts = sum(.data$evaluation %eq% "Ace"))
+                   )
+           } else if(by == "set") {
+               x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>% group_by(.data$set_number) %>%
+                   dplyr::summarize(Tot = n(),
+                                    Err = sum(.data$evaluation %eq% "Error"),
+                                    Pts = sum(.data$evaluation %eq% "Ace"),
+                                    expBP = paste0(round(mean(.data$expBP) * 100), "%"))
+           }
+    if (style %in% c("ov1")) {
+        dplyr::rename(out, Ace = "Pts")
+    } else {
+        dplyr::select(out, -"expBP")
     }
 }
 
@@ -308,19 +359,23 @@ vr_serve <- function(x, team, by = "player"){
 #' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
 #' @param team string: team name
 #' @param by string: "player" or "set"
+#' @param refx data.frame: see [vr_match_summary()]
+#' @param style string: see [vr_match_summary()]
 #' @param file_type string: "indoor", "perana_indoor"
 #' @export
-vr_reception <- function(x, team, by = "player", file_type = "indoor"){
+vr_reception <- function(x, team, by = "player", refx, style = "default", file_type = "indoor"){
     assert_that(is.string(by))
     by <- match.arg(tolower(by), c("player", "set"))
     assert_that(is.string(team))
     team_select <- team
-    if (by == "player"){
+    style <- check_report_style(style)
+    out <- if (by == "player"){
         x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% group_by(.data$player_id) %>%
             dplyr::summarize(Tot = n(),
                              Err = sum(.data$evaluation %eq% "Error"),
                              'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
-                             '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)")) %>%
+                             '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"),
+                             expSO = paste0(round(mean(.data$expSO) * 100), "%")) %>%
             bind_rows(
                 x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% 
                 mutate(player_id = "Team total") %>%
@@ -328,14 +383,21 @@ vr_reception <- function(x, team, by = "player", file_type = "indoor"){
                 dplyr::summarize(Tot = n(),
                                  Err = sum(.data$evaluation %eq% "Error"),
                                  'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
-                                 '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"))
+                                 '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"),
+                                 expSO = paste0(round(mean(.data$expSO) * 100), "%"))
             )
     } else if (by == "set") {
         x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% group_by(.data$set_number) %>%
             dplyr::summarize(Tot = n(),
                              Err = sum(.data$evaluation %eq% "Error"),
                              'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
-                             '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"))
+                             '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"),
+                             expSO = paste0(round(mean(.data$expSO) * 100), "%"))
+    }
+    if (style %in% c("ov1")) {
+        dplyr::select(out, -"(Exc%)")
+    } else {
+        dplyr::select(out, -"expSO")
     }
 }
 
@@ -343,13 +405,15 @@ vr_reception <- function(x, team, by = "player", file_type = "indoor"){
 #' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
 #' @param team string: team name
 #' @param by string: "player" or "set"
+#' @param style string: see [vr_match_summary()]
 #' @export
-vr_attack <- function(x, team, by = "player"){
+vr_attack <- function(x, team, by = "player", style = "default") {
     assert_that(is.string(by))
     by <- match.arg(tolower(by), c("player", "set"))
     assert_that(is.string(team))
     team_select <- team
-    if (by == "player") {
+    style <- check_report_style(style)
+    out <- if (by == "player") {
         x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Attack") %>% group_by(.data$player_id) %>%
             dplyr::summarize(Tot = n(),
                       Err = sum(.data$evaluation %eq% "Error"),
@@ -376,18 +440,22 @@ vr_attack <- function(x, team, by = "player"){
                       'Pts' = sum(.data$evaluation %eq% "Winning attack"),
                       'Pts%' = paste0(round(mean(.data$evaluation %in% "Winning attack"), 2)*100, "%"))
     }
+    if (style %in% c("ov1")) out <- dplyr::rename(out, Kill = "Pts", "K%" = "Pts%")
+    out
 }
 
 #' Generate block table
 #' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
 #' @param team string: team name
 #' @param by string: "player" or "set"
+#' @param style string: see [vr_match_summary()]
 #' @export
-vr_block <- function(x, team, by = "player"){
+vr_block <- function(x, team, by = "player", style = "default") {
     assert_that(is.string(by))
     by <- match.arg(tolower(by), c("player", "set"))
     assert_that(is.string(team))
     team_select <- team
+    style <- check_report_style(style)
     if (by == "player"){
         x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player") %>% group_by(.data$player_id) %>%
             dplyr::summarize(Tot = sum(.data$evaluation %eq% "Winning block" & .data$skill %eq% "Block")) %>%

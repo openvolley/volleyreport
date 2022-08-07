@@ -4,7 +4,7 @@
 \alias{vr_serve}
 \title{Generate serve table}
 \usage{
-vr_serve(x, team, by = "player")
+vr_serve(x, team, by = "player", refx, style = "default")
 }
 \arguments{
 \item{x}{datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}}
@@ -12,6 +12,10 @@ vr_serve(x, team, by = "player")
 \item{team}{string: team name}
 
 \item{by}{string: "player" or "set"}
+
+\item{refx}{data.frame: see \code{\link[=vr_match_summary]{vr_match_summary()}}}
+
+\item{style}{string: see \code{\link[=vr_match_summary]{vr_match_summary()}}}
 }
 \description{
 Generate serve table

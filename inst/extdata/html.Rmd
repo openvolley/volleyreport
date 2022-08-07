@@ -109,6 +109,11 @@ if (!is.null(vsx$icon)) {
 }
 ```
 
+```{r mr_score_ev, warning = FALSE, results = "asis", fig.height = 0.75, fig.width = 12}
+p <- volleyreport:::vr_content_score_evplot(vsx, font_size = 8)
+if (!is.null(p)) print(p)
+```
+
 ```{r mr2_home_html, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
 cat("<td width=\"100%\">")
@@ -159,30 +164,41 @@ if (vsx$shiny_progress) try(shiny::setProgress(value = 0.8, message = "Generatin
 
 ```{r fr0, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
+## left-hand content panel
 cat("<td width=\"83%\">\n")
-cat("<table class=\"mtbl\"><tr>\n")
-cat0("<td width=\"50%\" style=\"font-size:11px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, ";\">", vsx$meta$teams$team[1], "</td>\n")
-cat0("<td width=\"50%\" style=\"font-size:11px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, "; border-right:", vsx$css$border, ";\">", vsx$meta$teams$team[2], "</td>\n")
-cat("</tr></table>\n")
 ```
 
 ```{r fr1, warning = FALSE, results = "asis"}
+## team names
 cat("<table class=\"mtbl\"><tr>\n")
+cat0("<td width=\"50%\" style=\"font-size:", vsx$base_font_size * 10/12, "px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, ";\">", vsx$meta$teams$team[1], "</td>\n")
+cat0("<td width=\"50%\" style=\"font-size:", vsx$base_font_size * 10/12, "px; font-weight:bold; text-align:center; border-left:", vsx$css$border, "; border-top:", vsx$css$border, "; border-right:", vsx$css$border, ";\">", vsx$meta$teams$team[2], "</td>\n")
+cat("</tr></table>\n")
+cat("<table class=\"mtbl\"><tr>\n")
+```
 
-## wtf? this doesn't work if it's an if { ...} else {...} block??
-if (!grepl("beach", vsx$file_type)) cat0("<td width=\"10%\" style=\"border-right:", vsx$css$border, ";\">\n")
-if (!grepl("beach", vsx$file_type)) volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home")
-if (!grepl("beach", vsx$file_type)) cat("</td>\n")
-if (!grepl("beach", vsx$file_type)) cat("<td width=\"17%\">\n")
-if (grepl("beach", vsx$file_type)) cat("<td width=\"27%\">\n")
+```{r fr2, warning = FALSE, results = "asis"}
+## home team points by rot
+if (vsx$style %in% c("ov1")) {
+    cat("<td width=\"27%\">\n")
+    if (!grepl("beach", vsx$file_type)) cat(volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home"))
+    cat("</td>\n")
+} else {
+    ## default, show points by rot vertically and other stuff next to it
+    ## wtf? this doesn't work if it's an if { ...} else {...} block??
+    if (!grepl("beach", vsx$file_type)) cat0("<td width=\"10%\" style=\"border-right:", vsx$css$border, ";\">\n")
+    if (!grepl("beach", vsx$file_type)) cat(volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home"))
+    if (!grepl("beach", vsx$file_type)) cat("</td>\n")
+    if (!grepl("beach", vsx$file_type)) cat("<td width=\"17%\">\n")
+    if (grepl("beach", vsx$file_type)) cat("<td width=\"27%\">\n")
+    hteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "home")
+    for (this in hteach) cat(this, "\n")
+    cat("</td>\n")
+}
+```
 
-hteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "home")
-hteach[[1]]
-hteach[[2]]
-hteach[[3]]
-hteach[[4]]
-cat("</td>\n")
-
+```{r fr3, warning = FALSE, results = "asis"}
+## middle content
 cat0("<td width=\"46%\" style=\"border-right:", vsx$css$border, "; border-left:", vsx$css$border, ";\">\n")
 volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st Attack AFTER POSITIVE RECEPTION (+#)")
 volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("-", "!", "-/"), hdr = "1st Attack AFTER NEGATIVE RECEPTION (-!)")
@@ -190,22 +206,27 @@ volleyreport:::vr_content_kill_in_trans(vsx, kable_format)
 cat("</td>\n")
 ```
 
-```{r fr2, warning = FALSE, results = "asis"}
-cat0("<td width=\"", if (!grepl("beach", vsx$file_type)) 17 else 27, "%\" style=\"border-right:", vsx$css$border, ";\">\n")
-vteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "visiting")
-vteach[[1]]
-vteach[[2]]
-vteach[[3]]
-vteach[[4]]
-cat("</td>\n")
+```{r fr4, warning = FALSE, results = "asis"}
+## visiting team points by rot
+if (vsx$style %in% c("ov1")) {
+    cat("<td width=\"27%\">\n")
+    if (!grepl("beach", vsx$file_type)) cat(volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting"))
+    cat("</td>\n")
+} else {
+    cat0("<td width=\"", if (!grepl("beach", vsx$file_type)) 17 else 27, "%\" style=\"border-right:", vsx$css$border, ";\">\n")
+    vteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "visiting")
+    for (this in vteach) cat(this, "\n")
+    cat("</td>\n")
+    ## wtf? this doesn't work if it's an if { ...} block??
+    if (!grepl("beach", vsx$file_type)) cat0("<td width=\"10%\">\n")
+    if (!grepl("beach", vsx$file_type)) cat(volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting"))
+    if (!grepl("beach", vsx$file_type)) cat("</td>\n")
+}
+```
 
-## wtf? this doesn't work if it's an if { ...} block??
-if (!grepl("beach", vsx$file_type)) cat0("<td width=\"10%\">\n")
-if (!grepl("beach", vsx$file_type)) volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting")
-if (!grepl("beach", vsx$file_type)) cat("</td>\n")
-
+```{r fr5, warning = FALSE, results = "asis"}
 cat("</tr></table>\n")
-
+## the right-hand panel for the report legend
 cat0("<td width=\"16.7%\">\n")
 volleyreport:::vr_content_key(vsx, kable_format)
 cat("</td>\n")

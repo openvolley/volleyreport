@@ -4,7 +4,7 @@
 \alias{vr_block}
 \title{Generate block table}
 \usage{
-vr_block(x, team, by = "player")
+vr_block(x, team, by = "player", style = "default")
 }
 \arguments{
 \item{x}{datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}}
@@ -12,6 +12,8 @@ vr_block(x, team, by = "player")
 \item{team}{string: team name}
 
 \item{by}{string: "player" or "set"}
+
+\item{style}{string: see \code{\link[=vr_match_summary]{vr_match_summary()}}}
 }
 \description{
 Generate block table

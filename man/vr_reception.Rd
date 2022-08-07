@@ -4,7 +4,14 @@
 \alias{vr_reception}
 \title{Generate reception table}
 \usage{
-vr_reception(x, team, by = "player", file_type = "indoor")
+vr_reception(
+  x,
+  team,
+  by = "player",
+  refx,
+  style = "default",
+  file_type = "indoor"
+)
 }
 \arguments{
 \item{x}{datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}}
@@ -12,6 +19,10 @@ vr_reception(x, team, by = "player", file_type = "indoor")
 \item{team}{string: team name}
 
 \item{by}{string: "player" or "set"}
+
+\item{refx}{data.frame: see \code{\link[=vr_match_summary]{vr_match_summary()}}}
+
+\item{style}{string: see \code{\link[=vr_match_summary]{vr_match_summary()}}}
 
 \item{file_type}{string: "indoor", "perana_indoor"}
 }

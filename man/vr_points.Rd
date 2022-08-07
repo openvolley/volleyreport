@@ -4,7 +4,7 @@
 \alias{vr_points}
 \title{Generate points table}
 \usage{
-vr_points(x, team, by = "player", vote = FALSE)
+vr_points(x, team, by = "player", vote = FALSE, style = "default")
 }
 \arguments{
 \item{x}{datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}}
@@ -14,6 +14,8 @@ vr_points(x, team, by = "player", vote = FALSE)
 \item{by}{string: "player" or "set"}
 
 \item{vote}{logical: if \code{TRUE}, include vote detail}
+
+\item{style}{string: see \code{\link[=vr_match_summary]{vr_match_summary()}}}
 }
 \description{
 Generate points table
