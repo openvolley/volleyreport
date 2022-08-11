@@ -2,7 +2,7 @@
 #'
 #' @param x datavolley or string: as returned by \code{datavolley::dv_read}, or the path to such a file
 #' @param outfile string: path to file to produce (if not specified, will create a file in the temporary directory)
-#' @param refx data.frame: some choices of `style` require a reference data set to calculate e.g. expected SO. This should be from comparison matches (e.g. all matches from the same league), and should be a data.frame of the plays components from those matches. If missing, the current match will be used as its own reference, but results might not be entirely sensible
+#' @param refx data.frame: some choices of `style` require a reference data set to calculate e.g. expected SO. This should be from comparison matches (e.g. all matches from the same league), and should be a data.frame of the plays components from those matches. If missing, expected SO and BP will be replaced by reception and serve efficiency
 #' @param vote logical: include vote report component? If not explicitly specified, `vote` might be set to FALSE depending on `style`
 #' @param format string: "pdf" (using latex-based PDF), "paged_pdf" (using pagedown-based PDF), "png", "paged_png", or "html"
 #' @param icon string: (optional) filename of icon image to use
@@ -41,9 +41,16 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     footnotes <- c()
     if (style %in% c("ov1")) {
         if (missing(vote)) vote <- FALSE
-        if (missing(refx) || is.null(refx) || nrow(refx) < 1) {
-            refx <- datavolley::plays(x)
-            footnotes <- c(footnotes, "Expected SO/BP use this match as reference data.")
+        if (!missing(refx)) {
+            if (identical(refx, "self")) {
+                ## undocumented for now
+                refx <- datavolley::plays(x)
+                footnotes <- c(footnotes, "Expected SO/BP use this match as reference data.")
+            } else if (!is.data.frame(refx) || nrow(refx) < 1) {
+                refx <- NULL
+            }
+        } else {
+            refx <- NULL
         }
     } else {
         ## refx not used
@@ -119,7 +126,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
         x <- left_join(x, touchsum, by = c("match_id", "team_touch_id"))
     }
 
-    if (!is.null(refx) && nrow(refx) > 0) {
+    if (!is.null(refx)) {
         lso <- refx %>% dplyr::filter(.data$skill == "Reception") %>% group_by(.data$evaluation) %>% dplyr::summarize(skill = "Reception", expSO = mean(.data$point_won_by == .data$team, na.rm = TRUE)) %>% ungroup
         x <- left_join(x, lso, by = c("skill", "evaluation"))
         lbp <- refx %>% dplyr::filter(.data$skill == "Serve") %>% group_by(.data$evaluation) %>% dplyr::summarize(skill = "Serve", expBP = mean(.data$point_won_by == .data$team, na.rm = TRUE)) %>% ungroup
@@ -338,6 +345,7 @@ vr_serve <- function(x, team, by = "player", refx, style = "default"){
                    dplyr::summarize(Tot = n(),
                                     Err = sum(.data$evaluation %eq% "Error"),
                                     Pts = sum(.data$evaluation %eq% "Ace"),
+                                    `srvEff%` = paste0(round(serve_eff(.data$evaluation) * 100), "%"),
                                     `expBP%` = paste0(round(mean(.data$expBP) * 100), "%")) %>%
                    bind_rows(
                        x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>%
@@ -345,6 +353,7 @@ vr_serve <- function(x, team, by = "player", refx, style = "default"){
                        dplyr::summarize(Tot = n(),
                                         Err = sum(.data$evaluation %eq% "Error"),
                                         Pts = sum(.data$evaluation %eq% "Ace"),
+                                        `srvEff%` = paste0(round(serve_eff(.data$evaluation) * 100), "%"),
                                         `expBP%` = paste0(round(mean(.data$expBP) * 100), "%"))
                    )
            } else if(by == "set") {
@@ -352,12 +361,14 @@ vr_serve <- function(x, team, by = "player", refx, style = "default"){
                    dplyr::summarize(Tot = n(),
                                     Err = sum(.data$evaluation %eq% "Error"),
                                     Pts = sum(.data$evaluation %eq% "Ace"),
+                                    `srvEff%` = paste0(round(serve_eff(.data$evaluation) * 100), "%"),
                                     `expBP%` = paste0(round(mean(.data$expBP) * 100), "%"))
            }
     if (style %in% c("ov1")) {
+        out <- if (is.null(refx)) dplyr::select(out, -"expBP%") else dplyr::select(out, -"srvEff%")
         dplyr::rename(out, Ace = "Pts")
     } else {
-        dplyr::select(out, -"expBP%")
+        dplyr::select(out, -"expBP%", -"srvEff%")
     }
 }
 
@@ -381,6 +392,7 @@ vr_reception <- function(x, team, by = "player", refx, style = "default", file_t
                              Err = sum(.data$evaluation %eq% "Error"),
                              'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
                              '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"),
+                             `recEff%` = paste0(round(reception_eff(.data$evaluation) * 100), "%"),
                              `expSO%` = paste0(round(mean(.data$expSO) * 100), "%")) %>%
             bind_rows(
                 x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% 
@@ -390,6 +402,7 @@ vr_reception <- function(x, team, by = "player", refx, style = "default", file_t
                                  Err = sum(.data$evaluation %eq% "Error"),
                                  'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
                                  '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"),
+                                 `recEff%` = paste0(round(reception_eff(.data$evaluation) * 100), "%"),
                                  `expSO%` = paste0(round(mean(.data$expSO) * 100), "%"))
             )
     } else if (by == "set") {
@@ -398,12 +411,14 @@ vr_reception <- function(x, team, by = "player", refx, style = "default", file_t
                              Err = sum(.data$evaluation %eq% "Error"),
                              'Pos%' = paste0(round(mean(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100, "%"),
                              '(Exc%)' = paste0("(", round(mean(.data$evaluation_code %in% c("#")), 2)*100, "%)"),
+                             `recEff%` = paste0(round(reception_eff(.data$evaluation) * 100), "%"),
                              `expSO%` = paste0(round(mean(.data$expSO) * 100), "%"))
     }
     if (style %in% c("ov1")) {
-        dplyr::select(out, -"(Exc%)")
+        out <- dplyr::select(out, -"(Exc%)")
+        if (is.null(refx)) dplyr::select(out, -"expSO%") else dplyr::select(out, -"recEff%")
     } else {
-        dplyr::select(out, -"expSO%")
+        dplyr::select(out, -"expSO%", -"recEff%")
     }
 }
 

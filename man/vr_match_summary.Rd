@@ -27,7 +27,7 @@ vr_css()
 
 \item{outfile}{string: path to file to produce (if not specified, will create a file in the temporary directory)}
 
-\item{refx}{data.frame: some choices of \code{style} require a reference data set to calculate e.g. expected SO. This should be from comparison matches (e.g. all matches from the same league), and should be a data.frame of the plays components from those matches. If missing, the current match will be used as its own reference, but results might not be entirely sensible}
+\item{refx}{data.frame: some choices of \code{style} require a reference data set to calculate e.g. expected SO. This should be from comparison matches (e.g. all matches from the same league), and should be a data.frame of the plays components from those matches. If missing, expected SO and BP will be replaced by reception and serve efficiency}
 
 \item{vote}{logical: include vote report component? If not explicitly specified, \code{vote} might be set to FALSE depending on \code{style}}
 
