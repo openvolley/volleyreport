@@ -68,12 +68,12 @@ if (!is.null(vsx$icon)) {
 }
 ```
 
-<div style="margin-top:-2mm; margin-bottom:-2mm;">
-```{r mr_score_ev, warning = FALSE, results = "asis", fig.height = 18 / 25.4, fig.width = 210 / 25.4}
+```{r mr_score_ev, warning = FALSE, eval = vsx$style %in% c("ov1"), results = "asis", fig.height = 18 / 25.4, fig.width = 210 / 25.4}
+cat("\n<div style=\"margin-top:-2mm; margin-bottom:-2mm;\">\n")
 p <- volleyreport:::vr_content_score_evplot(vsx)
 if (!is.null(p)) print(p)
+cat("\n\n</div>\n")
 ```
-</div>
 
 ```{r mr2_home_html, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
