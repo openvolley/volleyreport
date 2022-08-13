@@ -39,13 +39,19 @@ vr_content_partial_scores <- function(vsx, kable_format) {
     } else {
         this <- this %>% mutate(Set = dplyr::row_number())
     }
-    this %>% mutate(Set = paste0(.data$Set, " (", .data$duration, " mins)")) %>% dplyr::select("Set", if (have_partial) "Partial score", Score = "score") %>%
+    if (!"duration" %in% names(this)) this$duration <- NA_integer_
+    duridx <- !is.na(this$duration)
+    this$Set[duridx] <- paste0(this$Set[duridx], " (", this$duration[duridx], " mins)")
+    out <- this %>% dplyr::select("Set", if (have_partial) "Partial score", Score = "score") %>%
         kable(format = kable_format, escape = FALSE, align = "r", table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
-        row_spec(0, align = "l", bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
-        column_spec(1, width = "0.7in", border_left = vsx$css$border) %>%
-        column_spec(2 + have_partial, border_right = vsx$css$border, bold = TRUE) %>%
-        row_spec(nrow(this), extra_css = paste0("border-bottom:", vsx$css$border))
+        row_spec(0, align = "l", bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background)
+    if (nrow(this) > 0) {
+        out <- out %>% column_spec(1, width = "0.7in", border_left = vsx$css$border) %>%
+            column_spec(2 + have_partial, border_right = vsx$css$border, bold = TRUE) %>%
+            row_spec(nrow(this), extra_css = paste0("border-bottom:", vsx$css$border))
+    }
+    out
 }
 
 
@@ -84,12 +90,20 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
                starting_position_set5 = case_when(!is.na(.data$starting_position_set5) & .data$starting_position_set5 %in% c("1","2","3","4","5","6") ~ cell_spec(.data$starting_position_set5, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
                                                   !is.na(.data$starting_position_set5) & .data$starting_position_set5 %in% c(".", "L") ~ cell_spec(.data$starting_position_set5, kable_format, color = "white", align = "c", background = "#999999")))
 
+
     P_sum <- P_sum %>% dplyr::select(-"player_id") %>% dplyr::arrange(.data$number) %>% na_if(0)
 
     ## note that in some cases the dvw file can contain starting positions for players in a set that doesn't have a result
+    if (isTRUE(vsx$remove_nonplaying)) {
+        if (!isTRUE(suppressWarnings(max(vsx$x$set_number, na.rm = TRUE) > 1))) {
+            ## special case for first set, rely on starting position
+            P_sum <- dplyr::filter(P_sum, !is.na(.data$starting_position_set1))
+        } else {
+            P_sum <- P_sum[rowSums(is.na(P_sum[, c(-1, -2)])) < (ncol(P_sum) - 2), ]
+        }
+    }
     notsets <- setdiff(1:5, seq_len(nrow(vsx$meta$result)))
     P_sum <- P_sum[, setdiff(colnames(P_sum), paste0("starting_position_set", notsets))]
-    if (isTRUE(vsx$remove_nonplaying)) P_sum <- P_sum[rowSums(is.na(P_sum[, c(-1, -2)])) < (ncol(P_sum) - 2), ]
     ## put 0s back in for W-L
     if ("W-L" %in% names(P_sum)) P_sum$`W-L`[is.na(P_sum$`W-L`)] <- 0L
     Rexc <- !isTRUE(grepl("perana", vsx$file_type)) ## perana have only R#+, not R#
@@ -175,14 +189,14 @@ vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
             dplyr::arrange(dplyr::desc(.data$home_setter_position))
         if (vsx$style %in% c("ov1")) {
             out <- left_join(out, vsx$x %>% dplyr::filter(.data$skill == "Serve" & .data$team == .data$home_team) %>% group_by(.data$home_setter_position) %>%
-                                  dplyr::summarize(`N srv` = n(), `BP%` = paste0(round(mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100), "%"),
-                                                   `srvEff%` = paste0(round(serve_eff(.data$evaluation) * 100), "%"),
-                                                   `expBP%` = paste0(round(mean(.data$expBP, na.rm = TRUE) * 100), "%")),
+                                  dplyr::summarize(`N srv` = n(), `BP%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
+                                                   `srvEff%` = prc(round(serve_eff(.data$evaluation) * 100)),
+                                                   `expBP%` = prc(round(mean0(.data$expBP) * 100))),
                              by = "home_setter_position")
             out <- left_join(out, vsx$x %>% dplyr::filter(.data$skill == "Reception" & .data$team == .data$home_team) %>% group_by(.data$home_setter_position) %>%
-                                  dplyr::summarize(`N rec` = n(), `SO%` = paste0(round(mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100), "%"),
-                                                   `recEff%` = paste0(round(reception_eff(.data$evaluation) * 100), "%"),
-                                                   `expSO%` = paste0(round(mean(.data$expSO, na.rm = TRUE) * 100), "%")),
+                                  dplyr::summarize(`N rec` = n(), `SO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
+                                                   `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
+                                                   `expSO%` = prc(round(mean0(.data$expSO) * 100))),
                              by = "home_setter_position")
         }
         out <- dplyr::rename(out, `S in` = .data$home_setter_position)
@@ -192,33 +206,35 @@ vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
             dplyr::arrange(dplyr::desc(.data$visiting_setter_position))
         if (vsx$style %in% c("ov1")) {
             out <- left_join(out, vsx$x %>% dplyr::filter(.data$skill == "Serve" & .data$team == .data$visiting_team) %>% group_by(.data$visiting_setter_position) %>%
-                                  dplyr::summarize(`N srv` = n(), `BP%` = paste0(round(mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100), "%"),
-                                                   `srvEff%` = paste0(round(serve_eff(.data$evaluation) * 100), "%"),
-                                                   `expBP%` = paste0(round(mean(.data$expBP, na.rm = TRUE) * 100), "%")),
+                                  dplyr::summarize(`N srv` = n(), `BP%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
+                                                   `srvEff%` = prc(round(serve_eff(.data$evaluation) * 100)),
+                                                   `expBP%` = prc(round(mean0(.data$expBP) * 100))),
                              by = "visiting_setter_position")
             out <- left_join(out, vsx$x %>% dplyr::filter(.data$skill == "Reception" & .data$team == .data$visiting_team) %>% group_by(.data$visiting_setter_position) %>%
-                                  dplyr::summarize(`N rec` = n(), `SO%` = paste0(round(mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100), "%"),
-                                                   `recEff%` = paste0(round(reception_eff(.data$evaluation) * 100), "%"),
-                                                   `expSO%` = paste0(round(mean(.data$expSO, na.rm = TRUE) * 100), "%")),
+                                  dplyr::summarize(`N rec` = n(), `SO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
+                                                   `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
+                                                   `expSO%` = prc(round(mean0(.data$expSO) * 100))),
                              by = "visiting_setter_position")
         }
         out <- dplyr::rename(out, `S in` = .data$visiting_setter_position)
     }
     out$`S in` <- factor(out$`S in`, levels = c(1, 6:2))
     out <- dplyr::arrange(out, .data$`S in`)
-    if (vsx$style %in% c("ov1")) {
-        out <- if (is.null(vsx$refx)) dplyr::select(out, -"expBP%", -"expSO%") else dplyr::select(out, -"srvEff%", -"recEff%")
-        out <- as.data.frame(t(dplyr::rename(out, "Pts diff" = "Diff")))
-        colnames(out) <- paste0("P", out[1, ])
-        out <- out[-1, ]
-        kable(out, format = kable_format, escape = FALSE, rownames = TRUE, align = "r", table.attr = "class=\"widetable\"") %>%
-            kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = vsx$base_font_size * 9/12) %>%
-            row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12)
-    } else {
-        kable(na.omit(out), format = kable_format, escape = FALSE, align = "r", table.attr = "class=\"widetable\"") %>%
-            kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = vsx$base_font_size * 10/12) %>%
-            row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
-            add_header_above(c("Points" = 2), color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;")
+    if (nrow(out) > 0) {
+        if (vsx$style %in% c("ov1")) {
+            out <- if (is.null(vsx$refx)) dplyr::select(out, -"expBP%", -"expSO%") else dplyr::select(out, -"srvEff%", -"recEff%")
+            out <- as.data.frame(t(dplyr::rename(out, "Pts diff" = "Diff")))
+            colnames(out) <- paste0("P", out[1, ])
+            out <- out[-1, ]
+            kable(out, format = kable_format, escape = FALSE, rownames = TRUE, align = "r", table.attr = "class=\"widetable\"") %>%
+                kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = vsx$base_font_size * 9/12) %>%
+                row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12)
+        } else {
+            kable(na.omit(out), format = kable_format, escape = FALSE, align = "r", table.attr = "class=\"widetable\"") %>%
+                kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = vsx$base_font_size * 10/12) %>%
+                row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
+                add_header_above(c("Points" = 2), color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;")
+        }
     }
 }
 
@@ -263,12 +279,12 @@ vr_content_key <- function(vsx, kable_format) {
 vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st Attack AFTER POSITIVE RECEPTION (+#)") {
     KoRhome <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$ts_pass_evaluation_code %in% eval_codes & .data$phase == "Reception" & .data$team == datavolley::home_team(vsx$x)) %>%
         dplyr::summarize(Err = sum(.data$evaluation_code == "="), Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = paste0(round(mean(.data$evaluation_code == "#") * 100), "%"), Tot = n())
+                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)), Tot = n())
     if (vsx$style %in% c("ov1")) KoRhome <- dplyr::rename(KoRhome, "K%" = "Pts%")
 
     KoRvis <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$ts_pass_evaluation_code %in% eval_codes & .data$phase == "Reception" & .data$team == datavolley::visiting_team(vsx$x)) %>%
         dplyr::summarize(Err = sum(.data$evaluation_code == "="), Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = paste0(round(mean(.data$evaluation_code == "#") * 100), "%"), Tot = n())
+                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)), Tot = n())
     if (vsx$style %in% c("ov1")) KoRvis <- dplyr::rename(KoRvis, "K%" = "Pts%")
 
     hd <- c(8)
@@ -284,13 +300,13 @@ vr_content_kill_in_trans <- function(vsx, kable_format) {
     KiThome <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$phase == "Transition" & .data$team == datavolley::home_team(vsx$x)) %>%
         dplyr::summarize(Err = sum(.data$evaluation_code == "="),
                          Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = round(mean(.data$evaluation_code == "#"), 2) * 100, Tot = n())
+                         'Pts%' = round(mean0(.data$evaluation_code == "#"), 2) * 100, Tot = n())
     if (vsx$style %in% c("ov1")) KiThome <- dplyr::rename(KiThome, "K%" = "Pts%")
 
     KiTvis <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$phase == "Transition" & .data$team == datavolley::visiting_team(vsx$x)) %>%
         dplyr::summarize(Err = sum(.data$evaluation_code == "="),
                          Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = round(mean(.data$evaluation_code == "#"), 2) * 100, Tot = n())
+                         'Pts%' = round(mean0(.data$evaluation_code == "#"), 2) * 100, Tot = n())
     if (vsx$style %in% c("ov1")) KiTvis <- dplyr::rename(KiTvis, "K%" = "Pts%")
 
     kable(cbind(KiThome, KiTvis[4:1]),format = vsx$format, escape = FALSE, align = "c", table.attr = "class=\"widetable\"") %>%

@@ -4,6 +4,15 @@ single_value_or_na <- function(x) if (length(x) == 1) x else NA
 single_value_or_na_char <- function(x) if (length(x) == 1) x else NA_character_
 single_value_or_na_int <- function(x) if (length(x) == 1) x else NA_integer_
 
+## mean but if empty vector passed, NA
+mean0 <- function(x, ...) {
+    if (length(x) < 1 || all(is.na(x))) as(NA, class(x)) else mean(x, na.rm = TRUE)
+}
+
+## convert to string with "%", but not if NA
+prc <- function(z, before = "", after = "%") {
+    if (length(z) < 1) z else ifelse(is.na(z), z, paste0(before, z, after))
+}
 
 ## guess data type given plays data.frame
 guess_data_type <- function(x) {
