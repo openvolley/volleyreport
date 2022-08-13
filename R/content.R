@@ -258,10 +258,11 @@ vr_content_team_each <- function(vsx, kable_format, which_team = "home") {
                          'Earned pts BP' = sum(.data$serving_team == teamfun(vsx$x)  & .data$skill %in% c("Serve", "Attack", "Block") & grepl("^(Ace|Winning) ", .data$evaluation), na.rm = TRUE)) %>%
         pivot_longer(cols = 1:2)
 
+    miss2 <- function(z) ifelse(is.na(z) | is.infinite(z), "?", z) ## replace missing or infinites with "?"
     list(kable(rthis, format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12),
-         kable(paste0("Each ", round(rthis$value[1]/rthis$value[2], 2), " receptions 1 point"), format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12),
+         kable(paste0("Each ", miss2(round(rthis$value[1]/rthis$value[2], 2)), " receptions 1 point"), format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12),
          kable(sthis, format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12),
-         kable(paste0("Each ", round(sthis$value[1]/sthis$value[2], 2), " serves 1 breakpoint"), format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12)
+         kable(paste0("Each ", miss2(round(sthis$value[1]/sthis$value[2], 2)), " serves 1 breakpoint"), format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12)
          )
 }
 

@@ -232,7 +232,7 @@ vr_points <- function(x, team, by = "player", vote = FALSE, style = "default") {
                              Atk = sum(.data$evaluation_code == "#" & .data$skill == "Attack" & .data$team %in% team_select, na.rm = TRUE),
                              Blo = sum(.data$evaluation_code == "#" & .data$skill == "Block" & .data$team %in% team_select, na.rm = TRUE),
                              "Op.Er" = suppressWarnings(max(.data$team_points, na.rm = TRUE)) - .data$Ser - .data$Atk - .data$Blo)
-        if (is.infinite(vr_pts$`Op.Er`)) vr_pts$`Op.Er` <- 0L ## if no points scores, max will return -Inf
+        vr_pts$`Op.Er`[is.infinite(vr_pts$`Op.Er`)] <- 0L ## if no points scores, max will return -Inf
     }
     vr_pts
 }
@@ -292,7 +292,7 @@ vr_vote <- function(x, team) {
         dplyr::select("team", "player_id", "skill", "evaluation_code", "vote_per_skill", "max_vote_per_skill") %>% na.omit()
 
     if (as_for_datavolley) {
-        vote.df$factor <- 1.0
+        vote.df$factor <- rep(1.0, nrow(vote.df))
         team_totals <- dplyr::filter(x, .data$team %in% team_select)
         serve_grade <- vote.df %>% dplyr::filter(.data$skill == "Serve") %>%
             group_by_at("player_id") %>%
@@ -311,6 +311,7 @@ vr_vote <- function(x, team) {
             ## count number of sets each player was listed as on court
             dplyr::tibble(player_id = id, n_sets_played = length(unique(na.omit(x$set_number[rowSums(x[, c(paste0("home_player_id", 1:6), paste0("visiting_player_id", 1:6))] == id) > 0]))))
         }))
+        if (ncol(player_nsets) < 1) player_nsets <- tibble(player_id = character(), n_sets_played = integer())
         block_grade <- left_join(block_grade, player_nsets, by = "player_id") %>%
             mutate(skill = "Block", vote = case_when(.data$n >= .data$n_sets_played ~ 8.5,
                                                      .data$n >= .data$n_sets_played*0.8 ~ 8.0,
