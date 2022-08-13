@@ -15,6 +15,7 @@ vr_match_summary(
   css = vr_css(),
   remove_nonplaying = TRUE,
   style = "default",
+  skill_evaluation_decode = "guess",
   shiny_progress = FALSE,
   chrome_print_extra_args = NULL,
   ...
@@ -44,6 +45,8 @@ vr_css()
 \item "default" - the standard FIVB match report
 \item "ov1" - modified version of "default" with score evolution plot, some columns dropped, expected SO and BP added, different breakdown by rotation
 }}
+
+\item{skill_evaluation_decode}{: as for \code{\link[datavolley:read_dv]{datavolley::dv_read()}}}
 
 \item{shiny_progress}{logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope}
 

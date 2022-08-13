@@ -11,6 +11,7 @@
 #' @param style string: can be
 #' * "default" - the standard FIVB match report
 #' * "ov1" - modified version of "default" with score evolution plot, some columns dropped, expected SO and BP added, different breakdown by rotation
+#' @param skill_evaluation_decode : as for [datavolley::dv_read()]
 #' @param shiny_progress logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope
 #' @param chrome_print_extra_args character: additional parameters to pass as `extra_args` to [pagedown::chrome_print()] (only relevant if using a "paged_*" format)
 #' @param ... : additional parameters passed to the rmarkdown template
@@ -22,9 +23,13 @@
 #'   if (interactive()) browseURL(f)
 #' }
 #' @export
-vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
-    if (is.string(x) && file.exists(x) && grepl("\\.dvw$", x, ignore.case = TRUE)) {
-        x <- datavolley::dv_read(x, skill_evaluation_decode = "guess")
+vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", skill_evaluation_decode = "guess", shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
+    if (is.string(x) && file.exists(x)) {
+        if (grepl("\\.dvw$", x, ignore.case = TRUE)) {
+            x <- datavolley::dv_read(x, skill_evaluation_decode = skill_evaluation_decode)
+        } else {
+            stop("unknown file format: ", x)
+        }
     }
     assert_that(inherits(x, c("datavolley", "peranavolley")))
     assert_that(is.string(format))
