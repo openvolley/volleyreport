@@ -110,7 +110,7 @@ if (!is.null(vsx$icon)) {
 ```
 
 ```{r mr_score_ev, warning = FALSE, eval = vsx$style %in% c("ov1"), results = "asis", fig.height = 0.75, fig.width = 12}
-p <- volleyreport:::vr_content_score_evplot(vsx, font_size = 8)
+p <- if (sum(vsx$x$point, na.rm = TRUE) < 2) NULL else volleyreport:::vr_content_score_evplot(vsx, font_size = 8)
 if (!is.null(p)) print(p)
 ```
 

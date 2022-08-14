@@ -225,7 +225,7 @@ vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
             out <- if (is.null(vsx$refx)) dplyr::select(out, -"expBP%", -"expSO%") else dplyr::select(out, -"srvEff%", -"recEff%")
             out <- as.data.frame(t(dplyr::rename(out, "Pts diff" = "Diff")))
             colnames(out) <- paste0("P", out[1, ])
-            out <- out[-1, ]
+            out <- out[-1, , drop = FALSE]
             kable(out, format = kable_format, escape = FALSE, rownames = TRUE, align = "r", table.attr = "class=\"widetable\"") %>%
                 kable_styling(bootstrap_options = c("striped", "hover", "condensed"), font_size = vsx$base_font_size * 9/12) %>%
                 row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12)
