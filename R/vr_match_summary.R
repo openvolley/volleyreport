@@ -10,7 +10,7 @@
 #' @param remove_nonplaying logical: if \code{TRUE}, remove players from the team summaries that did not take to the court
 #' @param style string: can be
 #' * "default" - the standard FIVB match report
-#' * "ov1" - modified version of "default" with score evolution plot, some columns dropped, expected SO and BP added, different breakdown by rotation
+#' * "ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes
 #' @param skill_evaluation_decode : as for [datavolley::dv_read()]
 #' @param shiny_progress logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope
 #' @param chrome_print_extra_args character: additional parameters to pass as `extra_args` to [pagedown::chrome_print()] (only relevant if using a "paged_*" format)
@@ -43,7 +43,13 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
         }
     }
     style <- check_report_style(style)
-    footnotes <- c()
+    dots <- list(...)
+    if ("footnotes" %in% names(dots)) {
+        footnotes <- dots$footnotes
+        dots$footnotes <- NULL
+    } else {
+        footnotes <- c()
+    }
     if (style %in% c("ov1")) {
         if (missing(vote)) vote <- FALSE
         if (!missing(refx)) {
@@ -151,7 +157,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
     ## cheap and nasty parameterisation
     vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = 11)
-    vsx <- c(vsx, list(...)) ## extra parms
+    vsx <- c(vsx, dots) ## extra parms
 
     rm(x, meta, refx, vote, style, shiny_progress, file_type, icon, remove_nonplaying)
 

@@ -43,7 +43,7 @@ vr_css()
 \item{style}{string: can be
 \itemize{
 \item "default" - the standard FIVB match report
-\item "ov1" - modified version of "default" with score evolution plot, some columns dropped, expected SO and BP added, different breakdown by rotation
+\item "ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes
 }}
 
 \item{skill_evaluation_decode}{: as for \code{\link[datavolley:read_dv]{datavolley::dv_read()}}}
