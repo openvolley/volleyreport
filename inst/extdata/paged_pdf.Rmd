@@ -24,7 +24,7 @@ kable_format <- "html"
 }
 .wcol { padding-left: 2px; padding-right: 2px; }
 .widetable { width: 100%; }
-thead > tr { border: 1px solid `r vsx$css$header_colour` }
+thead > tr { border: `r vsx$css$border` }
 .mtbl { width: 100%; }
 .mtbl > tbody > tr { background: #fff; }
 .mtbl td, .mtbl th { vertical-align: top; padding: 3px; }

@@ -60,7 +60,7 @@ a { color:#18348E; /*#060F6A;*/
   border: 1px solid grey;
 }
 
-thead > tr { border: 1px solid `r vsx$css$header_colour` }
+thead > tr { border: `r vsx$css$border` }
 
 .table { margin-bottom: 8px; }
 
