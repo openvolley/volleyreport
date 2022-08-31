@@ -19,8 +19,8 @@ kable_format <- "html"
 
 <style>
 :root {
---pagedjs-margin-top: 0 !important;
---pagedjs-margin-bottom: 0 !important;
+--pagedjs-margin-top: 2mm !important;
+--pagedjs-margin-bottom: 2mm !important;
 }
 .wcol { padding-left: 2px; padding-right: 2px; }
 .widetable { width: 100%; }
