@@ -186,7 +186,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
 #' @export
 #' @rdname vr_match_summary
 vr_css <- function() {
-    list(header_background = "#91A3B0", header_colour = "black", border = "1px solid #91A3B0")
+    list(header_background = "#91A3B0", header_colour = "black", border = "1px solid black")
 }
 
 check_report_style <- function(style) {
