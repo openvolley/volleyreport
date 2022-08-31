@@ -57,7 +57,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
                 ## undocumented for now
                 refx <- datavolley::plays(x)
                 footnotes <- c(footnotes, "Expected SO/BP use this match as reference data.")
-            } else if (!is.data.frame(refx) || nrow(refx) < 1) {
+            } else if (!((is.data.frame(refx) && nrow(refx) > 0) || (is.list(refx) && setequal(tolower(names(refx)), c("expso", "expbp"))))) {
                 refx <- NULL
             }
         } else {
@@ -138,16 +138,62 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     }
 
     if (!is.null(refx)) {
-        lso <- refx %>% dplyr::filter(.data$skill == "Reception") %>% group_by(.data$evaluation) %>% dplyr::summarize(skill = "Reception", expSO = mean0(.data$point_won_by == .data$team)) %>% ungroup
-        x <- left_join(x, lso, by = c("skill", "evaluation"))
-        lbp <- refx %>% dplyr::filter(.data$skill == "Serve") %>% group_by(.data$evaluation) %>% dplyr::summarize(skill = "Serve", expBP = mean0(.data$point_won_by == .data$team)) %>% ungroup
-        x <- left_join(x, lbp, by = c("skill", "evaluation"))
+        srmap <- dplyr::tribble(
+            ~skill, ~evaluation_code, ~evaluation,
+            "Serve", "=", "Error",
+            "Serve", "/", "Positive, no attack",
+            "Serve", "-", "Negative, opponent free attack",
+            "Serve", "+", "Positive, opponent some attack",
+            "Serve", "#", "Ace",
+            "Serve", "!", "OK, no first tempo possible",
+            "Reception", "=", "Error",
+            "Reception", "/", "Poor, no attack",
+            "Reception", "-", "Negative, limited attack",
+            "Reception", "-/", "Negative/poor pass",
+            "Reception", "+", "Positive, attack",
+            "Reception", "#", "Perfect pass",
+            "Reception", "#+", "Perfect/positive pass",
+            "Reception", "!", "OK, no first tempo possible")
+        ## deal with the various forms that refx can take
+        if (is.list(refx) && setequal(tolower(names(refx)), c("expso", "expbp"))) {
+            ## refx is of form list(expSO = list(`R#` = 0.7, ...), expBP = list(...)) or list(expSO = tibble(...), expBP = tibble(...)) following lso and lbp
+            names(refx) <- tolower(names(refx))
+            ## expSO
+            lso <- if (is.data.frame(refx$expso)) refx$expso else tibble(skill = "Reception", evaluation = names(refx$expso), expSO = as.numeric(unlist(refx$expso)))
+            if (all(grepl("R?[[:punct:]]", lso$evaluation))) {
+                lso <- mutate(lso, evaluation = sub("^R", "", .data$evaluation)) %>% dplyr::rename(evaluation_code = "evaluation") %>% left_join(srmap, by = c("skill", "evaluation_code")) %>% dplyr::select(-"evaluation_code")
+            }
+            lbp <- if (is.data.frame(refx$expbp)) refx$expbp else tibble(skill = "Serve", evaluation = names(refx$expbp), expBP = as.numeric(unlist(refx$expbp)))
+            if (all(grepl("S?[[:punct:]]", lbp$evaluation))) {
+                lbp <- mutate(lbp, evaluation = sub("^S", "", .data$evaluation)) %>% dplyr::rename(evaluation_code = "evaluation") %>% left_join(srmap, by = c("skill", "evaluation_code")) %>% dplyr::select(-"evaluation_code")
+            }
+            lso <- distinct(na.omit(lso))
+            lbp <- distinct(na.omit(lbp))
+            if (sum(lso$evaluation == "Error") < 1) lso <- bind_rows(lso, list(skill = "Reception", evaluation = "Error", expSO = 0))
+            if (sum(lbp$evaluation == "Error") < 1) lbp <- bind_rows(lbp, list(skill = "Serve", evaluation = "Error", expBP = 0))
+            if (sum(lbp$evaluation == "Ace") < 1) lbp <- bind_rows(lbp, list(skill = "Serve", evaluation = "Ace", expBP = 1))
+        } else {
+            lso <- refx %>% dplyr::filter(.data$skill == "Reception" & !is.na(.data$evaluation)) %>% group_by(.data$evaluation) %>% dplyr::summarize(skill = "Reception", expSO = mean0(.data$point_won_by == .data$team)) %>% ungroup
+            lbp <- refx %>% dplyr::filter(.data$skill == "Serve" & !is.na(.data$evaluation)) %>% group_by(.data$evaluation) %>% dplyr::summarize(skill = "Serve", expBP = mean0(.data$point_won_by == .data$team)) %>% ungroup
+        }
+        ## after all that, check that lso and lbp are ok
+        l_ok <- is.data.frame(lso) && is.data.frame(lbp) &&
+            setequal(names(lso), c("skill", "evaluation", "expSO")) && setequal(names(lbp), c("skill", "evaluation", "expBP")) &&
+            !any(duplicated(lso$evaluation)) && !any(duplicated(lbp$evaluation)) &&
+            all(lso$skill == "Reception") && all(lbp$skill == "Serve")
+        if (!l_ok) {
+            warning("reference data does not look correct, ignoring")
+            x$expBP <- x$expSO <- NA_real_
+        } else {
+            x <- x[, setdiff(names(x), c("expSO", "expBP")), drop = FALSE]
+            x <- left_join(x, lso, by = c("skill", "evaluation"))
+            x <- left_join(x, lbp, by = c("skill", "evaluation"))
+        }
     } else {
         x$expBP <- x$expSO <- NA_real_
     }
 
-    if (nrow(x) != starting_nrow)
-        warning("data preprocessing has added rows: are there non-unique team or player identifiers?")
+    if (nrow(x) != starting_nrow) warning("data preprocessing has added rows: are there non-unique team or player identifiers?")
 
     ## perana_indoor or beach don't have setter calls
     if (!file_type %eq% "indoor") setter_calls <- NULL
