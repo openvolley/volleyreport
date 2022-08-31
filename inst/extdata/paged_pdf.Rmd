@@ -86,11 +86,11 @@ cat("</tr></table>\n")
 
 ```{r mr3_home_html, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
-cat("<td width=\"25%\">")
+cat("<td width=\"18%\">")
 volleyreport:::vr_content_team_staff(vsx, kable_format, which_team = "home")
 cat("</td>\n")
 
-cat("<td width=\"75%\">")
+cat("<td width=\"81%\">")
 volleyreport:::vr_content_team_set_summary(vsx, kable_format, which_team = "home")
 cat("</td>\n")
 cat("</tr></table>\n")
@@ -108,11 +108,11 @@ cat("</tr></table>\n")
 
 ```{r mr3_visiting_html, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
-cat("<td width=\"25%\">")
+cat("<td width=\"18%\">")
 volleyreport:::vr_content_team_staff(vsx, kable_format, which_team = "visiting")
 cat("</td>\n")
 
-cat("<td width=\"75%\">")
+cat("<td width=\"81%\">")
 volleyreport:::vr_content_team_set_summary(vsx, kable_format, which_team = "visiting")
 cat("</td>\n")
 cat("</tr></table>\n")
