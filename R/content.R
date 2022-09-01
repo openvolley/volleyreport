@@ -58,11 +58,11 @@ vr_content_partial_scores <- function(vsx, kable_format) {
 vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
     which_team <- match.arg(which_team, c("home", "visiting"))
     if (which_team == "home") {
-        players <- vsx$meta$players_h
+        players <- dplyr::as_tibble(vsx$meta$players_h)
         teamfun <- datavolley::home_team
         tchar <- "\\*"
     } else {
-        players <- vsx$meta$players_v
+        players <- dplyr::as_tibble(vsx$meta$players_v)
         teamfun <- datavolley::visiting_team
         tchar <- "a"
     }
@@ -86,11 +86,11 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
                 sub_codes <- vsx$x$code[which(vsx$x$set_number == st & grepl(paste0("^", tchar, "c[[:digit:]\\:\\.]+$"), vsx$x$code))]
                 sbs <- bind_rows(lapply(sub_codes, function(cd) {
                     list(p_out = as.numeric(sub("^.c", "", sub("[\\:\\.][[:digit:]]+$", "", cd))), p_in = as.numeric(sub("^.c[[:digit:]]+[\\:\\.]", "", cd)))
-                }
-                ))
+                }))
                 if (nrow(sbs) > 0) {
+                    sbs <- distinct(sbs)
                     subs_in <- P_sum %>% dplyr::filter(.data[[paste0("starting_position_set", st)]] == ".")
-                    sbs <- sbs %>% group_by(.data$p_in) %>% dplyr::summarize(p_out = paste0("!", paste(.data$p_out, collapse = ","))) %>% ungroup
+                    sbs <- sbs %>% group_by(.data$p_in) %>% dplyr::summarize(p_out = paste0("!", paste(unique(.data$p_out), collapse = ","))) %>% ungroup
                     for (i in seq_len(nrow(sbs))) {
                         pidx <- P_sum$number %eq% sbs$p_in[i] & P_sum[[paste0("starting_position_set", st)]] %eq% "."
                         P_sum[pidx, paste0("starting_position_set", st)] <- sbs$p_out[i]

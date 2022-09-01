@@ -199,5 +199,5 @@ cat("</tr></table>\n</div>\n")
 if (length(vsx$footnotes) > 0) cat0("<div style=\"float:right; font-size:", vsx$base_font_size * 8/12, "px;\">", paste(footnotes, collapse = " "), "</p>")
 ```
 
-`r if (vsx$shiny_progress) try(shiny::setProgress(value = 0.95, message = paste0("Converting to ", toupper(vsx$format))), silent = TRUE)`
+`r if (vsx$shiny_progress) try(shiny::setProgress(value = 0.95, message = "Rendering"), silent = TRUE)`
 
