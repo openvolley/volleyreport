@@ -200,8 +200,8 @@ if (vsx$style %in% c("ov1")) {
 ```{r fr3, warning = FALSE, results = "asis"}
 ## middle content
 cat0("<td width=\"46%\" style=\"border-right:", vsx$css$border, "; border-left:", vsx$css$border, ";\">\n")
-volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st Attack AFTER POSITIVE RECEPTION (+#)")
-volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("-", "!", "-/"), hdr = "1st Attack AFTER NEGATIVE RECEPTION (-!)")
+volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)")
+volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("-", "!", "-/"), hdr = "1st attack after neg. reception (R-!)")
 volleyreport:::vr_content_kill_in_trans(vsx, kable_format)
 cat("</td>\n")
 ```

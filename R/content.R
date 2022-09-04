@@ -313,7 +313,7 @@ vr_content_key <- function(vsx, kable_format) {
         row_spec(10, extra_css = paste0("border-bottom:", vsx$css$border))
 }
 
-vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st Attack AFTER POSITIVE RECEPTION (+#)") {
+vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)") {
     KoRhome <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$ts_pass_evaluation_code %in% eval_codes & .data$phase == "Reception" & .data$team == datavolley::home_team(vsx$x)) %>%
         dplyr::summarize(Err = sum(.data$evaluation_code == "="), Blo = sum(.data$evaluation_code == "/"),
                          'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)), Tot = n())
