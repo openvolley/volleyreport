@@ -27,7 +27,7 @@ kable_format <- "html"
 thead > tr { border: `r vsx$css$border` }
 .mtbl { width: 100%; }
 .mtbl > tbody > tr { background: #fff; }
-.mtbl td, .mtbl th { vertical-align: top; padding: 3px; }
+.mtbl td, .mtbl th { vertical-align: top; padding: 2px; }
 </style>
 
 
@@ -41,7 +41,7 @@ if (!is.null(vsx$header_extra_pre)) cat(vsx$header_extra_pre, "\n")
 
 if (!is.null(vsx$icon)) {
     cat("<table class=\"mtbl\"><tr><td width=\"15%\">\n")
-    cat("<p style=\"margin:0;\"><img src=\"", vsx$icon, "\" style=\"max-width: 90%; max-height: 90%;\" /></p>\n", sep = "")
+    cat("<p style=\"margin:0;\"><img src=\"", vsx$icon, "\" style=\"max-width: 90%; max-height: 23mm;\" /></p>\n", sep = "")
     cat("</td>\n")
     cat("<td width=\"85%\">\n")
 }
@@ -69,7 +69,7 @@ if (!is.null(vsx$icon)) {
 ```
 
 ```{r mr_score_ev, warning = FALSE, eval = vsx$style %in% c("ov1"), results = "asis", fig.height = 18 / 25.4, fig.width = 210 / 25.4}
-cat("\n<div style=\"margin-top:-2mm; margin-bottom:-2mm;\">\n")
+cat("\n<div style=\"margin-top:-5mm; margin-bottom:-2mm;\">\n")
 p <- if (sum(vsx$x$point, na.rm = TRUE) < 2) NULL else volleyreport:::vr_content_score_evplot(vsx)
 if (!is.null(p)) print(p)
 cat("\n\n</div>\n")
