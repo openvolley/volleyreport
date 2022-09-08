@@ -26,9 +26,10 @@ vr_score_evplot <- function(x, home_colour = "darkblue", visiting_colour = "dark
     if (nrow(sc) < 1) return(NULL)
     setx <- c(0, sc$pid[which(diff(sc$set_number) > 0)]) + 0.5
     sc <- mutate(sc, set_number = paste0("Set ", .data$set_number))
-    yr <- c(min(-4, min(sc$diff, na.rm = TRUE)), max(4, max(sc$diff, na.rm = TRUE))) ## y-range
+    yr <- c(min(-4, min(sc$diff, na.rm = TRUE)), max(4, max(sc$diff, na.rm = TRUE))) ## y-range, at least -4 to +4
     ggplot(sc, aes_string("pid", "diff")) + ggplot2::theme_minimal(base_size = font_size) +
-        ggplot2::geom_vline(xintercept = setx, col = "black", alpha = 0.5) +
+        ggplot2::geom_vline(xintercept = setx, col = "black", alpha = 0.5, size = 0.25) +
+        ggplot2::geom_hline(yintercept = 0, col = "black", alpha = 0.5, size = 0.25) +
         ggplot2::geom_col(aes_string(fill = "teamcolor"), width = 1.0, col = NA) +
         ggplot2::theme(strip.background = ggplot2::element_rect(fill = "white"), axis.text.x = ggplot2::element_text(hjust = 0)) +
         ggplot2::scale_fill_manual(values = c(home_colour, visiting_colour), guide = "none") +
@@ -36,6 +37,6 @@ vr_score_evplot <- function(x, home_colour = "darkblue", visiting_colour = "dark
         ggplot2::annotate(geom = "text", label = datavolley::home_team(x), x = 1, y = diff(yr) * 0.9 + yr[1], hjust = 0, size = font_size * 0.35278, fontface = "bold") +
         ggplot2::annotate(geom = "text", label = datavolley::visiting_team(x), x = 1, y = diff(yr) * 0.1 + yr[1], hjust = 0, size = font_size * 0.35278, fontface = "bold") +
         ggplot2::scale_x_continuous(labels = paste0("Set ", seq_along(setx)), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005)) +
-        ggplot2::ylim(yr)
+        ggplot2::scale_y_continuous(breaks = function(z) c(rev(seq(0, yr[1], by = -4)), seq(0, yr[2], by = 4)[-1]), limits = yr)
 }
 
