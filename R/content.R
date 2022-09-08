@@ -179,13 +179,16 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     } else {
         teamfun <- datavolley::visiting_team
     }
-    kable(P_sum, format = "html", escape = FALSE, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", if (vsx$style %in% c("default")) c("BP", "W-L"), "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", "Pts"), table.attr = "class=\"widetable\"") %>%
+    bcols <- if (vsx$style %in% c("ov1")) 2 + nrow(vsx$meta$result) + c(1, 5, 9, 15) else NULL
+    out <- kable(P_sum, format = "html", escape = FALSE, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", if (vsx$style %in% c("default")) c("BP", "W-L"), "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", "Pts"), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
         column_spec(2, width = "1.8in") %>%
         add_header_above(c(setNames(2, teamfun(vsx$x)), "Set" = nrow(vsx$meta$result), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP + srvEff, "Reception" = 3 + Rexc + expSO + recEff, "Attack" = 5 + attEff, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE, line = FALSE, extra_css = "padding-bottom:2px;") %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
-        column_spec(1, border_left = vsx$css$border) %>% 
+        column_spec(1, border_left = vsx$css$border) %>%
         column_spec(ncol(P_sum), border_right = vsx$css$border) %>%
         row_spec(which(P_sum$name == "Team total"), background = "lightgrey")
+    if (length(bcols) > 0) out <- out %>% column_spec(bcols, border_right = "1px solid #CCC")
+    out
 }
 
 
@@ -229,13 +232,15 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
     BP <- "BP%" %in% names(thisSS)
     SO <- "SO%" %in% names(thisSS)
     attEff <- "attEff%" %in% names(thisSS)
-    kable(thisSS,format = "html", escape = TRUE, col.names = c("","Ser", "Atk", "Blo", "Op.Err", "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (BP) "BP%", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (SO) "SO%", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", "Pts"), table.attr = "class=\"widetable\"") %>%
+    bcols <- if (vsx$style %in% c("ov1")) 1 + cumsum(c(0, 4, 3 + BP + expBP + srvEff, 3 + Rexc + SO + expSO + recEff, 5 + attEff)) else NULL
+    out <- kable(thisSS,format = "html", escape = TRUE, col.names = c("","Ser", "Atk", "Blo", "Op.Err", "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (BP) "BP%", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (SO) "SO%", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", "Pts"), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
         add_header_above(c("Set" = 1, "Points" = 4, "Serve" = 3 + BP + expBP + srvEff, "Reception" = 3 + SO + Rexc + expSO + recEff, "Attack" = 5 + attEff, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;") %>%
         row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
         column_spec(1, border_left = vsx$css$border) %>%
-        column_spec(ncol(thisSS), border_right = vsx$css$border) %>%
-        row_spec(nrow(thisSS), extra_css = paste0("border-bottom:", vsx$css$border))
+        column_spec(ncol(thisSS), border_right = vsx$css$border)
+    if (length(bcols) > 0) out <- out %>% column_spec(bcols, border_right = "1px solid #CCC")
+    row_spec(out, nrow(thisSS), extra_css = paste0("border-bottom:", vsx$css$border))
 }
 
 vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
