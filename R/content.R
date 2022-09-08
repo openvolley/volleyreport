@@ -12,6 +12,7 @@ vr_content_match_outcome <- function(vsx, kable_format) {
 vr_content_match_date <- function(vsx, kable_format) {
     temp <- vsx$meta$match
     temp$time <- tryCatch(format(temp$date + temp$time, "%H:%M:%S"), error = function(e) temp$time)
+    ## do we need to enforce max nchars in league, season?
     kable(temp %>% dplyr::select(.data$date, .data$time, .data$season, .data$league) %>% mutate_all(to_char_noNA) %>% pivot_longer(cols = 1:4) %>%
           mutate(name = str_to_title(.data$name)),
           format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>%
@@ -41,15 +42,40 @@ vr_content_partial_scores <- function(vsx, kable_format) {
     }
     if (!"duration" %in% names(this)) this$duration <- NA_integer_
     duridx <- !is.na(this$duration)
-    this$Set[duridx] <- paste0(this$Set[duridx], " (", this$duration[duridx], " mins)")
-    out <- this %>% dplyr::select("Set", if (have_partial) "Partial score", Score = "score") %>%
-        kable(format = kable_format, escape = FALSE, align = "r", table.attr = "class=\"widetable\"") %>%
-        kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
-        row_spec(0, align = "l", bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background)
-    if (nrow(this) > 0) {
-        out <- out %>% column_spec(1, width = "0.7in", border_left = vsx$css$border) %>%
-            column_spec(2 + have_partial, border_right = vsx$css$border, bold = TRUE) %>%
-            row_spec(nrow(this), extra_css = paste0("border-bottom:", vsx$css$border))
+    fontscale <- 11/12
+    if (vsx$style %in% c("ov1")) {
+        this$duration <- as.character(this$duration)
+        if (any(duridx)) this$duration[tail(which(duridx), 1)] <- paste0(this$duration[tail(which(duridx), 1)], " mins")
+        out <- bind_rows(tidyr::pivot_wider(this[, c("Set", "score"), drop = FALSE], names_from = "Set", values_from = "score"),
+                         tidyr::pivot_wider(this[, c("Set", "duration"), drop = FALSE], names_from = "Set", values_from = "duration"))
+        if (ncol(out) > 0) {
+            names(out)[1] <- paste0("Set ", names(out)[1])
+            #out <- as.data.frame(out)
+            #rownames(out) <- c("Score", "Duration")
+            out <- kable(out, format = kable_format, escape = FALSE, align = "r", table.attr = "class=\"widetable\"", row.names = FALSE) %>%
+                kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * fontscale) %>%
+                row_spec(0, align = "r", bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background)
+            if (nrow(this) > 0) {
+                out <- out %>% column_spec(1, ##width = "0.7in",
+                                           border_left = vsx$css$border) %>%
+                    column_spec(nrow(this), border_right = vsx$css$border) %>%
+                    row_spec(1, bold = TRUE) %>%
+                    row_spec(2, extra_css = paste0("border-bottom:", vsx$css$border), font_size = 0.9 * vsx$base_font_size * fontscale)
+            }
+        } else {
+            out <- NULL
+        }
+    } else {
+        this$Set[duridx] <- paste0(this$Set[duridx], " (", this$duration[duridx], " mins)")
+        out <- this %>% dplyr::select("Set", if (have_partial) "Partial score", Score = "score") %>%
+            kable(format = kable_format, escape = FALSE, align = "r", table.attr = "class=\"widetable\"") %>%
+            kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * fontscale) %>%
+            row_spec(0, align = "l", bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background)
+        if (nrow(this) > 0) {
+            out <- out %>% column_spec(1, width = "0.7in", border_left = vsx$css$border) %>%
+                column_spec(2 + have_partial, border_right = vsx$css$border, bold = TRUE) %>%
+                row_spec(nrow(this), extra_css = paste0("border-bottom:", vsx$css$border))
+        }
     }
     out
 }
