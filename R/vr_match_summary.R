@@ -35,7 +35,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     assert_that(is.string(format))
     assert_that(is.flag(shiny_progress), !is.na(shiny_progress))
     format <- tolower(format)
-    format <- match.arg(format, c("html", "pdf", "png", "paged_pdf", "paged_png"))
+    format <- match.arg(format, c("html", "pdf", "png", "paged_pdf", "paged_png", "paged_html"))
     if (format %in% c("pdf", "png")) {
         ## check that we have phantomjs installed
         if (!webshot::is_phantomjs_installed()) {
@@ -123,10 +123,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     }
     if (!"freeball_over" %in% names(x)) {
         ## "Freeball" skill can be used both for sending a freeball to the opposition as well as receiving one, so disambiguate these usages
-        x <- mutate(x, freeball_over = .data$skill %eq% "Freeball",
-                    lag(.data$match_id) %eq% .data$match_id, ##lead(.data$match_id) %eq% .data$match_id,
-                    lag(.data$point_id) %eq% .data$point_id, ##lead(.data$point_id) %eq% .data$point_id,
-                    ((!is.na(lead(.data$team)) & lead(.data$team) != .data$team) | lag(.data$team) %eq% .data$team))
+        x <- mutate(x, freeball_over = .data$skill %eq% "Freeball" & lag(.data$match_id) %eq% .data$match_id & lag(.data$point_id) %eq% .data$point_id & ((!is.na(lead(.data$team)) & lead(.data$team) != .data$team) | lag(.data$team) %eq% .data$team))
     }
 
     starting_nrow <- nrow(x)
@@ -211,7 +208,10 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     output_options <- NULL
     if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
     blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
-    if (grepl("paged_", format)) {
+    if (format == "paged_html") {
+        rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = TRUE), clean = TRUE)
+        do.call(rmarkdown::render, rgs)
+    } else if (grepl("paged_", format)) {
         rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = FALSE, copy_resources = TRUE), clean = TRUE)
         do.call(rmarkdown::render, rgs)
         rgs2 <- list(input = outfile, output = final_outfile, format = final_format)
