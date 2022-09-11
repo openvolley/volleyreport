@@ -284,7 +284,7 @@ vr_points <- function(x, team, by = "player", vote = FALSE, style = "default") {
         if (style %in% c("ov1")) vr_pts <- dplyr::select(vr_pts, -"BP", -"W-L")
     } else if (by == "set") {
         x$team_points <- if (team_select %eq% datavolley::home_team(x)) x$home_team_score else if (team_select %eq% datavolley::visiting_team(x)) x$visiting_team_score else NA_integer_
-        vr_pts <- x %>% group_by(.data$set_number) %>%
+        vr_pts <- x %>% dplyr::filter(!is.na(.data$set_number)) %>% group_by(.data$set_number) %>%
             dplyr::summarize(Ser = sum(.data$evaluation_code == "#" & .data$skill == "Serve" & .data$team %in% team_select, na.rm = TRUE),
                              Atk = sum(.data$evaluation_code == "#" & .data$skill == "Attack" & .data$team %in% team_select, na.rm = TRUE),
                              Blo = sum(.data$evaluation_code == "#" & .data$skill == "Block" & .data$team %in% team_select, na.rm = TRUE),
