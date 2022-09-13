@@ -92,6 +92,34 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
         teamfun <- datavolley::visiting_team
         tchar <- "a"
     }
+    ## starting setters, per set
+    if (!grepl("beach", vsx$file_type)) {
+        if (which_team == "home") {
+            ss <- vsx$x %>% dplyr::filter(!is.na(.data$set_number), !is.na(.data$home_setter_position)) %>% group_by(.data$set_number) %>%
+                slice(1L) %>% dplyr::summarize(setter_id = case_when(.data$home_setter_position == 1 ~ .data$home_player_id1,
+                                                                     .data$home_setter_position == 2 ~ .data$home_player_id2,
+                                                                     .data$home_setter_position == 3 ~ .data$home_player_id3,
+                                                                     .data$home_setter_position == 4 ~ .data$home_player_id4,
+                                                                     .data$home_setter_position == 5 ~ .data$home_player_id5,
+                                                                     .data$home_setter_position == 6 ~ .data$home_player_id6)) %>%
+                ungroup
+        } else {
+            ss <- vsx$x %>% dplyr::filter(!is.na(.data$set_number), !is.na(.data$visiting_setter_position)) %>% group_by(.data$set_number) %>%
+                slice(1L) %>% dplyr::summarize(setter_id = case_when(.data$visiting_setter_position == 1 ~ .data$visiting_player_id1,
+                                                                     .data$visiting_setter_position == 2 ~ .data$visiting_player_id2,
+                                                                     .data$visiting_setter_position == 3 ~ .data$visiting_player_id3,
+                                                                     .data$visiting_setter_position == 4 ~ .data$visiting_player_id4,
+                                                                     .data$visiting_setter_position == 5 ~ .data$visiting_player_id5,
+                                                                     .data$visiting_setter_position == 6 ~ .data$visiting_player_id6)) %>%
+                ungroup
+        }
+        for (si in seq_len(nrow(ss))) {
+            idx <- players$player_id %eq% ss$setter_id[si]
+            if (sum(idx) == 1) {
+                players[idx, paste0("starting_position_set", si)] <- paste0(players[idx, paste0("starting_position_set", si)], "S")
+            }
+        }
+    }
     P_sum <- players %>% dplyr::select(.data$player_id, .data$number, .data$name, .data$starting_position_set1, .data$starting_position_set2, .data$starting_position_set3, .data$starting_position_set4, .data$starting_position_set5, .data$role) %>%
         add_row(player_id = "Team total", name = "Team total") %>%
         mutate(starting_position_set1 = case_when(!is.na(.data$starting_position_set1) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set1, '\\*', '.')),
@@ -128,21 +156,27 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
 
     ## cell spec for libero/sub cells
     lsspec <- function(z, border = FALSE) cell_spec(z, kable_format, color = "white", align = "c", background = "#999999", extra_css = if (border) "border:1px solid black;" else NULL)
+    sspec <- function(z) cell_spec(sub("S", "", z), kable_format, color = "black", align = "c", background = "#FFF", bold = TRUE, extra_css = "border:1px solid black;")
     P_sum <- P_sum %>%
-        mutate(starting_position_set1 = case_when(!is.na(.data$starting_position_set1) & .data$starting_position_set1 %in% c(1:6) ~ cell_spec(.data$starting_position_set1, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
-                                                  !is.na(.data$starting_position_set1) & .data$starting_position_set1 %in% c(".", "L") ~ lsspec(.data$starting_position_set1),
+        mutate(starting_position_set1 = case_when(.data$starting_position_set1 %in% c(1:6) ~ cell_spec(.data$starting_position_set1, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
+                                                  .data$starting_position_set1 %in% paste0(c(1:6), "S") ~ sspec(.data$starting_position_set1),
+                                                  .data$starting_position_set1 %in% c(".", "L") ~ lsspec(.data$starting_position_set1),
                                                   !is.na(.data$starting_position_set1) & grepl("^!", .data$starting_position_set1) ~ lsspec(sub("!", "", .data$starting_position_set1), border = TRUE)),
-               starting_position_set2 = case_when(!is.na(.data$starting_position_set2) & .data$starting_position_set2 %in% c(1:6) ~ cell_spec(.data$starting_position_set2, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
-                                                  !is.na(.data$starting_position_set2) & .data$starting_position_set2 %in% c(".", "L") ~ lsspec(.data$starting_position_set2),
+               starting_position_set2 = case_when(.data$starting_position_set2 %in% c(1:6) ~ cell_spec(.data$starting_position_set2, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
+                                                  .data$starting_position_set2 %in% paste0(c(1:6), "S") ~ sspec(.data$starting_position_set2),
+                                                  .data$starting_position_set2 %in% c(".", "L") ~ lsspec(.data$starting_position_set2),
                                                   !is.na(.data$starting_position_set2) & grepl("^!", .data$starting_position_set2) ~ lsspec(sub("!", "", .data$starting_position_set2), border = TRUE)),
-               starting_position_set3 = case_when(!is.na(.data$starting_position_set3) & .data$starting_position_set3 %in% c(1:6) ~ cell_spec(.data$starting_position_set3, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
-                                                  !is.na(.data$starting_position_set3) & .data$starting_position_set3 %in% c(".", "L") ~ lsspec(.data$starting_position_set3),
+               starting_position_set3 = case_when(.data$starting_position_set3 %in% c(1:6) ~ cell_spec(.data$starting_position_set3, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
+                                                  .data$starting_position_set3 %in% paste0(c(1:6), "S") ~ sspec(.data$starting_position_set3),
+                                                  .data$starting_position_set3 %in% c(".", "L") ~ lsspec(.data$starting_position_set3),
                                                   !is.na(.data$starting_position_set3) & grepl("^!", .data$starting_position_set3) ~ lsspec(sub("!", "", .data$starting_position_set3), border = TRUE)),
-               starting_position_set4 = case_when(!is.na(.data$starting_position_set4) & .data$starting_position_set4 %in% c(1:6) ~ cell_spec(.data$starting_position_set4, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
-                                                  !is.na(.data$starting_position_set4) & .data$starting_position_set4 %in% c(".", "L") ~ lsspec(.data$starting_position_set4),
+               starting_position_set4 = case_when(.data$starting_position_set4 %in% c(1:6) ~ cell_spec(.data$starting_position_set4, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
+                                                  .data$starting_position_set4 %in% paste0(c(1:6), "S") ~ sspec(.data$starting_position_set4),
+                                                  .data$starting_position_set4 %in% c(".", "L") ~ lsspec(.data$starting_position_set4),
                                                   !is.na(.data$starting_position_set4) & grepl("^!", .data$starting_position_set4) ~ lsspec(sub("!", "", .data$starting_position_set4), border = TRUE)),
-               starting_position_set5 = case_when(!is.na(.data$starting_position_set5) & .data$starting_position_set5 %in% c(1:6) ~ cell_spec(.data$starting_position_set5, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
-                                                  !is.na(.data$starting_position_set5) & .data$starting_position_set5 %in% c(".", "L") ~ lsspec(.data$starting_position_set5),
+               starting_position_set5 = case_when(.data$starting_position_set5 %in% c(1:6) ~ cell_spec(.data$starting_position_set5, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
+                                                  .data$starting_position_set5 %in% paste0(c(1:6), "S") ~ sspec(.data$starting_position_set5),
+                                                  .data$starting_position_set5 %in% c(".", "L") ~ lsspec(.data$starting_position_set5),
                                                   !is.na(.data$starting_position_set5) & grepl("^!", .data$starting_position_set5) ~ lsspec(sub("!", "", .data$starting_position_set5), border = TRUE)))
 
     P_sum <- P_sum %>% dplyr::select(-"player_id") %>% dplyr::arrange(.data$number) %>% na_if(0)
@@ -330,10 +364,12 @@ vr_content_team_each <- function(vsx, kable_format, which_team = "home") {
 }
 
 vr_content_key <- function(vsx, kable_format) {
-    out <- data.frame(Label = c("BP", "Err", "Pos%", if (vsx$style %in% c("default")) "W-L", if (vsx$style %in% c("ov1")) "K%" else "Pts", "Blo", if (vsx$style %in% c("default")) "Exc", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("expSO%", "expBP%") else c("srvEff%", "recEff%") }, if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", "*n*", "."),
-                      Description = c("Break point", "Errors", "Positive +#", if (vsx$style %in% c("default")) "Won-Lost", if (vsx$style %in% c("ov1")) "Attack kill%" else "Points", "Blocked", if (vsx$style %in% c("default")) "Excellent", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("Expected SO%", "Expected BP%") else c("Serve efficiency", "Reception efficiency") }, if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills", "Starting position", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute"))
+    out <- data.frame(Label = c("BP", "Err", "Pos%", if (vsx$style %in% c("default")) "W-L", if (vsx$style %in% c("ov1")) "K%" else "Pts", "Blo", if (vsx$style %in% c("default")) "Exc", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("expSO%", "expBP%") else c("srvEff%", "recEff%") }, if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", "*n*", "*n*", "."),
+                      Description = c("Break point", "Errors", "Positive +#", if (vsx$style %in% c("default")) "Won-Lost", if (vsx$style %in% c("ov1")) "Attack kill%" else "Points", "Blocked", if (vsx$style %in% c("default")) "Excellent", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("Expected SO%", "Expected BP%") else c("Serve efficiency", "Reception efficiency") }, if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills", "Starting position", "Starting setter", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute"))
+    nidx <- which(out$Label == "*n*")
+    if (length(nidx) > 0) out$Label[nidx[1]] <- cell_spec("n", kable_format, color = "white", align = "c", background = "#444444", bold = TRUE)
+    if (length(nidx) > 1) out$Label[nidx[2]] <- cell_spec("n", kable_format, color = "black", align = "c", background = "#FFF", bold = TRUE, extra_css = "border:1px solid black;")
     if (vsx$style %in% c("ov1")) {
-        out$Label[out$Label == "*n*"] <- cell_spec("n", kable_format, color = "white", align = "c", background = "#444444", bold = TRUE)
         out$Label[out$Label == "."] <- cell_spec("p", kable_format, color = "white", align = "c", background = "#999999", extra_css = "border:1px solid black;")
     }
     out %>% kable(format = kable_format, align = c("r", "l"), escape = FALSE, col.names = NULL, table.attr = "class=\"widetable\"") %>%
@@ -341,7 +377,7 @@ vr_content_key <- function(vsx, kable_format) {
         ## add outer framing to make the key visually separate from the content
         column_spec(1, border_left = vsx$css$border) %>% column_spec(2, border_right = vsx$css$border) %>%
         row_spec(1, extra_css = paste0("border-top:", vsx$css$border)) %>%
-        row_spec(10, extra_css = paste0("border-bottom:", vsx$css$border))
+        row_spec(11, extra_css = paste0("border-bottom:", vsx$css$border))
 }
 
 vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)") {
