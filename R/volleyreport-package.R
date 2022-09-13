@@ -6,7 +6,7 @@
 #' @docType package
 #' @importFrom assertthat assert_that is.flag is.string
 #' @importFrom datavolley dv_example_file
-#' @importFrom dplyr `%>%` add_row bind_rows case_when .data distinct group_by group_by_at lag lead left_join mutate mutate_all n na_if summarize tibble ungroup
+#' @importFrom dplyr `%>%` add_row bind_rows case_when .data distinct group_by lag lead left_join mutate mutate_all n na_if slice summarize tibble ungroup
 #' @importFrom ggplot2 aes_string geom_path geom_point ggplot theme_bw theme_void
 #' @importFrom kableExtra add_header_above cell_spec column_spec kable_styling row_spec
 #' @importFrom knitr kable

@@ -128,7 +128,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
 
     starting_nrow <- nrow(x)
     if (!"ts_pass_evaluation_code" %in% names(x)) {
-        touchsum <- x %>% ungroup %>% dplyr::filter(!is.na(.data$team)) %>% group_by_at(c("match_id", "team", "team_touch_id")) %>%
+        touchsum <- x %>% ungroup %>% dplyr::filter(!is.na(.data$team)) %>% group_by(.data$match_id, .data$team, .data$team_touch_id) %>%
             dplyr::summarize(ts_pass_evaluation_code = single_value_or_na_char(na.omit(.data$evaluation_code[.data$skill %in% c("Reception", "Dig") | (.data$skill %eq% "Freeball" & !.data$freeball_over)]))) %>%
             ungroup %>% dplyr::select(-"team")
         x <- left_join(x, touchsum, by = c("match_id", "team_touch_id"))
@@ -352,15 +352,15 @@ vr_vote <- function(x, team) {
         vote.df$factor <- rep(1.0, nrow(vote.df))
         team_totals <- dplyr::filter(x, .data$team %in% team_select)
         serve_grade <- vote.df %>% dplyr::filter(.data$skill == "Serve") %>%
-            group_by_at("player_id") %>%
+            group_by(.data$player_id) %>%
             dplyr::summarize(skill = "Serve", N = n(), vote = pmax(5.5, sum(.data$vote_per_skill*.data$factor)/n())) %>%
             mutate(vote = case_when(.data$N >= 0.05*sum(team_totals$skill == "Serve", na.rm = TRUE) ~ .data$vote))
         rec_grade <- vote.df %>% dplyr::filter(.data$skill == "Reception") %>%
-            group_by_at("player_id") %>%
+            group_by(.data$player_id) %>%
             dplyr::summarize(skill = "Reception", N = n(), vote = pmax(5.5, sum(.data$vote_per_skill*.data$factor)/n())) %>%
             mutate(vote = case_when(.data$N >= 0.12*sum(team_totals$skill == "Reception", na.rm = TRUE) ~ .data$vote))
         att_grade <- vote.df %>% dplyr::filter(.data$skill == "Attack") %>%
-            group_by_at("player_id") %>%
+            group_by(.data$player_id) %>%
             dplyr::summarize(skill = "Attack", N = n(), vote = pmax(5.5, sum(.data$vote_per_skill*.data$factor)/n())) %>%
             mutate(vote = case_when(.data$N >= 0.07*sum(team_totals$skill == "Attack", na.rm = TRUE) ~ .data$vote))
         block_grade <- team_totals %>% dplyr::filter(.data$skill == "Block" & .data$evaluation == "Winning block") %>% dplyr::count(.data$player_id)
@@ -375,10 +375,10 @@ vr_vote <- function(x, team) {
                                                      .data$n >= .data$n_sets_played*0.5 ~ 7.0)) %>%
             dplyr::select_at(c("player_id", "skill", "vote"))
         ## TODO setter, also include attacks after positive reception with weights error/blocked = 0, neg/pos = 5, kill = 10; only when those attacks are > 30% of number of team attacks
-        bind_rows(serve_grade, rec_grade, att_grade, block_grade) %>% group_by_at("player_id") %>%
+        bind_rows(serve_grade, rec_grade, att_grade, block_grade) %>% group_by(.data$player_id) %>%
             dplyr::summarize(vote = round(mean0(.data$vote), 1))
     } else {
-        vote.df %>% group_by_at("player_id") %>%
+        vote.df %>% group_by(.data$player_id) %>%
             dplyr::summarize(vote = round(sum(.data$vote_per_skill)/sum(.data$max_vote_per_skill)*10, 1), Nskills = n()) %>%
             mutate(vote = case_when(.data$Nskills < 10 ~ NA_real_, TRUE ~ .data$vote)) %>% dplyr::select(-"Nskills")
     }
