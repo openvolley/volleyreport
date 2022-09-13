@@ -1,6 +1,7 @@
 ---
 output:
   html_document: default
+pagetitle: Match report
 ---
 
 ```{r chunkopts, eval = TRUE, echo = FALSE}
