@@ -382,13 +382,17 @@ vr_content_key <- function(vsx, kable_format) {
 
 vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)") {
     KoRhome <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$ts_pass_evaluation_code %in% eval_codes & .data$phase == "Reception" & .data$team == datavolley::home_team(vsx$x)) %>%
-        dplyr::summarize(Err = sum(.data$evaluation_code == "="), Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)), Tot = n())
+        dplyr::summarize(Err = sum(.data$evaluation_code == "="),
+                         Blo = sum(.data$evaluation_code == "/"),
+                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)),
+                         Tot = n())
     if (vsx$style %in% c("ov1")) KoRhome <- dplyr::rename(KoRhome, "K%" = "Pts%")
 
     KoRvis <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$ts_pass_evaluation_code %in% eval_codes & .data$phase == "Reception" & .data$team == datavolley::visiting_team(vsx$x)) %>%
-        dplyr::summarize(Err = sum(.data$evaluation_code == "="), Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)), Tot = n())
+        dplyr::summarize(Err = sum(.data$evaluation_code == "="),
+                         Blo = sum(.data$evaluation_code == "/"),
+                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)),
+                         Tot = n())
     if (vsx$style %in% c("ov1")) KoRvis <- dplyr::rename(KoRvis, "K%" = "Pts%")
 
     hd <- c(8)
@@ -404,13 +408,15 @@ vr_content_kill_in_trans <- function(vsx, kable_format) {
     KiThome <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$phase == "Transition" & .data$team == datavolley::home_team(vsx$x)) %>%
         dplyr::summarize(Err = sum(.data$evaluation_code == "="),
                          Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = round(mean0(.data$evaluation_code == "#"), 2) * 100, Tot = n())
+                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)),
+                         Tot = n())
     if (vsx$style %in% c("ov1")) KiThome <- dplyr::rename(KiThome, "K%" = "Pts%")
 
     KiTvis <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$phase == "Transition" & .data$team == datavolley::visiting_team(vsx$x)) %>%
         dplyr::summarize(Err = sum(.data$evaluation_code == "="),
                          Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = round(mean0(.data$evaluation_code == "#"), 2) * 100, Tot = n())
+                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)),
+                         Tot = n())
     if (vsx$style %in% c("ov1")) KiTvis <- dplyr::rename(KiTvis, "K%" = "Pts%")
 
     kable(cbind(KiThome, KiTvis[4:1]),format = vsx$format, escape = FALSE, align = "c", table.attr = "class=\"widetable\"") %>%
