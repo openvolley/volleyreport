@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">volleyreport</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.4.14</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,6 +58,7 @@
   css <span class="op">=</span> <span class="fu">vr_css</span><span class="op">(</span><span class="op">)</span>,
   remove_nonplaying <span class="op">=</span> <span class="cn">TRUE</span>,
   style <span class="op">=</span> <span class="st">"default"</span>,
+  skill_evaluation_decode <span class="op">=</span> <span class="st">"guess"</span>,
   shiny_progress <span class="op">=</span> <span class="cn">FALSE</span>,
   chrome_print_extra_args <span class="op">=</span> <span class="cn">NULL</span>,
   <span class="va">...</span>
@@ -73,7 +74,7 @@
 <dt>outfile</dt>
 <dd><p>string: path to file to produce (if not specified, will create a file in the temporary directory)</p></dd>
 <dt>refx</dt>
-<dd><p>data.frame: some choices of <code>style</code> require a reference data set to calculate e.g. expected SO. This should be from comparison matches (e.g. all matches from the same league), and should be a data.frame of the plays components from those matches. If missing, the current match will be used as its own reference, but results might not be entirely sensible</p></dd>
+<dd><p>data.frame: some choices of <code>style</code> require a reference data set to calculate e.g. expected SO. This should be from comparison matches (e.g. all matches from the same league), and should be a data.frame of the plays components from those matches. If missing, expected SO and BP will be replaced by reception and serve efficiency</p></dd>
 <dt>vote</dt>
 <dd><p>logical: include vote report component? If not explicitly specified, <code>vote</code> might be set to FALSE depending on <code>style</code></p></dd>
 <dt>format</dt>
@@ -86,8 +87,10 @@
 <dd><p>logical: if <code>TRUE</code>, remove players from the team summaries that did not take to the court</p></dd>
 <dt>style</dt>
 <dd><p>string: can be</p><ul><li><p>"default" - the standard FIVB match report</p></li>
-<li><p>"ov1" - modified version of "default" with score evolution plot, some columns dropped, expected SO and BP added, different breakdown by rotation</p></li>
+<li><p>"ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes</p></li>
 </ul></dd>
+<dt>skill_evaluation_decode</dt>
+<dd><p>: as for <code><a href="https://datavolley.openvolley.org/reference/read_dv.html" class="external-link">datavolley::dv_read()</a></code></p></dd>
 <dt>shiny_progress</dt>
 <dd><p>logical: if <code>TRUE</code>, the report generation process will issue <code><a href="https://rdrr.io/pkg/shiny/man/withProgress.html" class="external-link">shiny::setProgress()</a></code> calls. The call to <code>vr_match_summary</code> should therefore be wrapped in a <code><a href="https://rdrr.io/pkg/shiny/man/withProgress.html" class="external-link">shiny::withProgress()</a></code> scope</p></dd>
 <dt>chrome_print_extra_args</dt>
@@ -110,128 +113,138 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |                                                                      |   0%  |                                                                              |..                                                                    |   3%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    inline R code fragments</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.....                                                                 |   6%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |....                                                                  |   6%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: chunkopts (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ eval: logi TRUE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ echo: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.......                                                               |  10%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |......                                                                |   9%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    inline R code fragments</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.........                                                             |  13%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |........                                                              |  12%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: unnamed-chunk-1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...........                                                           |  16%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...........                                                           |  15%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |..............                                                        |  19%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.............                                                         |  18%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: mr1html (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |................                                                      |  23%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...............                                                       |  21%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |..................                                                    |  26%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.................                                                     |  24%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: mr_score_ev (with options) </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> List of 4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> List of 5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning   : logi FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ eval      : logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results   : chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ fig.height: num 0.709</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ fig.width : num 8.27</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |....................                                                  |  29%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...................                                                   |  27%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.......................                                               |  32%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.....................                                                 |  30%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: mr2_home_html (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.........................                                             |  35%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.......................                                               |  33%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...........................                                           |  39%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.........................                                             |  36%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: mr3_home_html (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.............................                                         |  42%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |............................                                          |  39%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |................................                                      |  45%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |..............................                                        |  42%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: mr2_visiting_html (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |..................................                                    |  48%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |................................                                      |  45%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |....................................                                  |  52%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |..................................                                    |  48%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: mr3_visiting_html (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |....................................                                  |  52%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |......................................                                |  55%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.........................................                             |  58%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: unnamed-chunk-2</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...........................................                           |  61%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |........................................                              |  58%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.............................................                         |  65%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |..........................................                            |  61%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: fr0 (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...............................................                       |  68%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.............................................                         |  64%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |..................................................                    |  71%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...............................................                       |  67%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: fr1 (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |....................................................                  |  74%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.................................................                     |  70%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |......................................................                |  77%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...................................................                   |  73%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: fr2 (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |........................................................              |  81%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.....................................................                 |  76%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...........................................................           |  84%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.......................................................               |  79%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: fr3 (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.............................................................         |  87%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.........................................................             |  82%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...............................................................       |  90%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |...........................................................           |  85%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> label: fr4 (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |.................................................................     |  94%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |..............................................................        |  88%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |................................................................      |  91%</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> label: fr5 (with options) </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |..................................................................    |  94%</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   ordinary text without R code</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   |                                                                              |....................................................................  |  97%</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> label: fr5 (with options) </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> label: footnotes (with options) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> List of 2</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ warning: logi FALSE</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  $ results: chr "asis"</span>
@@ -241,9 +254,9 @@
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> output file: paged_pdf.knit.md</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> /usr/lib/rstudio/bin/quarto/bin/pandoc +RTS -K512m -RTS paged_pdf.knit.md --to html4 --from markdown+tex_math_single_backslash-autolink_bare_uris --output /tmp/Rtmp81UgrX/filee0fef2586e653.html --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/bookdown/rmarkdown/lua/custom-environment.lua --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/rmarkdown/rmarkdown/lua/latex-div.lua --wrap preserve --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/pagedown/resources/lua/uri-to-fn.lua --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/pagedown/resources/lua/loft.lua --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/pagedown/resources/lua/footnotes.lua --metadata newpage_html_class="page-break-after" --standalone --section-divs --template /home/ben/R/x86_64-pc-linux-gnu-library/4.2/ovpaged/resources/html/template_simple.html --highlight-style pygments --css /home/ben/R/x86_64-pc-linux-gnu-library/4.2/ovpaged/resources/css/plain.css --css /home/ben/R/x86_64-pc-linux-gnu-library/4.2/ovpaged/resources/css/striped.css '--mathjax=https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --include-in-header /tmp/Rtmp81UgrX/rmarkdown-stre0fef5804cb26.html </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> /usr/lib/rstudio/bin/quarto/bin/tools/pandoc +RTS -K512m -RTS paged_pdf.knit.md --to html4 --from markdown+tex_math_single_backslash-autolink_bare_uris --output /tmp/RtmpNnL1Xd/file1500d7fd518b8.html --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/bookdown/rmarkdown/lua/custom-environment.lua --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/rmarkdown/rmarkdown/lua/pagebreak.lua --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/rmarkdown/rmarkdown/lua/latex-div.lua --wrap preserve --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/pagedown/resources/lua/uri-to-fn.lua --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/pagedown/resources/lua/loft.lua --lua-filter /home/ben/R/x86_64-pc-linux-gnu-library/4.2/pagedown/resources/lua/footnotes.lua --metadata newpage_html_class="page-break-after" --standalone --section-divs --template /home/ben/R/x86_64-pc-linux-gnu-library/4.2/ovpaged/resources/html/template_simple.html --highlight-style pygments --css /home/ben/R/x86_64-pc-linux-gnu-library/4.2/ovpaged/resources/css/plain.css --css /home/ben/R/x86_64-pc-linux-gnu-library/4.2/ovpaged/resources/css/striped.css '--mathjax=https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML' --include-in-header /tmp/RtmpNnL1Xd/rmarkdown-str1500d493c8a5d.html </span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Output created: /tmp/Rtmp81UgrX/filee0fef2586e653.html</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Output created: /tmp/RtmpNnL1Xd/file1500d7fd518b8.html</span>
 <span class="r-in">  <span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/browseURL.html" class="external-link">browseURL</a></span><span class="op">(</span><span class="va">f</span><span class="op">)</span></span>
 <span class="r-in"><span class="co"># }</span></span>
 </code></pre></div>
