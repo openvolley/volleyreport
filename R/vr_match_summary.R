@@ -18,7 +18,7 @@
 #' @return The path to the report file
 #'
 #' @examples
-#' \donttest{
+#' \dontrun{
 #'   f <- vr_match_summary(dv_example_file(), format = "paged_pdf")
 #'   if (interactive()) browseURL(f)
 #' }

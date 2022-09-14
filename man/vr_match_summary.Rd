@@ -61,7 +61,7 @@ The path to the report file
 Generate single-page match summary report
 }
 \examples{
-\donttest{
+\dontrun{
   f <- vr_match_summary(dv_example_file(), format = "paged_pdf")
   if (interactive()) browseURL(f)
 }

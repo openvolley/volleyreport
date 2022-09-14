@@ -16,6 +16,8 @@ test_that("minimal PDF example report runs", {
 
 test_that("variety of example reports run", {
     skip_if_not(rmarkdown::pandoc_available(version = "1.12.3"))
+    ## also temporarily skip on CI (GitHub actions) on Windows
+    skip_if(isTRUE(as.logical(Sys.getenv("CI"))) && isTRUE(tolower(Sys.info()[["sysname"]]) %in% "windows"))
     rpt <- vr_match_summary(datavolley::dv_example_file(1), format = "html", remove_nonplaying = FALSE)
     rpt <- vr_match_summary(datavolley::dv_example_file(1), format = "paged_pdf")
     rpt <- vr_match_summary(datavolley::dv_example_file(1), format = "paged_pdf", vote = FALSE)
