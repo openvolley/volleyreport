@@ -93,9 +93,10 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
         tchar <- "a"
     }
     ## starting setters, per set
+    ## avoid >LUp (lineup) rows, can get carryover from preceding set into these lines. Lineups should be settled after the initial >LUps per set
     if (!grepl("beach", vsx$file_type)) {
         if (which_team == "home") {
-            ss <- vsx$x %>% dplyr::filter(!is.na(.data$set_number), !is.na(.data$home_setter_position)) %>% group_by(.data$set_number) %>%
+            ss <- vsx$x %>% dplyr::filter(!grepl(">LUp", .data$code, ignore.case = TRUE) & !is.na(.data$set_number), !is.na(.data$home_setter_position)) %>% group_by(.data$set_number) %>%
                 slice(1L) %>% dplyr::summarize(setter_id = case_when(.data$home_setter_position == 1 ~ .data$home_player_id1,
                                                                      .data$home_setter_position == 2 ~ .data$home_player_id2,
                                                                      .data$home_setter_position == 3 ~ .data$home_player_id3,
@@ -104,7 +105,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
                                                                      .data$home_setter_position == 6 ~ .data$home_player_id6)) %>%
                 ungroup
         } else {
-            ss <- vsx$x %>% dplyr::filter(!is.na(.data$set_number), !is.na(.data$visiting_setter_position)) %>% group_by(.data$set_number) %>%
+            ss <- vsx$x %>% dplyr::filter(!grepl(">LUp", .data$code, ignore.case = TRUE) & !is.na(.data$set_number), !is.na(.data$visiting_setter_position)) %>% group_by(.data$set_number) %>%
                 slice(1L) %>% dplyr::summarize(setter_id = case_when(.data$visiting_setter_position == 1 ~ .data$visiting_player_id1,
                                                                      .data$visiting_setter_position == 2 ~ .data$visiting_player_id2,
                                                                      .data$visiting_setter_position == 3 ~ .data$visiting_player_id3,
@@ -154,7 +155,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
         }
     }
 
-    ## cell spec for libero/sub cells
+    ## cell spec for libero/sub/setter cells
     lsspec <- function(z, border = FALSE) cell_spec(z, kable_format, color = "white", align = "c", background = "#999999", extra_css = if (border) "border:1px solid black;" else NULL)
     sspec <- function(z) cell_spec(sub("S", "", z), kable_format, color = "black", align = "c", background = "#FFF", bold = TRUE, extra_css = "border:1px solid black;")
     P_sum <- P_sum %>%
