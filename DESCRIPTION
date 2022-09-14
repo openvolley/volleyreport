@@ -1,6 +1,6 @@
 Package: volleyreport
 Title: Reports from Volleyball Match Files
-Version: 0.4.15
+Version: 0.4.16
 Authors@R: c(person("Adrien", "Ickowicz", email = "ickowicz.adrien@gmail.com", role = c("aut", "cre")),
              person("Ben", "Raymond", role = "aut"),
              person("Francesco", "Oleni", role = "ctb"),
@@ -20,7 +20,7 @@ Imports:
   kableExtra,
   knitr,
   methods,
-  ovpaged (>= 0.0.4),
+  ovpaged (>= 0.0.6),
   rmarkdown,
   stringr,
   tidyr,
