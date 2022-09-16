@@ -96,23 +96,23 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
     ## avoid >LUp (lineup) rows, can get carryover from preceding set into these lines. Lineups should be settled after the initial >LUps per set
     if (!grepl("beach", vsx$file_type)) {
         if (which_team == "home") {
-            ss <- vsx$x %>% dplyr::filter(!grepl(">LUp", .data$code, ignore.case = TRUE) & !is.na(.data$set_number), !is.na(.data$home_setter_position)) %>% group_by(.data$set_number) %>%
-                slice(1L) %>% dplyr::summarize(setter_id = case_when(.data$home_setter_position == 1 ~ .data$home_player_id1,
-                                                                     .data$home_setter_position == 2 ~ .data$home_player_id2,
-                                                                     .data$home_setter_position == 3 ~ .data$home_player_id3,
-                                                                     .data$home_setter_position == 4 ~ .data$home_player_id4,
-                                                                     .data$home_setter_position == 5 ~ .data$home_player_id5,
-                                                                     .data$home_setter_position == 6 ~ .data$home_player_id6)) %>%
-                ungroup
+            ss <- vsx$x %>% dplyr::filter(!grepl(">LUp|\\*\\*.set", .data$code, ignore.case = TRUE), !is.na(.data$set_number), !is.na(.data$home_setter_position), !is.na(.data$home_player_id1), !is.na(.data$home_player_id2), !is.na(.data$home_player_id3), !is.na(.data$home_player_id4), !is.na(.data$home_player_id5), !is.na(.data$home_player_id6)) %>%
+                group_by(.data$set_number) %>% slice(1L) %>%
+                dplyr::summarize(setter_id = case_when(.data$home_setter_position == 1 ~ .data$home_player_id1,
+                                                       .data$home_setter_position == 2 ~ .data$home_player_id2,
+                                                       .data$home_setter_position == 3 ~ .data$home_player_id3,
+                                                       .data$home_setter_position == 4 ~ .data$home_player_id4,
+                                                       .data$home_setter_position == 5 ~ .data$home_player_id5,
+                                                       .data$home_setter_position == 6 ~ .data$home_player_id6)) %>% ungroup
         } else {
-            ss <- vsx$x %>% dplyr::filter(!grepl(">LUp", .data$code, ignore.case = TRUE) & !is.na(.data$set_number), !is.na(.data$visiting_setter_position)) %>% group_by(.data$set_number) %>%
-                slice(1L) %>% dplyr::summarize(setter_id = case_when(.data$visiting_setter_position == 1 ~ .data$visiting_player_id1,
-                                                                     .data$visiting_setter_position == 2 ~ .data$visiting_player_id2,
-                                                                     .data$visiting_setter_position == 3 ~ .data$visiting_player_id3,
-                                                                     .data$visiting_setter_position == 4 ~ .data$visiting_player_id4,
-                                                                     .data$visiting_setter_position == 5 ~ .data$visiting_player_id5,
-                                                                     .data$visiting_setter_position == 6 ~ .data$visiting_player_id6)) %>%
-                ungroup
+            ss <- vsx$x %>% dplyr::filter(!grepl(">LUp|\\*\\*.set", .data$code, ignore.case = TRUE), !is.na(.data$set_number), !is.na(.data$visiting_setter_position), !is.na(.data$visiting_player_id1), !is.na(.data$visiting_player_id2), !is.na(.data$visiting_player_id3), !is.na(.data$visiting_player_id4), !is.na(.data$visiting_player_id5), !is.na(.data$visiting_player_id6)) %>%
+                group_by(.data$set_number) %>% slice(1L) %>%
+                dplyr::summarize(setter_id = case_when(.data$visiting_setter_position == 1 ~ .data$visiting_player_id1,
+                                                       .data$visiting_setter_position == 2 ~ .data$visiting_player_id2,
+                                                       .data$visiting_setter_position == 3 ~ .data$visiting_player_id3,
+                                                       .data$visiting_setter_position == 4 ~ .data$visiting_player_id4,
+                                                       .data$visiting_setter_position == 5 ~ .data$visiting_player_id5,
+                                                       .data$visiting_setter_position == 6 ~ .data$visiting_player_id6)) %>% ungroup
         }
         for (si in seq_len(nrow(ss))) {
             idx <- players$player_id %eq% ss$setter_id[si]
