@@ -104,6 +104,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
         if (length(which) > 0) x[[col]][idx] <- lead(x[[col]])[idx]
     }
     ## add some extra cols
+    if (!"phase" %in% names(x)) x$phase <- datavolley::play_phase(x)
     if (!"end_cone" %in% names(x)) x$end_cone <- NA_integer_
     if (!"receiving_team" %in% names(x)) {
         x <- mutate(x, receiving_team = case_when(.data$serving_team %eq% .data$home_team ~ .data$visiting_team,

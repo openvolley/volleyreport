@@ -21,8 +21,8 @@ vr_content_match_date <- function(vsx, kable_format) {
 }
 
 vr_content_match_refs <- function(vsx, kable_format) {
-    kable(vsx$meta$more %>% dplyr::select(.data$referees, .data$city, .data$arena, .data$scout) %>% mutate_all(to_char_noNA) %>% pivot_longer(cols = 1:4) %>%
-          mutate(name = str_to_title(.data$name)),
+    this <- tibble(referees = if ("referees" %in% names(vsx$meta$more)) vsx$meta$more$referees else "", city = if ("city" %in% names(vsx$meta$more)) vsx$meta$more$city else "", arena = if ("arena" %in% names(vsx$meta$more)) vsx$meta$more$arena else "", scout = if ("scout" %in% names(vsx$meta$more)) vsx$meta$more$scout else "")
+    kable(this %>% mutate_all(to_char_noNA) %>% pivot_longer(cols = 1:4) %>% mutate(name = str_to_title(.data$name)),
           format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("condensed"), full_width = TRUE, font_size = vsx$base_font_size * 9/12) %>%
         column_spec(1, bold = TRUE)
@@ -92,6 +92,11 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
         teamfun <- datavolley::visiting_team
         tchar <- "a"
     }
+    if (!"starting_position_set1" %in% names(players)) players$starting_position_set1 <- NA_character_
+    if (!"starting_position_set2" %in% names(players)) players$starting_position_set2 <- NA_character_
+    if (!"starting_position_set3" %in% names(players)) players$starting_position_set3 <- NA_character_
+    if (!"starting_position_set4" %in% names(players)) players$starting_position_set4 <- NA_character_
+    if (!"starting_position_set5" %in% names(players)) players$starting_position_set5 <- NA_character_
     ## starting setters, per set
     ## avoid >LUp (lineup) rows, can get carryover from preceding set into these lines. Lineups should be settled after the initial >LUps per set
     if (!grepl("beach", vsx$file_type)) {
