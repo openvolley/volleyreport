@@ -69,10 +69,13 @@ if (!is.null(vsx$icon)) {
 ```
 
 ```{r mr_score_ev, warning = FALSE, eval = vsx$style %in% c("ov1"), results = "asis", fig.height = 18 / 25.4, fig.width = 210 / 25.4}
-cat("\n<div style=\"margin-top:-5mm; margin-bottom:-2mm;\">\n")
 p <- if (sum(vsx$x$point, na.rm = TRUE) < 2) NULL else volleyreport:::vr_content_score_evplot(vsx)
-if (!is.null(p)) print(p)
-cat("\n\n</div>\n")
+if (!is.null(p)) {
+    cat("\n<div style=\"margin-top:-5mm; margin-bottom:-2mm;\">\n")
+    print(p)
+    cat("\n\n</div>\n")
+}
+
 ```
 
 ```{r mr2_home_html, warning = FALSE, results = "asis"}
