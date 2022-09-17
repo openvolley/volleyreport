@@ -37,6 +37,6 @@ vr_score_evplot <- function(x, home_colour = "darkblue", visiting_colour = "dark
         ggplot2::annotate(geom = "text", label = datavolley::home_team(x), x = 1, y = diff(yr) * 0.9 + yr[1], hjust = 0, size = font_size * 0.35278, fontface = "bold") +
         ggplot2::annotate(geom = "text", label = datavolley::visiting_team(x), x = 1, y = diff(yr) * 0.1 + yr[1], hjust = 0, size = font_size * 0.35278, fontface = "bold") +
         ggplot2::scale_x_continuous(labels = paste0("Set ", seq_along(setx)), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005)) +
-        ggplot2::scale_y_continuous(breaks = function(z) c(rev(seq(0, yr[1], by = -4)), seq(0, yr[2], by = 4)[-1]), limits = yr)
+        ggplot2::scale_y_continuous(breaks = function(z) c(rev(seq(0, yr[1], by = -4)), seq(0, yr[2], by = 4)[-1]), limits = yr, labels = abs)
 }
 
