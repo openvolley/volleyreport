@@ -20,10 +20,12 @@ vr_score_evplot <- function(x, home_colour = "darkblue", visiting_colour = "dark
         x <- datavolley::dv_read(x, skill_evaluation_decode = "guess")
     }
     assert_that(inherits(x, c("datavolley", "peranavolley")))
-    sc <- datavolley::plays(x) %>% dplyr::filter(.data$point) %>% dplyr::select("set_number", "home_team", "home_team_score", "visiting_team", "visiting_team_score") %>% distinct %>% na.omit() %>%
-        mutate(pid = dplyr::row_number(), diff = .data$home_team_score - .data$visiting_team_score,
-               teamcolor = case_when(.data$diff < 0 ~ visiting_colour, TRUE ~ home_colour))
-    if (nrow(sc) < 1) return(NULL)
+    sc <- datavolley::plays(x) %>% group_by(.data$point_id) %>% dplyr::slice_tail(n = 1) %>% ungroup %>%
+        dplyr::select("set_number", "home_team", "home_team_score", "visiting_team", "visiting_team_score") %>% distinct %>% na.omit() %>%
+        mutate(ok = lead(.data$home_team_score) != .data$home_team_score | lead(.data$visiting_team_score) != .data$visiting_team_score)
+    sc$ok[nrow(sc)] <- TRUE
+    sc <- sc %>% dplyr::filter(.data$ok) %>% mutate(pid = dplyr::row_number(), diff = .data$home_team_score - .data$visiting_team_score, teamcolor = case_when(.data$diff < 0 ~ visiting_colour, TRUE ~ home_colour)) %>% dplyr::select(-"ok")
+    if (nrow(sc) < 2) return(NULL)
     setx <- c(0, sc$pid[which(diff(sc$set_number) > 0)]) + 0.5
     sc <- mutate(sc, set_number = paste0("Set ", .data$set_number))
     yr <- c(min(-4, min(sc$diff, na.rm = TRUE)), max(4, max(sc$diff, na.rm = TRUE))) ## y-range, at least -4 to +4
