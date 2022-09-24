@@ -75,7 +75,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     team <- datavolley::home_team(x)
     meta <- x$meta
     final_format <- sub("paged_", "", format)
-    if (!grepl("paged_", format)) format <- "html" ## even for pdf, treat now as html then webshot to pdf from that
+    if (!grepl("paged_", format)) format <- "html" ## for pdf or png, treat now as html then webshot to pdf/png from that
     working_dir <- tempfile()
     dir.create(working_dir)
     rmd_template <- file.path(working_dir, paste0(if (grepl("paged", format)) "paged_pdf" else format, ".Rmd"))
@@ -86,7 +86,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
         final_outfile <- if (missing(outfile)) tempfile(fileext = paste0(".", final_format)) else outfile
         outfile <- tempfile(fileext = ".html")
     } else {
-        if (missing(outfile)) outfile <- tempfile(fileext = paste0(".", format))
+        if (missing(outfile)) outfile <- tempfile(fileext = paste0(".", sub("paged_", "", format)))
     }
     file_type <- NULL ## indoor (datavolley) or perana_indoor or potentially beach
     if ("file_meta" %in% names(x)) file_type <- x$file_meta$file_type
@@ -173,6 +173,18 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
         } else {
             lso <- refx %>% dplyr::filter(.data$skill == "Reception" & !is.na(.data$evaluation)) %>% group_by(.data$evaluation) %>% dplyr::summarize(skill = "Reception", expSO = mean0(.data$point_won_by == .data$team)) %>% ungroup
             lbp <- refx %>% dplyr::filter(.data$skill == "Serve" & !is.na(.data$evaluation)) %>% group_by(.data$evaluation) %>% dplyr::summarize(skill = "Serve", expBP = mean0(.data$point_won_by == .data$team)) %>% ungroup
+
+
+##            if (FALSE) {
+##                fx <- refx %>% dplyr::filter(skill == "Attack") %>% mutate(kill = evaluation == "Winning attack", phase = as.factor(phase), skill_type = as.factor(skill_type), start_zone = as.factor(start_zone), attack_code = as.factor(attack_code))
+##
+##                fit1 <- gam(kill ~ s(start_zone, bs = "re") + s(skill_type, bs = "re") + s(phase, bs = "re"), family = binomial, data = fx)
+##
+##                fit1 <- gam(kill ~ s(phase, attack_code, bs = "re"), family = binomial, data = fx)
+##                data.frame(what = levels(interaction(levels(fx$phase), levels(fx$attack_code))), coef = coef(fit1)[-1])
+##            }
+
+
         }
         ## after all that, check that lso and lbp are ok
         l_ok <- is.data.frame(lso) && is.data.frame(lbp) &&
