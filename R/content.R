@@ -205,6 +205,27 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
     P_sum
 }
 
+
+first_serve <- function(x, file_type) {
+    temp <- x %>% dplyr::filter(.data$skill == "Serve") %>% group_by(.data$set_number) %>% slice(1L) %>% ungroup %>% dplyr::summarize(srv = case_when(.data$team == .data$home_team ~ "H", .data$team == .data$visiting_team ~ "V", TRUE ~ "U")) %>% dplyr::pull(.data$srv)
+    ## in some cases we might not have the first serve of a set, either because the scout missed it or it was e.g. a rotation error and not scouted
+    ## for beach we can't do much about this but for indoor we can correct one such error in the first 4 sets (not set 5)
+    if (!grepl("beach", file_type)) {
+        smax <- min(4, length(temp)) ## which sets are we looking at here
+        opts <- substr(c("HVHV", "VHVH"), 1, smax)
+        actual <- paste(temp[seq_len(smax)], collapse = "")
+        tempd <- adist(actual, opts)[1, ] ## levenshtein distance
+        if (min(tempd) == 1) { ## one disagreement between actual values and possible options, we can fix this
+            closest <- which.min(tempd)
+            temp[seq_len(smax)] <- strsplit(opts[closest], "")[[1]]
+        }
+    }
+    temp[temp %eq% "H"] <- "home"
+    temp[temp %eq% "V"] <- "visiting"
+    temp[temp %eq% "U"] <- "unknown"
+    temp
+}
+
 vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     which_team <- match.arg(which_team, c("home", "visiting"))
     P_sum <- vr_content_team_summary(vsx = vsx, kable_format = kable_format, which_team = which_team)
@@ -220,7 +241,25 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
         teamfun <- datavolley::visiting_team
     }
     bcols <- if (vsx$style %in% c("ov1")) 2 + nrow(vsx$meta$result) + c(1, 5, 9, 15) else NULL
-    out <- kable(P_sum, format = "html", escape = FALSE, col.names = c("", "", seq_len(nrow(vsx$meta$result)), if (vsx$vote) "Vote", "Tot", if (vsx$style %in% c("default")) c("BP", "W-L"), "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", "Pts"), table.attr = "class=\"widetable\"") %>%
+
+    ## indicate first-serving team in each set
+    set_col_hdr <- seq_len(nrow(vsx$meta$result))
+    try({
+        circled1to5 <- strsplit(intToUtf8(9312:9316), "")[[1]]
+        fss <- first_serve(vsx$x, file_type = vsx$file_type)
+        for (k in seq_along(set_col_hdr)) {
+            if (fss[k] %eq% which_team) {
+                ## team served first, so use circled number with font size and layout adjustment
+                set_col_hdr[k] <- paste0("<span style='font-size:125%; vertical-align:top;'>", circled1to5[k], "</span>")
+                ## or could just underline the set number
+                ##set_col_hdr[k] <- paste0("<span style='text-decoration:underline;'>", set_col_hdr[k], "</span>")
+            } else {
+                set_col_hdr[k] <- paste0("<span style='vertical-align:-5%;'>", set_col_hdr[k], "</span>")
+            }
+        }
+    })
+
+    out <- kable(P_sum, format = "html", escape = FALSE, col.names = c("", "", set_col_hdr, if (vsx$vote) "Vote", "Tot", if (vsx$style %in% c("default")) c("BP", "W-L"), "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", "Pts"), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
         column_spec(2, width = "1.8in") %>%
         add_header_above(c(setNames(2, teamfun(vsx$x)), "Set" = nrow(vsx$meta$result), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP + srvEff, "Reception" = 3 + Rexc + expSO + recEff, "Attack" = 5 + attEff, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE, line = FALSE, extra_css = "padding-bottom:2px;") %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%

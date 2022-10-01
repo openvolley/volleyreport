@@ -15,5 +15,5 @@
 #' @importFrom stats na.omit setNames
 #' @importFrom stringr str_to_title
 #' @importFrom tidyr pivot_longer pivot_wider
-#' @importFrom utils tail
+#' @importFrom utils adist tail
 NULL
