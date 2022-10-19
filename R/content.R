@@ -143,9 +143,9 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
         ## can we figure out which played subbed for which?
         for (st in 1:5) {
             try({
-                sub_codes <- vsx$x$code[which(vsx$x$set_number == st & grepl(paste0("^", tchar, "c[[:digit:]\\:\\.]+$"), vsx$x$code))]
+                sub_codes <- vsx$x$code[which(vsx$x$set_number == st & grepl(paste0("^", tchar, "[Cc][[:digit:]\\:\\.]+$"), vsx$x$code))]
                 sbs <- bind_rows(lapply(sub_codes, function(cd) {
-                    list(p_out = as.numeric(sub("^.c", "", sub("[\\:\\.][[:digit:]]+$", "", cd))), p_in = as.numeric(sub("^.c[[:digit:]]+[\\:\\.]", "", cd)))
+                    list(p_out = as.numeric(sub("^.[Cc]", "", sub("[\\:\\.][[:digit:]]+$", "", cd))), p_in = as.numeric(sub("^.[Cc][[:digit:]]+[\\:\\.]", "", cd)))
                 }))
                 if (nrow(sbs) > 0) {
                     sbs <- distinct(sbs)
