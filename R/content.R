@@ -1,5 +1,5 @@
 vr_content_match_outcome <- function(vsx, kable_format) {
-    vsx$meta$teams %>% dplyr::select(.data$team, .data$sets_won) %>%
+    vsx$meta$teams %>% dplyr::select("team", "sets_won") %>%
         dplyr::rename(Teams = "team", 'Final score' = "sets_won") %>%
         kable(format = kable_format, escape = FALSE, col.names = c("MATCH RESULT", ""), table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("striped", "hover"), full_width = TRUE, font_size = vsx$base_font_size) %>%
         row_spec(1:2, bold = TRUE) %>%
@@ -13,7 +13,7 @@ vr_content_match_date <- function(vsx, kable_format) {
     temp <- vsx$meta$match
     temp$time <- tryCatch(format(temp$date + temp$time, "%H:%M:%S"), error = function(e) temp$time)
     ## do we need to enforce max nchars in league, season?
-    kable(temp %>% dplyr::select(.data$date, .data$time, .data$season, .data$league) %>% mutate_all(to_char_noNA) %>% pivot_longer(cols = 1:4) %>%
+    kable(temp %>% dplyr::select("date", "time", "season", "league") %>% mutate_all(to_char_noNA) %>% pivot_longer(cols = 1:4) %>%
           mutate(name = str_to_title(.data$name)),
           format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("condensed"), full_width = TRUE, font_size = vsx$base_font_size * 9/12) %>%
@@ -126,7 +126,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
             }
         }
     }
-    P_sum <- players %>% dplyr::select(.data$player_id, .data$number, .data$name, .data$starting_position_set1, .data$starting_position_set2, .data$starting_position_set3, .data$starting_position_set4, .data$starting_position_set5, .data$role) %>%
+    P_sum <- players %>% dplyr::select("player_id", "number", "name", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "role") %>%
         add_row(player_id = "Team total", name = "Team total") %>%
         mutate(starting_position_set1 = case_when(!is.na(.data$starting_position_set1) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set1, '\\*', '.')),
                starting_position_set2 = case_when(!is.na(.data$starting_position_set2) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set2, '\\*', '.')),
@@ -281,7 +281,7 @@ vr_content_team_staff <- function(vsx, kable_format, which_team = "home") {
     } else {
         teamfun <- datavolley::visiting_team
     }
-    thisC <- vsx$meta$teams %>% dplyr::filter(.data$team %eq% teamfun(vsx$x)) %>% dplyr::select(.data$coach, .data$assistant) %>% pivot_longer(1:2) %>%
+    thisC <- vsx$meta$teams %>% dplyr::filter(.data$team %eq% teamfun(vsx$x)) %>% dplyr::select("coach", "assistant") %>% pivot_longer(1:2) %>%
         mutate(name = str_to_title(.data$name))
     kable(thisC, format = "html", escape = FALSE, col.names = c("Staff", ""), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 10/12) %>%
@@ -344,7 +344,7 @@ vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
                                                    `expSO%` = prc(round(mean0(.data$expSO) * 100))),
                              by = "home_setter_position")
         }
-        out <- dplyr::rename(out, `S in` = .data$home_setter_position)
+        out <- dplyr::rename(out, `S in` = "home_setter_position")
     } else {
         out <- group_by(out, .data$visiting_setter_position) %>%
             dplyr::summarize(Diff = sum(.data$point_won_by == .data$visiting_team, na.rm = TRUE) - sum(.data$point_won_by == .data$home_team, na.rm = TRUE)) %>%
@@ -361,7 +361,7 @@ vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
                                                    `expSO%` = prc(round(mean0(.data$expSO) * 100))),
                              by = "visiting_setter_position")
         }
-        out <- dplyr::rename(out, `S in` = .data$visiting_setter_position)
+        out <- dplyr::rename(out, `S in` = "visiting_setter_position")
     }
     out$`S in` <- factor(out$`S in`, levels = c(1, 6:2))
     out <- dplyr::arrange(out, .data$`S in`)
