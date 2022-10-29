@@ -39,7 +39,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     if (format %in% c("pdf", "png")) {
         ## check that we have phantomjs installed
         if (!webshot::is_phantomjs_installed()) {
-            stop("phantomjs must be installed for pdf/png format. See help('install_phantomjs', 'webshot')")
+            stop("phantomjs must be installed for pdf/png format. See help('install_phantomjs', 'webshot') or consider using paged_", format, " format")
         }
     }
     style <- check_report_style(style)
