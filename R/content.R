@@ -81,14 +81,63 @@ vr_content_partial_scores <- function(vsx, kable_format) {
 }
 
 
+update_lineups <- function(x) {
+    is_beach <- any(grepl("beach", x$meta$match$regulation))
+    pseq <- seq_len(if (is_beach) 2L else 6L)
+    if (is.null(x$plays) || nrow(x$plays) < 1) return(x)
+    ## starting lineups and subs
+    ## this can be done even for sets that haven't been completed
+    for (si in seq_len(max(x$plays$set_number, na.rm = TRUE))) {
+        ## use the final >LUp row for starting lineup
+        final_lup_row <- which(x$plays$set_number == si & grepl(">LUp", x$plays$code, ignore.case = TRUE))
+        if (length(final_lup_row) > 0) final_lup_row <- max(final_lup_row)
+        if (length(final_lup_row) == 1) {
+            home_starting_lineup <- as.numeric(x$plays[final_lup_row, paste0("home_p", pseq)])
+            if (!paste0("starting_position_set", si) %in% names(x$meta$players_h)) x$meta$players_h[[paste0("starting_position_set", si)]] <- NA_character_
+            for (j in seq_along(home_starting_lineup)) {
+                pl_row <- which(x$meta$players_h$number == home_starting_lineup[j])
+                if (length(pl_row) == 1) x$meta$players_h[[paste0("starting_position_set", si)]][pl_row] <- as.character(j)
+            }
+            ## subs
+            all_home_pl <- unique(na.omit(as.numeric(unlist(x$plays[which(x$plays$set_number == si & !grepl(">LUp", x$plays$code, ignore.case = TRUE)), paste0("home_p", pseq)]))))
+            home_subs <- na.omit(setdiff(all_home_pl, home_starting_lineup))
+            x$meta$players_h[[paste0("starting_position_set", si)]][x$meta$players_h$number %in% home_subs] <- "*"
+            ## visiting team
+            visiting_starting_lineup <- as.numeric(x$plays[final_lup_row, paste0("visiting_p", pseq)])
+            if (!paste0("starting_position_set", si) %in% names(x$meta$players_v)) x$meta$players_v[[paste0("starting_position_set", si)]] <- NA_character_
+            for (j in seq_along(visiting_starting_lineup)) {
+                pl_row <- which(x$meta$players_v$number == visiting_starting_lineup[j])
+                if (length(pl_row) == 1) x$meta$players_v[[paste0("starting_position_set", si)]][pl_row] <- as.character(j)
+            }
+            ## subs
+            all_visiting_pl <- unique(na.omit(as.numeric(unlist(x$plays[which(x$plays$set_number == si & !grepl(">LUp", x$plays$code, ignore.case = TRUE)), paste0("visiting_p", pseq)]))))
+            visiting_subs <- na.omit(setdiff(all_visiting_pl, visiting_starting_lineup))
+            x$meta$players_v[[paste0("starting_position_set", si)]][x$meta$players_v$number %in% visiting_subs] <- "*"
+        }
+    }
+    x
+}
+
 vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
     which_team <- match.arg(which_team, c("home", "visiting"))
+
+    nsets <- max(vsx$x$set_number, na.rm = TRUE)
+    if (!grepl("beach", vsx$file_type) && nsets > 5) {
+        ## with 5 + golden (6 set) matches, the $meta component only holds the starting/sub info for the first 5 sets
+        temp <- update_lineups(list(meta = vsx$meta, plays = vsx$x)) ## gives lineup/subs for 6th set
+        thismeta <- vsx$meta
+        thismeta$players_h$starting_position_set6 <- temp$meta$players_h$starting_position_set6
+        thismeta$players_v$starting_position_set6 <- temp$meta$players_v$starting_position_set6
+    } else {
+        thismeta <- vsx$meta
+    }
+
     if (which_team == "home") {
-        players <- dplyr::as_tibble(vsx$meta$players_h)
+        players <- dplyr::as_tibble(thismeta$players_h)
         teamfun <- datavolley::home_team
         tchar <- "\\*"
     } else {
-        players <- dplyr::as_tibble(vsx$meta$players_v)
+        players <- dplyr::as_tibble(thismeta$players_v)
         teamfun <- datavolley::visiting_team
         tchar <- "a"
     }
@@ -97,6 +146,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
     if (!"starting_position_set3" %in% names(players)) players$starting_position_set3 <- NA_character_
     if (!"starting_position_set4" %in% names(players)) players$starting_position_set4 <- NA_character_
     if (!"starting_position_set5" %in% names(players)) players$starting_position_set5 <- NA_character_
+    if (!"starting_position_set6" %in% names(players)) players$starting_position_set6 <- NA_character_
     ## starting setters, per set
     ## avoid >LUp (lineup) rows, can get carryover from preceding set into these lines. Lineups should be settled after the initial >LUps per set
     if (!grepl("beach", vsx$file_type)) {
@@ -119,20 +169,27 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
                                                        .data$visiting_setter_position == 5 ~ .data$visiting_player_id5,
                                                        .data$visiting_setter_position == 6 ~ .data$visiting_player_id6)) %>% ungroup
         }
-        for (si in seq_len(min(5, nrow(ss)))) { ## with 5 + golden (6 set) matches, we can only show the first 5
+        for (si in seq_len(min(nsets, nrow(ss)))) {
             idx <- players$player_id %eq% ss$setter_id[si]
             if (sum(idx) == 1) {
                 players[idx, paste0("starting_position_set", si)] <- paste0(players[idx, paste0("starting_position_set", si)], "S")
             }
         }
     }
-    P_sum <- players %>% dplyr::select("player_id", "number", "name", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "role") %>%
+    P_sum <- players %>% dplyr::select("player_id", "number", "name", "starting_position_set1", "starting_position_set2", "starting_position_set3", "starting_position_set4", "starting_position_set5", "starting_position_set6", "role") %>%
         add_row(player_id = "Team total", name = "Team total") %>%
-        mutate(starting_position_set1 = case_when(!is.na(.data$starting_position_set1) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set1, '\\*', '.')),
-               starting_position_set2 = case_when(!is.na(.data$starting_position_set2) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set2, '\\*', '.')),
-               starting_position_set3 = case_when(!is.na(.data$starting_position_set3) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set3, '\\*', '.')),
-               starting_position_set4 = case_when(!is.na(.data$starting_position_set4) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set4, '\\*', '.')),
-               starting_position_set5 = case_when(!is.na(.data$starting_position_set5) & .data$role %eq% "libero" ~ "L", TRUE ~ stringr::str_replace(starting_position_set5, '\\*', '.'))) %>%
+        mutate(starting_position_set1 = case_when(!is.na(.data$starting_position_set1) & .data$role %eq% "libero" ~ "L",
+                                                  TRUE ~ stringr::str_replace(starting_position_set1, '\\*', '.')),
+               starting_position_set2 = case_when(!is.na(.data$starting_position_set2) & .data$role %eq% "libero" ~ "L",
+                                                  TRUE ~ stringr::str_replace(starting_position_set2, '\\*', '.')),
+               starting_position_set3 = case_when(!is.na(.data$starting_position_set3) & .data$role %eq% "libero" ~ "L",
+                                                  TRUE ~ stringr::str_replace(starting_position_set3, '\\*', '.')),
+               starting_position_set4 = case_when(!is.na(.data$starting_position_set4) & .data$role %eq% "libero" ~ "L",
+                                                  TRUE ~ stringr::str_replace(starting_position_set4, '\\*', '.')),
+               starting_position_set5 = case_when(!is.na(.data$starting_position_set5) & .data$role %eq% "libero" ~ "L",
+                                                  TRUE ~ stringr::str_replace(starting_position_set5, '\\*', '.')),
+               starting_position_set6 = case_when(!is.na(.data$starting_position_set6) & .data$role %eq% "libero" ~ "L",
+                                                  TRUE ~ stringr::str_replace(starting_position_set6, '\\*', '.'))) %>%
         dplyr::select(-"role") %>%
         left_join(volleyreport::vr_points(vsx$x, teamfun(vsx$x), vote = vsx$vote, style = vsx$style) %>% dplyr::select("player_id", if (vsx$vote) "vote", "Tot", if (vsx$style %in% "default") c("BP", "W-L")), by = "player_id") %>%
         left_join(volleyreport::vr_serve(vsx$x, teamfun(vsx$x), refx = vsx$refx, style = vsx$style), by = "player_id", suffix = c(".pts", ".ser")) %>%
@@ -141,7 +198,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
         left_join(volleyreport::vr_block(vsx$x, teamfun(vsx$x), style = vsx$style), by = "player_id")
     if (vsx$style %in% c("ov1")) {
         ## can we figure out which played subbed for which?
-        for (st in 1:5) {
+        for (st in seq_len(nsets)) {
             try({
                 sub_codes <- vsx$x$code[which(vsx$x$set_number == st & grepl(paste0("^", tchar, "[Cc][[:digit:]\\:\\.]+$"), vsx$x$code))]
                 sbs <- bind_rows(lapply(sub_codes, function(cd) {
@@ -183,7 +240,11 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
                starting_position_set5 = case_when(.data$starting_position_set5 %in% c(1:6) ~ cell_spec(.data$starting_position_set5, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
                                                   .data$starting_position_set5 %in% paste0(c(1:6), "S") ~ sspec(.data$starting_position_set5),
                                                   .data$starting_position_set5 %in% c(".", "L") ~ lsspec(.data$starting_position_set5),
-                                                  !is.na(.data$starting_position_set5) & grepl("^!", .data$starting_position_set5) ~ lsspec(sub("!", "", .data$starting_position_set5), border = TRUE)))
+                                                  !is.na(.data$starting_position_set5) & grepl("^!", .data$starting_position_set5) ~ lsspec(sub("!", "", .data$starting_position_set5), border = TRUE)),
+               starting_position_set6 = case_when(.data$starting_position_set6 %in% c(1:6) ~ cell_spec(.data$starting_position_set6, kable_format, color = "white", align = "c", background = "#444444", bold = TRUE),
+                                                  .data$starting_position_set6 %in% paste0(c(1:6), "S") ~ sspec(.data$starting_position_set6),
+                                                  .data$starting_position_set6 %in% c(".", "L") ~ lsspec(.data$starting_position_set6),
+                                                  !is.na(.data$starting_position_set6) & grepl("^!", .data$starting_position_set6) ~ lsspec(sub("!", "", .data$starting_position_set6), border = TRUE)))
 
     P_sum <- P_sum %>% dplyr::select(-"player_id") %>% dplyr::arrange(.data$number) %>% na_if(0)
 
@@ -196,7 +257,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
             P_sum <- P_sum[rowSums(is.na(P_sum[, c(-1, -2)])) < (ncol(P_sum) - 2), ]
         }
     }
-    notsets <- setdiff(1:5, seq_len(nrow(vsx$meta$result)))
+    notsets <- setdiff(1:6, seq_len(nrow(thismeta$result)))
     P_sum <- P_sum[, setdiff(colnames(P_sum), paste0("starting_position_set", notsets))]
     ## put 0s back in for W-L
     if ("W-L" %in% names(P_sum)) P_sum$`W-L`[is.na(P_sum$`W-L`)] <- 0L
@@ -209,7 +270,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
 first_serve <- function(x, file_type) {
     temp <- x %>% dplyr::filter(.data$skill == "Serve") %>% group_by(.data$set_number) %>% slice(1L) %>% ungroup %>% dplyr::summarize(srv = case_when(.data$team == .data$home_team ~ "H", .data$team == .data$visiting_team ~ "V", TRUE ~ "U")) %>% dplyr::pull(.data$srv)
     ## in some cases we might not have the first serve of a set, either because the scout missed it or it was e.g. a rotation error and not scouted
-    ## for beach we can't do much about this but for indoor we can correct one such error in the first 4 sets (not set 5)
+    ## for beach we can't do much about this but for indoor we can correct one such error in the first 4 sets (not set 5 or 6/golden set)
     if (!grepl("beach", file_type)) {
         smax <- min(4, length(temp)) ## which sets are we looking at here
         opts <- substr(c("HVHV", "VHVH"), 1, smax)
@@ -243,14 +304,14 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     bcols <- if (vsx$style %in% c("ov1")) 2 + nrow(vsx$meta$result) + c(1, 5, 9, 15) else NULL
 
     ## indicate first-serving team in each set
-    set_col_hdr <- seq_len(min(5, nrow(vsx$meta$result)))
+    set_col_hdr <- seq_len(min(6, nrow(vsx$meta$result)))
     try({
-        circled1to5 <- strsplit(intToUtf8(9312:9316), "")[[1]]
+        circled1to6 <- strsplit(intToUtf8(9312:9317), "")[[1]]
         fss <- first_serve(vsx$x, file_type = vsx$file_type)
         for (k in seq_along(set_col_hdr)) {
             if (fss[k] %eq% which_team) {
                 ## team served first, so use circled number with font size and layout adjustment
-                set_col_hdr[k] <- paste0("<span style='font-size:125%; vertical-align:top;'>", circled1to5[k], "</span>")
+                set_col_hdr[k] <- paste0("<span style='font-size:125%; vertical-align:top;'>", circled1to6[k], "</span>")
                 ## or could just underline the set number
                 ##set_col_hdr[k] <- paste0("<span style='text-decoration:underline;'>", set_col_hdr[k], "</span>")
             } else {
@@ -263,7 +324,7 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     out <- kable(P_sum, format = "html", escape = FALSE, col.names = cn, table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
         column_spec(2, width = "1.8in") %>%
-        add_header_above(c(setNames(2, teamfun(vsx$x)), "Set" = min(5, nrow(vsx$meta$result)), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP + srvEff, "Reception" = 3 + Rexc + expSO + recEff, "Attack" = 5 + attEff, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE, line = FALSE, extra_css = "padding-bottom:2px;") %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
+        add_header_above(c(setNames(2, teamfun(vsx$x)), "Set" = min(6, nrow(vsx$meta$result)), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP + srvEff, "Reception" = 3 + Rexc + expSO + recEff, "Attack" = 5 + attEff, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE, line = FALSE, extra_css = "padding-bottom:2px;") %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
         column_spec(1, border_left = vsx$css$border) %>%
         column_spec(ncol(P_sum), border_right = vsx$css$border) %>%
         row_spec(which(P_sum$name == "Team total"), background = "lightgrey")
