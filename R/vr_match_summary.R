@@ -234,7 +234,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     } else {
         out <- render(rmd_template, output_file = outfile, output_options = output_options)
         if (final_format %in% c("pdf", "png")) {
-            webshot::webshot(outfile, file = final_outfile)
+            safe_webshot(outfile, file = final_outfile)
             final_outfile
         } else {
             out

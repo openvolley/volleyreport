@@ -30,3 +30,32 @@ to_char_noNA <- function(z) {
 }
 
 cat0 <- function(...) cat(..., sep = "")
+
+## webshot using phantomjs on recent Ubuntu/Debian will fail, because of openssl lib version issues
+## workaround
+safe_webshot <- function(...) {
+    be_safe <- isTRUE(get_os() %in% c("linux", "unix"))
+    if (be_safe) {
+        temp <- Sys.getenv("OPENSSL_CONF")
+        Sys.setenv(OPENSSL_CONF = "/dev/null")
+    }
+    out <- webshot::webshot(...)
+    if (be_safe) Sys.setenv(OPENSSL_CONF = temp)
+    out
+}
+
+get_os <- function() {
+    if (.Platform$OS.type == "windows") return("windows")
+    sysinf <- Sys.info()
+    if (!is.null(sysinf)) {
+        os <- sysinf["sysname"]
+        if (tolower(os) == "darwin") os <- "osx"
+    } else {
+        os <- .Platform$OS.type
+        if (grepl("^darwin", R.version$os, ignore.case = TRUE)) os <- "osx"
+        if (grepl("linux-gnu", R.version$os, ignore.case = TRUE)) os <- "linux"
+    }
+    os <- tolower(os)
+    if (!os %in% c("windows", "linux", "unix", "osx")) warning("unknown operating system: ", os)
+    os
+}
