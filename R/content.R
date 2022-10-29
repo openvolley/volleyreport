@@ -471,8 +471,26 @@ vr_content_team_each <- function(vsx, kable_format, which_team = "home") {
 }
 
 vr_content_key <- function(vsx, kable_format) {
-    out <- data.frame(Label = c("BP", "Err", "Pos%", if (vsx$style %in% c("default")) "W-L", if (vsx$style %in% c("ov1")) "K%" else "Pts", "Blo", if (vsx$style %in% c("default")) "Exc", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("expSO%", "expBP%") else c("srvEff%", "recEff%") }, if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", "*n*", "*n*", "."),
-                      Description = c("Break point", "Errors", "Positive +#", if (vsx$style %in% c("default")) "Won-Lost", if (vsx$style %in% c("ov1")) "Attack kill%" else "Points", "Blocked", if (vsx$style %in% c("default")) "Excellent", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("Expected SO%", "Expected BP%") else c("Serve efficiency", "Reception efficiency") }, if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills", "Starting position", "Starting setter", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute"))
+    receff_txt <- paste0("Reception efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Perf + Pos - Err - Overpasses) / N</span>")
+    srveff_txt <- paste0("Serve efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Ace + Pos - Err - Poor) / N</span>")
+    ##out <- data.frame(Label = c("BP", "Err", "Pos%", if (vsx$style %in% c("default")) "W-L", if (vsx$style %in% c("ov1")) "K%" else "Pts", "Blo", if (vsx$style %in% c("default")) "Exc", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("expSO%", "expBP%") else c("srvEff%", "recEff%") }, if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", "*n*", "*n*", "."),
+    ##                  Description = c("Break point", "Errors", "Positive +#", if (vsx$style %in% c("default")) "Won-Lost", if (vsx$style %in% c("ov1")) "Attack kill%" else "Points", "Blocked", if (vsx$style %in% c("default")) "Excellent", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("Expected SO%", "Expected BP%") else c(srveff_txt, receff_txt) }, if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills", "Starting position", "Starting setter", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute"))
+    out <- tribble(
+        ~Label, ~Description,
+        "BP", "Break point",
+        "Err", "Errors",
+        "Pos%", "Positive +#",
+        if (vsx$style %in% c("default")) "W-L" else "", if (vsx$style %in% c("default")) "Won-Lost" else "",
+        if (vsx$style %in% c("ov1")) "K%" else "Pts", if (vsx$style %in% c("ov1")) "Attack kill%" else "Points",
+        "Blo", "Blocked",
+        if (vsx$style %in% c("default")) "Exc" else "", if (vsx$style %in% c("default")) "Excellent" else "",
+        if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "expSO%" else "srvEff%" } else "", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "Expected SO%" else srveff_txt } else "",
+        if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "expBP%" else "recEff%" } else "", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "Expected BP%" else receff_txt } else "",
+        if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills",
+        "*n*", "Starting position",
+        "*n*", "Starting setter",
+        ".", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute")
+    out <- out[nzchar(out$Label), ]
     nidx <- which(out$Label == "*n*")
     if (length(nidx) > 0) out$Label[nidx[1]] <- cell_spec("n", kable_format, color = "white", align = "c", background = "#444444", bold = TRUE)
     if (length(nidx) > 1) out$Label[nidx[2]] <- cell_spec("n", kable_format, color = "black", align = "c", background = "#FFF", bold = TRUE, extra_css = "border:1px solid black;")

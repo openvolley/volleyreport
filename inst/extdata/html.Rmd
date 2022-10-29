@@ -166,7 +166,7 @@ if (vsx$shiny_progress) try(shiny::setProgress(value = 0.8, message = "Generatin
 ```{r fr0, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
 ## left-hand content panel
-cat("<td width=\"83%\">\n")
+cat("<td width=\"78%\">\n")
 ```
 
 ```{r fr1, warning = FALSE, results = "asis"}
@@ -181,7 +181,7 @@ cat("<table class=\"mtbl\"><tr>\n")
 ```{r fr2, warning = FALSE, results = "asis"}
 ## home team points by rot
 if (vsx$style %in% c("ov1")) {
-    cat("<td width=\"27%\">\n")
+    cat("<td width=\"29%\">\n")
     if (!grepl("beach", vsx$file_type)) cat(volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home"))
     cat("</td>\n")
 } else {
@@ -190,8 +190,7 @@ if (vsx$style %in% c("ov1")) {
     if (!grepl("beach", vsx$file_type)) cat0("<td width=\"10%\" style=\"border-right:", vsx$css$border, ";\">\n")
     if (!grepl("beach", vsx$file_type)) cat(volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "home"))
     if (!grepl("beach", vsx$file_type)) cat("</td>\n")
-    if (!grepl("beach", vsx$file_type)) cat("<td width=\"17%\">\n")
-    if (grepl("beach", vsx$file_type)) cat("<td width=\"27%\">\n")
+    cat0("<td width=\"", if (!grepl("beach", vsx$file_type)) 19 else 29, "%\">\n")
     hteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "home")
     for (this in hteach) cat(this, "\n")
     cat("</td>\n")
@@ -200,7 +199,7 @@ if (vsx$style %in% c("ov1")) {
 
 ```{r fr3, warning = FALSE, results = "asis"}
 ## middle content
-cat0("<td width=\"46%\" style=\"border-right:", vsx$css$border, "; border-left:", vsx$css$border, ";\">\n")
+cat0("<td width=\"42%\" style=\"border-right:", vsx$css$border, "; border-left:", vsx$css$border, ";\">\n")
 volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)")
 volleyreport:::vr_content_kill_on_rec(vsx, kable_format, eval_codes = c("-", "!", "-/"), hdr = "1st attack after neg. reception (R-!)")
 volleyreport:::vr_content_kill_in_trans(vsx, kable_format)
@@ -210,11 +209,11 @@ cat("</td>\n")
 ```{r fr4, warning = FALSE, results = "asis"}
 ## visiting team points by rot
 if (vsx$style %in% c("ov1")) {
-    cat("<td width=\"27%\">\n")
+    cat("<td width=\"29%\">\n")
     if (!grepl("beach", vsx$file_type)) cat(volleyreport:::vr_content_points_by_rot(vsx, kable_format, which_team = "visiting"))
     cat("</td>\n")
 } else {
-    cat0("<td width=\"", if (!grepl("beach", vsx$file_type)) 17 else 27, "%\" style=\"border-right:", vsx$css$border, ";\">\n")
+    cat0("<td width=\"", if (!grepl("beach", vsx$file_type)) 19 else 29, "%\" style=\"border-right:", vsx$css$border, ";\">\n")
     vteach <- volleyreport:::vr_content_team_each(vsx, kable_format, which_team = "visiting")
     for (this in vteach) cat(this, "\n")
     cat("</td>\n")
@@ -228,7 +227,7 @@ if (vsx$style %in% c("ov1")) {
 ```{r fr5, warning = FALSE, results = "asis"}
 cat("</tr></table>\n")
 ## the right-hand panel for the report legend
-cat0("<td width=\"16.7%\">\n")
+cat0("<td width=\"21.7%\">\n")
 volleyreport:::vr_content_key(vsx, kable_format)
 cat("</td>\n")
 
