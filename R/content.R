@@ -398,7 +398,7 @@ vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
                                                    `expBP%` = prc(round(mean0(.data$expBP) * 100))),
                              by = "home_setter_position")
             out <- left_join(out, vsx$x %>% dplyr::filter(.data$skill == "Reception" & .data$team == .data$home_team) %>% group_by(.data$home_setter_position) %>%
-                                  dplyr::summarize(`N rec` = n(), `SO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
+                                  dplyr::summarize(`N rec` = n(), `modSO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
                                                    `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
                                                    `expSO%` = prc(round(mean0(.data$expSO) * 100))),
                              by = "home_setter_position")
@@ -415,7 +415,7 @@ vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
                                                    `expBP%` = prc(round(mean0(.data$expBP) * 100))),
                              by = "visiting_setter_position")
             out <- left_join(out, vsx$x %>% dplyr::filter(.data$skill == "Reception" & .data$team == .data$visiting_team) %>% group_by(.data$visiting_setter_position) %>%
-                                  dplyr::summarize(`N rec` = n(), `SO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
+                                  dplyr::summarize(`N rec` = n(), `modSO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
                                                    `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
                                                    `expSO%` = prc(round(mean0(.data$expSO) * 100))),
                              by = "visiting_setter_position")
@@ -487,6 +487,7 @@ vr_content_key <- function(vsx, kable_format) {
         if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "expSO%" else "srvEff%" } else "", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "Expected SO%" else srveff_txt } else "",
         if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "expBP%" else "recEff%" } else "", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "Expected BP%" else receff_txt } else "",
         if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills",
+        if (vsx$style %in% c("ov1")) "modSO%" else "", "SO% on non-error serves",
         "*n*", "Starting position",
         "*n*", "Starting setter",
         ".", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute")
@@ -498,11 +499,11 @@ vr_content_key <- function(vsx, kable_format) {
         out$Label[out$Label == "."] <- cell_spec("p", kable_format, color = "white", align = "c", background = "#999999", extra_css = "border:1px solid black;")
     }
     out %>% kable(format = kable_format, align = c("r", "l"), escape = FALSE, col.names = NULL, table.attr = "class=\"widetable\"") %>%
-        kable_styling(font_size = vsx$base_font_size * 9/12) %>%
+        kable_styling(font_size = vsx$base_font_size * 7.5/12) %>%
         ## add outer framing to make the key visually separate from the content
         column_spec(1, border_left = vsx$css$border) %>% column_spec(2, border_right = vsx$css$border) %>%
         row_spec(1, extra_css = paste0("border-top:", vsx$css$border)) %>%
-        row_spec(11, extra_css = paste0("border-bottom:", vsx$css$border))
+        row_spec(11 + vsx$style %in% c("ov1"), extra_css = paste0("border-bottom:", vsx$css$border))
 }
 
 vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)") {
