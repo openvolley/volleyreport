@@ -246,7 +246,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
                                                   .data$starting_position_set6 %in% c(".", "L") ~ lsspec(.data$starting_position_set6),
                                                   !is.na(.data$starting_position_set6) & grepl("^!", .data$starting_position_set6) ~ lsspec(sub("!", "", .data$starting_position_set6), border = TRUE)))
 
-    P_sum <- P_sum %>% dplyr::select(-"player_id") %>% dplyr::arrange(.data$number) %>% na_if(0)
+    P_sum <- P_sum %>% dplyr::select(-"player_id") %>% dplyr::arrange(.data$number) %>% mutate(across(where(is.numeric), ~na_if(., 0)))
 
     ## note that in some cases the dvw file can contain starting positions for players in a set that doesn't have a result
     if (isTRUE(vsx$remove_nonplaying)) {
@@ -363,7 +363,7 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
         left_join(volleyreport::vr_reception(vsx$x, teamfun(vsx$x), by = "set", refx = vsx$refx, file_type = vsx$file_type, style = vsx$style), by = "set_number", suffix = c(".ser", ".rec") ) %>%
         left_join(volleyreport::vr_attack(vsx$x, teamfun(vsx$x), by = "set", style = vsx$style), by = "set_number", suffix = c(".rec", ".att") ) %>%
         left_join(volleyreport::vr_block(vsx$x, teamfun(vsx$x), by = "set", style = vsx$style), by = "set_number") %>%
-        mutate(set_number = paste("Set", .data$set_number)) %>% na_if(0)
+        mutate(set_number = paste("Set", .data$set_number)) %>% mutate(across(where(is.numeric), ~na_if(., 0)))
     Rexc <- !isTRUE(grepl("perana", vsx$file_type)) && "(Exc%)" %in% names(thisSS) ## perana have only R#+, not R#
     if (!Rexc && "(Exc%)" %in% names(thisSS)) thisSS <- dplyr::select(thisSS, -"(Exc%)")
     expSO <- "expSO%" %in% names(thisSS)
