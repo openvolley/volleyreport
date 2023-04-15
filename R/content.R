@@ -196,7 +196,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
         left_join(volleyreport::vr_reception(vsx$x, teamfun(vsx$x), refx = vsx$refx, file_type = vsx$file_type, style = vsx$style), by = "player_id", suffix = c(".ser", ".rec")) %>%
         left_join(volleyreport::vr_attack(vsx$x, teamfun(vsx$x), style = vsx$style), by = "player_id", suffix = c(".rec", ".att")) %>%
         left_join(volleyreport::vr_block(vsx$x, teamfun(vsx$x), style = vsx$style), by = "player_id")
-    if (vsx$style %in% c("ov1")) {
+    if (!grepl("beach", vsx$file_type) && vsx$style %in% c("ov1")) {
         ## can we figure out which played subbed for which?
         for (st in seq_len(nsets)) {
             try({
@@ -249,7 +249,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
     P_sum <- P_sum %>% dplyr::select(-"player_id") %>% dplyr::arrange(.data$number) %>% mutate(across(where(is.numeric), ~na_if(., 0)))
 
     ## note that in some cases the dvw file can contain starting positions for players in a set that doesn't have a result
-    if (isTRUE(vsx$remove_nonplaying)) {
+    if (!grepl("beach", vsx$file_type) && isTRUE(vsx$remove_nonplaying)) {
         if (!isTRUE(suppressWarnings(max(vsx$x$set_number, na.rm = TRUE) > 1))) {
             ## special case for first set, rely on starting position
             P_sum <- dplyr::filter(P_sum, !is.na(.data$starting_position_set1))
@@ -263,6 +263,9 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
     if ("W-L" %in% names(P_sum)) P_sum$`W-L`[is.na(P_sum$`W-L`)] <- 0L
     Rexc <- !isTRUE(grepl("perana", vsx$file_type)) ## perana have only R#+, not R#
     if (!Rexc && "(Exc%)" %in% names(P_sum)) P_sum <- dplyr::select(P_sum, -"(Exc%)")
+    if (grepl("beach", vsx$file_type)) {
+        P_sum <- P_sum[, !grepl("^starting_position_set", names(P_sum))]
+    }
     P_sum
 }
 
@@ -301,30 +304,37 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     } else {
         teamfun <- datavolley::visiting_team
     }
-    bcols <- if (vsx$style %in% c("ov1")) 2 + nrow(vsx$meta$result) + c(1, 5, 9, 15) else NULL
+    spcols <- grep("^starting_position_set", names(P_sum)) ## won't be present for beach
+    bcols <- if (vsx$style %in% c("ov1")) 2 + length(spcols) + c(1, 5, 9, 15) else NULL
 
-    ## indicate first-serving team in each set
-    set_col_hdr <- seq_len(min(6, nrow(vsx$meta$result)))
-    try({
-        circled1to6 <- strsplit(intToUtf8(9312:9317), "")[[1]]
-        fss <- first_serve(vsx$x, file_type = vsx$file_type)
-        for (k in seq_along(set_col_hdr)) {
-            if (fss[k] %eq% which_team) {
-                ## team served first, so use circled number with font size and layout adjustment
-                set_col_hdr[k] <- paste0("<span style='font-size:125%; vertical-align:top;'>", circled1to6[k], "</span>")
-                ## or could just underline the set number
-                ##set_col_hdr[k] <- paste0("<span style='text-decoration:underline;'>", set_col_hdr[k], "</span>")
-            } else {
-                set_col_hdr[k] <- paste0("<span style='vertical-align:-5%;'>", set_col_hdr[k], "</span>")
+    if (length(spcols) < 1) {
+        set_col_hdr <- character()
+    } else {
+        set_col_hdr <- seq_len(min(6, length(spcols)))
+        ## indicate first-serving team in each set
+        try({
+            fss <- first_serve(vsx$x, file_type = vsx$file_type)
+            for (k in seq_along(set_col_hdr)) {
+                if (fss[k] %eq% which_team) {
+                    ## team served first, so use circled number with font size and layout adjustment
+                    set_col_hdr[k] <- paste0("<span style='font-size:125%; vertical-align:top;'>", circled1to6[k], "</span>")
+                    ## or could just underline the set number
+                    ##set_col_hdr[k] <- paste0("<span style='text-decoration:underline;'>", set_col_hdr[k], "</span>")
+                } else {
+                    set_col_hdr[k] <- paste0("<span style='vertical-align:-5%;'>", set_col_hdr[k], "</span>")
+                }
             }
-        }
-    })
+        })
+    }
 
+    ## col names
     cn <- c("", "", set_col_hdr, if (vsx$vote) "Vote", "Tot", if (vsx$style %in% c("default")) c("BP", "W-L"), "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", "Pts")
+    ## header above col names
+    ch <- c(setNames(2, teamfun(vsx$x)), if (length(spcols) > 0) setNames(min(6, length(spcols)), "Set"), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP + srvEff, "Reception" = 3 + Rexc + expSO + recEff, "Attack" = 5 + attEff, "Blo" = 1)
     out <- kable(P_sum, format = "html", escape = FALSE, col.names = cn, table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
         column_spec(2, width = "1.8in") %>%
-        add_header_above(c(setNames(2, teamfun(vsx$x)), "Set" = min(6, nrow(vsx$meta$result)), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP + srvEff, "Reception" = 3 + Rexc + expSO + recEff, "Attack" = 5 + attEff, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE, line = FALSE, extra_css = "padding-bottom:2px;") %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
+        add_header_above(ch, color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE, line = FALSE, extra_css = "padding-bottom:2px;") %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
         column_spec(1, border_left = vsx$css$border) %>%
         column_spec(ncol(P_sum), border_right = vsx$css$border) %>%
         row_spec(which(P_sum$name == "Team total"), background = "lightgrey")
@@ -332,6 +342,8 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     out
 }
 
+## used to indicate first team serving in a set
+circled1to6 <- strsplit(intToUtf8(9312:9317), "")[[1]]
 
 vr_content_team_staff <- function(vsx, kable_format, which_team = "home") {
     which_team <- match.arg(which_team, c("home", "visiting"))
