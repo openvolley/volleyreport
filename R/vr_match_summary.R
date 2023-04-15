@@ -25,7 +25,7 @@
 #' @export
 vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", skill_evaluation_decode = "guess", shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
     if (is.string(x) && file.exists(x)) {
-        if (grepl("\\.dvw$", x, ignore.case = TRUE)) {
+        if (grepl("\\.(dvw|vsm|xml)$", x, ignore.case = TRUE)) {
             x <- datavolley::dv_read(x, skill_evaluation_decode = skill_evaluation_decode)
         } else {
             stop("unknown file format: ", x)
