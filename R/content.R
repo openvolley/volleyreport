@@ -385,8 +385,22 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
     BP <- "BP%" %in% names(thisSS)
     SO <- "SO%" %in% names(thisSS)
     attEff <- "attEff%" %in% names(thisSS)
+    ## for beach, we aren't showing the set columns with starting positions so indicate first-serving team in each set in this table instead
+    if (grepl("beach", vsx$file_type)) {
+        try({
+            fss <- first_serve(vsx$x, file_type = vsx$file_type)
+            for (k in seq_len(nrow(thisSS))) {
+                if (fss[k] %eq% which_team) {
+                    ## team served first, so use circled number with font size and layout adjustment
+                    thisSS$set_number[k] <- paste0("Set <span style='font-size:125%; vertical-align:middle;'>", circled1to6[k], "</span>")
+                ##} else {
+                ##    set_col_hdr[k] <- paste0("<span style='vertical-align:-5%;'>", set_col_hdr[k], "</span>")
+                }
+            }
+        })
+    }
     bcols <- if (vsx$style %in% c("ov1")) 1 + cumsum(c(0, 4, 3 + BP + expBP + srvEff, 3 + Rexc + SO + expSO + recEff, 5 + attEff)) else NULL
-    out <- kable(thisSS,format = "html", escape = TRUE, col.names = c("","Ser", "Atk", "Blo", "Op.Err", "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (BP) "BP%", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (SO) "SO%", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", "Pts"), table.attr = "class=\"widetable\"") %>%
+    out <- kable(thisSS,format = "html", escape = FALSE, col.names = c("","Ser", "Atk", "Blo", "Op.Err", "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (BP) "BP%", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (SO) "SO%", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", "Pts"), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
         add_header_above(c("Set" = 1, "Points" = 4, "Serve" = 3 + BP + expBP + srvEff, "Reception" = 3 + SO + Rexc + expSO + recEff, "Attack" = 5 + attEff, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;") %>%
         row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
