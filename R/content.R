@@ -497,6 +497,7 @@ vr_content_team_each <- function(vsx, kable_format, which_team = "home") {
 }
 
 vr_content_key <- function(vsx, kable_format) {
+    beach <- grepl("beach", vsx$file_type)
     receff_txt <- paste0("Reception efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Perf + Pos - Err - Overpasses) / N</span>")
     srveff_txt <- paste0("Serve efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Ace + Pos - Err - Poor) / N</span>")
     ##out <- data.frame(Label = c("BP", "Err", "Pos%", if (vsx$style %in% c("default")) "W-L", if (vsx$style %in% c("ov1")) "K%" else "Pts", "Blo", if (vsx$style %in% c("default")) "Exc", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("expSO%", "expBP%") else c("srvEff%", "recEff%") }, if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", "*n*", "*n*", "."),
@@ -512,11 +513,14 @@ vr_content_key <- function(vsx, kable_format) {
         if (vsx$style %in% c("default")) "Exc" else "", if (vsx$style %in% c("default")) "Excellent" else "",
         if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "expSO%" else "srvEff%" } else "", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "Expected SO%" else srveff_txt } else "",
         if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "expBP%" else "recEff%" } else "", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) "Expected BP%" else receff_txt } else "",
-        if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills",
+        if (vsx$style %in% c("ov1") && !beach) "P*x*" else "", "Setter in *x*",
+        if (!vsx$style %in% c("ov1")) "Earned pts" else "", "Aces, attack and block kills",
+        ##if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills",
         if (vsx$style %in% c("ov1")) "modSO%" else "", "SO% on non-error serves",
-        "*n*", "Starting position",
-        "*n*", "Starting setter",
-        ".", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute")
+        if (!beach) "*n*" else "", "Starting position",
+        if (!beach) "*n*" else "", "Starting setter",
+        if (beach) paste0("Set <span style='font-size:125%; vertical-align:middle;'>", circled1to6[1], "</span>") else "", "Served first in set",
+        if (!beach) "." else "", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute")
     out <- out[nzchar(out$Label), ]
     nidx <- which(out$Label == "*n*")
     if (length(nidx) > 0) out$Label[nidx[1]] <- cell_spec("n", kable_format, color = "white", align = "c", background = "#444444", bold = TRUE)
@@ -529,7 +533,7 @@ vr_content_key <- function(vsx, kable_format) {
         ## add outer framing to make the key visually separate from the content
         column_spec(1, border_left = vsx$css$border) %>% column_spec(2, border_right = vsx$css$border) %>%
         row_spec(1, extra_css = paste0("border-top:", vsx$css$border)) %>%
-        row_spec(11 + vsx$style %in% c("ov1"), extra_css = paste0("border-bottom:", vsx$css$border))
+        row_spec(11 + vsx$style %in% c("ov1") - 3 * beach, extra_css = paste0("border-bottom:", vsx$css$border))
 }
 
 vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)") {
