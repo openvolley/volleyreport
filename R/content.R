@@ -265,6 +265,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
     if (!Rexc && "(Exc%)" %in% names(P_sum)) P_sum <- dplyr::select(P_sum, -"(Exc%)")
     if (grepl("beach", vsx$file_type)) {
         P_sum <- P_sum[, !grepl("^starting_position_set", names(P_sum))]
+        P_sum$number <- NA_integer_
     }
     P_sum
 }
