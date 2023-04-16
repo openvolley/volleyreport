@@ -518,9 +518,9 @@ vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "def
                       Blo = sum(.data$evaluation %eq% "Blocked"),
                       `Pts` = sum(.data$evaluation %eq% "Winning attack"),
                       `Pts%` = prc(round(mean0(.data$evaluation %eq% "Winning attack"), 2)*100),
+                      `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)),
                       On2 = sum(.data$on2, na.rm = TRUE),
-                      `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)),
-                      `attEff%` = prc(round(attack_eff(.data$evaluation) * 100))) %>%
+                      `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100))) %>%
             bind_rows(
                 x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Attack") %>%
                 mutate(player_id = "Team total") %>%
@@ -530,9 +530,9 @@ vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "def
                                  Blo = sum(.data$evaluation %eq% "Blocked"),
                                  `Pts` = sum(.data$evaluation %eq% "Winning attack"),
                                  `Pts%` = prc(round(mean0(.data$evaluation %eq% "Winning attack"), 2)*100),
+                                 `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)),
                                  On2 = sum(.data$on2, na.rm = TRUE),
-                                 `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)),
-                                 `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)))
+                                 `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)))
             )
            } else if (by == "set") {
                x %>% dplyr::filter(.data$team %in% team_select, .data$skill == "Attack") %>% group_by(.data$set_number) %>%
@@ -541,9 +541,9 @@ vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "def
                                     Blo = sum(.data$evaluation %eq% "Blocked"),
                                     `Pts` = sum(.data$evaluation %eq% "Winning attack"),
                                     `Pts%` = prc(round(mean0(.data$evaluation %in% "Winning attack"), 2)*100),
+                                    `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)),
                                     On2 = sum(.data$on2, na.rm = TRUE),
-                                    `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)),
-                                    `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)))
+                                    `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)))
 
            }
     if (!(grepl("beach", file_type) && style %in% c("ov1"))) out <- dplyr::select(out, -"On2", -"On2 K%")
