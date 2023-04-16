@@ -343,7 +343,7 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     ch <- c(setNames(2, teamfun(vsx$x)), if (length(spcols) > 0) setNames(min(6, length(spcols)), "Set"), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP + srvEff, "Reception" = 3 + Rexc + expSO + recEff, "Attack" = 5 + attEff, "Blo" = 1)
     out <- kable(P_sum, format = "html", escape = FALSE, col.names = cn, table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
-        column_spec(2, width = "1.8in") %>%
+        column_spec(2, width = if (!grepl("beach", vsx$file_type)) "46mm" else "36mm") %>%
         add_header_above(ch, color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE, line = FALSE, extra_css = "padding-bottom:2px;") %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
         column_spec(1, border_left = vsx$css$border) %>%
         column_spec(ncol(P_sum), border_right = vsx$css$border) %>%
@@ -517,6 +517,7 @@ vr_content_key <- function(vsx, kable_format) {
     ##                  Description = c("Break point", "Errors", "Positive +#", if (vsx$style %in% c("default")) "Won-Lost", if (vsx$style %in% c("ov1")) "Attack kill%" else "Points", "Blocked", if (vsx$style %in% c("default")) "Excellent", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("Expected SO%", "Expected BP%") else c(srveff_txt, receff_txt) }, if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills", "Starting position", "Starting setter", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute"))
     out <- tribble(
         ~Label, ~Description,
+        if (beach) "L/R/Blk/Def" else "", "Played left/right, as blocker/defender",
         "BP", "Break point",
         "Err", "Errors",
         "Pos%", "Positive +#",
@@ -546,7 +547,7 @@ vr_content_key <- function(vsx, kable_format) {
         ## add outer framing to make the key visually separate from the content
         column_spec(1, border_left = vsx$css$border) %>% column_spec(2, border_right = vsx$css$border) %>%
         row_spec(1, extra_css = paste0("border-top:", vsx$css$border)) %>%
-        row_spec(11 + vsx$style %in% c("ov1") - 3 * beach, extra_css = paste0("border-bottom:", vsx$css$border))
+        row_spec(11 + vsx$style %in% c("ov1") - 2 * beach, extra_css = paste0("border-bottom:", vsx$css$border))
 }
 
 vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)") {

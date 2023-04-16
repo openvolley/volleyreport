@@ -79,10 +79,10 @@ beach_guess_roles_sides <- function(x, which_team = "home", threshold = 0.7) {
                                                          prop_right = .data$n_right / (.data$n_left + .data$n_right))
 
     bdx <- bdx %>% full_join(lrx, by = "player_id") %>%
-        mutate(player_beach_side = case_when(.data$prop_left > threshold ~ "Left",
-                                .data$prop_right > threshold ~ "Right"),
-               player_beach_role = case_when(.data$bd > threshold ~ "Blocker",
-                                             .data$bd < (1 - threshold) ~ "Defender"))
+        mutate(player_beach_side = case_when(.data$prop_left > threshold ~ "L",
+                                .data$prop_right > threshold ~ "R"),
+               player_beach_role = case_when(.data$bd > threshold ~ "Blk",
+                                             .data$bd < (1 - threshold) ~ "Def"))
     ## since this is a single match, if we have inferred left/right for one player and not the other, take the complement
 ## not sure yet if this is wise
 ##    if (sum(is.na(bdx$player_beach_side)) == 1) bdx$player_beach_side[is.na(bdx$player_beach_side)] <- setdiff(c("Left", "Right", NA_character_), bdx$player_beach_side)
