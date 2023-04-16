@@ -347,7 +347,8 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
         add_header_above(ch, color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE, line = FALSE, extra_css = "padding-bottom:2px;") %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
         column_spec(1, border_left = vsx$css$border) %>%
         column_spec(ncol(P_sum), border_right = vsx$css$border) %>%
-        row_spec(which(P_sum$name == "Team total"), background = "lightgrey")
+        row_spec(which(P_sum$name == "Team total"), background = "lightgrey") %>%
+        row_spec(nrow(P_sum), extra_css = paste0("border-bottom:", vsx$css$border, "; padding-bottom:2px;"))
     if (length(bcols) > 0) out <- out %>% column_spec(bcols, border_right = "1px solid #CCC")
     out
 }
