@@ -199,7 +199,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
     if (grepl("beach", vsx$file_type)) {
         ## for beach, add blocker/defender and side if possible
         rs <- beach_guess_roles_sides(vsx$x, which_team = which_team)
-        if (nrow(rs) == 2 && !any(is.na(rs$pos)) && !any(rs$side)) {
+        if (nrow(rs) == 2 && !any(is.na(rs$player_beach_role)) && !any(is.na(rs$player_beach_side))) {
             P_sum <- left_join(P_sum, rs, by = "player_id") %>%
                 mutate(name = case_when(.data$name == "Team total" ~ .data$name,
                                         TRUE ~ paste0(.data$name, " (", .data$player_beach_side, "/", .data$player_beach_role, ")"))) %>%
