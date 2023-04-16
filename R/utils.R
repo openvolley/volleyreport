@@ -59,3 +59,30 @@ get_os <- function() {
     if (!os %in% c("windows", "linux", "unix", "osx")) warning("unknown operating system: ", os)
     os
 }
+
+beach_guess_roles_sides <- function(x, which_team = "home", threshold = 0.7) {
+    ## threshold controls certainty - if we are uncertain, we won't give a player a side/role classification
+    which_team <- match.arg(which_team, c("home", "visiting"))
+    tmcol <- paste0(which_team, "_team")
+    bdx <- x %>% dplyr::filter(.data$team == .data[[tmcol]], .data$skill == "Block") %>% dplyr::count(.data$player_id, name = "n_blocks") %>% mutate(prop_block = .data$n_blocks / sum(.data$n_blocks)) %>%
+        full_join(x %>% dplyr::filter(.data$team == .data[[tmcol]], .data$skill == "Dig") %>% dplyr::count(.data$player_id, name = "n_digs") %>% mutate(prop_dig = .data$n_digs / sum(.data$n_digs)), by = "player_id") %>%
+        mutate(prop_block = if_else(is.na(.data$prop_block), 0, .data$prop_block), prop_dig = if_else(is.na(.data$prop_dig), 0, .data$prop_dig),
+               bd = (.data$prop_block + 1 - .data$prop_dig) / 2)
+    lrx <- x %>% dplyr::filter(.data$team == .data[[tmcol]], .data$skill %in% c("Reception", "Attack")) %>%
+        mutate(left = (.data$skill == "Attack" & (.data$start_zone %in% c(4, 7, 5) | .data$start_coordinate_x < 1.5)) |
+                   (.data$skill == "Reception" & (.data$end_zone %in% c(4, 7, 5) | .data$end_coordinate_x < 1.5)),
+               right = (.data$skill == "Attack" & (.data$start_zone %in% c(2, 9, 1) | .data$start_coordinate_x > 2.5)) |
+                   (.data$skill == "Reception" & (.data$end_zone %in% c(2, 9, 1) | .data$end_coordinate_x > 2.5))) %>%
+        group_by(.data$player_id) %>% dplyr::summarize(n_left = sum(.data$left, na.rm = TRUE), n_right = sum(.data$right, na.rm = TRUE),
+                                                         n_tot = n(),
+                                                         prop_left = .data$n_left / (.data$n_left + .data$n_right),
+                                                         prop_right = .data$n_right / (.data$n_left + .data$n_right))
+
+    bdx <- bdx %>% full_join(lrx, by = "player_id") %>%
+        mutate(player_beach_side = case_when(.data$prop_left > threshold ~ "Left",
+                                .data$prop_right > threshold ~ "Right"),
+               player_beach_role = case_when(.data$bd > threshold ~ "Blocker",
+                               .data$bd < (1 - threshold) ~ "Defender")) %>%
+        dplyr::select("player_id", "player_beach_side", "player_beach_role")
+    bdx %>% dplyr::filter(!is.na(.data$player_id), !.data$player_id %in% bdx$player_id[duplicated(bdx$player_id)])
+}

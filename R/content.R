@@ -196,8 +196,17 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
         left_join(volleyreport::vr_reception(vsx$x, teamfun(vsx$x), refx = vsx$refx, file_type = vsx$file_type, style = vsx$style), by = "player_id", suffix = c(".ser", ".rec")) %>%
         left_join(volleyreport::vr_attack(vsx$x, teamfun(vsx$x), style = vsx$style), by = "player_id", suffix = c(".rec", ".att")) %>%
         left_join(volleyreport::vr_block(vsx$x, teamfun(vsx$x), style = vsx$style), by = "player_id")
-    if (!grepl("beach", vsx$file_type) && vsx$style %in% c("ov1")) {
-        ## can we figure out which played subbed for which?
+    if (grepl("beach", vsx$file_type)) {
+        ## for beach, add blocker/defender and side if possible
+        rs <- beach_guess_roles_sides(vsx$x, which_team = which_team)
+        if (nrow(rs) == 2 && !any(is.na(rs$pos)) && !any(rs$side)) {
+            P_sum <- left_join(P_sum, rs, by = "player_id") %>%
+                mutate(name = case_when(.data$name == "Team total" ~ .data$name,
+                                        TRUE ~ paste0(.data$name, " (", .data$player_beach_side, "/", .data$player_beach_role, ")"))) %>%
+                dplyr::select(-"player_beach_role", -"player_beach_side")
+        }
+    } else if (vsx$style %in% c("ov1")) {
+        ## indoor, can we figure out which played subbed for which?
         for (st in seq_len(nsets)) {
             try({
                 sub_codes <- vsx$x$code[which(vsx$x$set_number == st & grepl(paste0("^", tchar, "[Cc][[:digit:]\\:\\.]+$"), vsx$x$code))]
