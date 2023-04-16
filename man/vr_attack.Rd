@@ -4,7 +4,7 @@
 \alias{vr_attack}
 \title{Generate attack table}
 \usage{
-vr_attack(x, team, by = "player", style = "default")
+vr_attack(x, team, by = "player", file_type = "indoor", style = "default")
 }
 \arguments{
 \item{x}{datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}}
@@ -12,6 +12,8 @@ vr_attack(x, team, by = "player", style = "default")
 \item{team}{string: team name}
 
 \item{by}{string: "player" or "set"}
+
+\item{file_type}{string: "indoor", "perana_indoor", "beach", "perana_beach"}
 
 \item{style}{string: see \code{\link[=vr_match_summary]{vr_match_summary()}}}
 }

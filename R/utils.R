@@ -9,6 +9,9 @@ mean0 <- function(x, ...) {
     if (length(x) < 1 || all(is.na(x))) as(NA, class(x)) else mean(x, na.rm = TRUE)
 }
 
+## division, avoiding div by 0 warnings (return NA not NaN)
+`%/n/%` <- function(x, y) ifelse(abs(y) < 1e-09, NA_real_, x/y)
+
 ## convert to string with "%", but not if NA
 prc <- function(z, before = "", after = "%") {
     if (length(z) < 1) z else ifelse(is.na(z), z, paste0(before, z, after))

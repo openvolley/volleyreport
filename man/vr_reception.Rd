@@ -24,7 +24,7 @@ vr_reception(
 
 \item{style}{string: see \code{\link[=vr_match_summary]{vr_match_summary()}}}
 
-\item{file_type}{string: "indoor", "perana_indoor"}
+\item{file_type}{string: "indoor", "perana_indoor", "beach", "perana_beach"}
 }
 \description{
 Generate reception table

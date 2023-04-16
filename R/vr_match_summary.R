@@ -450,7 +450,7 @@ vr_serve <- function(x, team, by = "player", refx, style = "default"){
 #' @param by string: "player" or "set"
 #' @param refx data.frame: see [vr_match_summary()]
 #' @param style string: see [vr_match_summary()]
-#' @param file_type string: "indoor", "perana_indoor"
+#' @param file_type string: "indoor", "perana_indoor", "beach", "perana_beach"
 #' @export
 vr_reception <- function(x, team, by = "player", refx, style = "default", file_type = "indoor"){
     assert_that(is.string(by))
@@ -499,14 +499,18 @@ vr_reception <- function(x, team, by = "player", refx, style = "default", file_t
 #' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
 #' @param team string: team name
 #' @param by string: "player" or "set"
+#' @param file_type string: "indoor", "perana_indoor", "beach", "perana_beach"
 #' @param style string: see [vr_match_summary()]
 #' @export
-vr_attack <- function(x, team, by = "player", style = "default") {
+vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "default") {
     assert_that(is.string(by))
     by <- match.arg(tolower(by), c("player", "set"))
     assert_that(is.string(team))
     team_select <- team
     style <- check_report_style(style)
+    assert_that(is.string(file_type))
+    ## 2nd-ball attack
+    x <- x %>% mutate(on2 = .data$skill == "Attack" & lag(.data$skill) %in% c("Reception", "Dig") & lag(.data$team) == .data$team & !is.na(.data$player_id) & .data$player_id != lag(.data$player_id))
     out <- if (by == "player") {
         x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Attack") %>% group_by(.data$player_id) %>%
             dplyr::summarize(Tot = n(),
@@ -514,6 +518,8 @@ vr_attack <- function(x, team, by = "player", style = "default") {
                       Blo = sum(.data$evaluation %eq% "Blocked"),
                       `Pts` = sum(.data$evaluation %eq% "Winning attack"),
                       `Pts%` = prc(round(mean0(.data$evaluation %eq% "Winning attack"), 2)*100),
+                      On2 = sum(.data$on2, na.rm = TRUE),
+                      `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)),
                       `attEff%` = prc(round(attack_eff(.data$evaluation) * 100))) %>%
             bind_rows(
                 x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Attack") %>%
@@ -524,6 +530,8 @@ vr_attack <- function(x, team, by = "player", style = "default") {
                                  Blo = sum(.data$evaluation %eq% "Blocked"),
                                  `Pts` = sum(.data$evaluation %eq% "Winning attack"),
                                  `Pts%` = prc(round(mean0(.data$evaluation %eq% "Winning attack"), 2)*100),
+                                 On2 = sum(.data$on2, na.rm = TRUE),
+                                 `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)),
                                  `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)))
             )
            } else if (by == "set") {
@@ -533,9 +541,12 @@ vr_attack <- function(x, team, by = "player", style = "default") {
                                     Blo = sum(.data$evaluation %eq% "Blocked"),
                                     `Pts` = sum(.data$evaluation %eq% "Winning attack"),
                                     `Pts%` = prc(round(mean0(.data$evaluation %in% "Winning attack"), 2)*100),
+                                    On2 = sum(.data$on2, na.rm = TRUE),
+                                    `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)),
                                     `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)))
 
            }
+    if (!(grepl("beach", file_type) && style %in% c("ov1"))) out <- dplyr::select(out, -"On2", -"On2 K%")
     if (style %in% c("ov1")) {
         out <- dplyr::rename(out, Kill = "Pts", "K%" = "Pts%")
     } else {
