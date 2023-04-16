@@ -136,6 +136,11 @@ cat("</td></tr></table>\n")
 
 ```
 
+```{r hvspace1, warning = FALSE, results = "asis"}
+if (grepl("beach", vsx$file_type)) cat("<div style=\"height:6mm\"></div>\n")
+
+```
+
 ```{r mr2_visiting_html, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
 cat("<td width=\"100%\">")
@@ -159,6 +164,11 @@ cat("</td>\n</tr></table>\n")
 
 ```{r}
 if (vsx$shiny_progress) try(shiny::setProgress(value = 0.8, message = "Generating footer"), silent = TRUE)
+```
+
+```{r hvspace2, warning = FALSE, results = "asis"}
+if (grepl("beach", vsx$file_type)) cat("<div style=\"height:6mm\"></div>\n")
+
 ```
 
 ```{r fr0, warning = FALSE, results = "asis"}
