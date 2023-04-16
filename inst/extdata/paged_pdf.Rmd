@@ -68,6 +68,11 @@ if (!is.null(vsx$icon)) {
 }
 ```
 
+```{r hvspace0, warning = FALSE, results = "asis"}
+if (grepl("beach", vsx$file_type)) cat("<div style=\"height:3mm\"></div>\n")
+
+```
+
 ```{r mr_score_ev, warning = FALSE, eval = vsx$style %in% c("ov1"), results = "asis", fig.height = 18 / 25.4, fig.width = 210 / 25.4}
 p <- volleyreport:::vr_content_score_evplot(vsx)
 if (!is.null(p)) {
