@@ -554,48 +554,46 @@ vr_content_key <- function(vsx, kable_format) {
         row_spec(11 + vsx$style %in% c("ov1") - 2 * beach, extra_css = paste0("border-bottom:", vsx$css$border))
 }
 
-vr_content_kill_on_rec <- function(vsx, kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)") {
-    KoRhome <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$ts_pass_evaluation_code %in% eval_codes & .data$phase == "Reception" & .data$team == datavolley::home_team(vsx$x)) %>%
-        dplyr::summarize(Err = sum(.data$evaluation_code == "="),
-                         Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)),
-                         Tot = n())
-    if (vsx$style %in% c("ov1")) KoRhome <- dplyr::rename(KoRhome, "K%" = "Pts%")
+## kill on reception or in transition
+##  eval_codes ignored for transition
+vr_content_kill_rec_trans <- function(vsx, which_team = "both", rec_trans = "rec", kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)") {
+    which_team <- match.arg(which_team, c("home", "visiting", "both"))
+    rec_trans <- match.arg(rec_trans, c("rec", "trans")) ## on reception or in transition?
+    if (which_team %in% c("home", "both")) {
+        temp <- if (rec_trans == "rec") {
+                    vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$ts_pass_evaluation_code %in% eval_codes & .data$phase == "Reception" & .data$team == datavolley::home_team(vsx$x))
+                } else {
+                    vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$phase == "Transition" & .data$team == datavolley::home_team(vsx$x))
+                }
+        Khome <- temp %>% dplyr::summarize(Err = sum(.data$evaluation_code == "="),
+                                           Blo = sum(.data$evaluation_code == "/"),
+                                           'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)),
+                                           Tot = n())
+        if (vsx$style %in% c("ov1")) Khome <- dplyr::rename(Khome, "K%" = "Pts%")
+    }
 
-    KoRvis <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$ts_pass_evaluation_code %in% eval_codes & .data$phase == "Reception" & .data$team == datavolley::visiting_team(vsx$x)) %>%
-        dplyr::summarize(Err = sum(.data$evaluation_code == "="),
-                         Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)),
-                         Tot = n())
-    if (vsx$style %in% c("ov1")) KoRvis <- dplyr::rename(KoRvis, "K%" = "Pts%")
+    if (which_team %in% c("visiting", "both")) {
+        temp <- if (rec_trans == "rec") {
+                    vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$ts_pass_evaluation_code %in% eval_codes & .data$phase == "Reception" & .data$team == datavolley::visiting_team(vsx$x))
+                } else {
+                    vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$phase == "Transition" & .data$team == datavolley::visiting_team(vsx$x))
+                }
+        Kvis <- temp %>% dplyr::summarize(Err = sum(.data$evaluation_code == "="),
+                                          Blo = sum(.data$evaluation_code == "/"),
+                                          'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)),
+                                          Tot = n())
+        if (vsx$style %in% c("ov1")) Kvis <- dplyr::rename(Kvis, "K%" = "Pts%")
+    }
 
-    hd <- c(8)
-    names(hd) <- hdr
-    kable(cbind(KoRhome, KoRvis[4:1]), format = kable_format, escape = FALSE, align = "c", table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12) %>%
-        column_spec(4, border_right = vsx$css$border) %>%
+    hd <- setNames(which_team %in% c("home", "both") * 4 + which_team %in% c("visiting", "both") * 4, hdr)
+    tbl_content <- if (which_team == "home") Khome else if (which_team == "visiting") Kvis else cbind(Khome, Kvis[4:1])
+    out <- kable(tbl_content, format = kable_format, escape = FALSE, align = "c", table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12) %>%
         row_spec(0, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
+        column_spec(4, border_right = vsx$css$border) %>%
         add_header_above(hd, color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;")
-}
-
-
-vr_content_kill_in_trans <- function(vsx, kable_format) {
-    KiThome <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$phase == "Transition" & .data$team == datavolley::home_team(vsx$x)) %>%
-        dplyr::summarize(Err = sum(.data$evaluation_code == "="),
-                         Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)),
-                         Tot = n())
-    if (vsx$style %in% c("ov1")) KiThome <- dplyr::rename(KiThome, "K%" = "Pts%")
-
-    KiTvis <- vsx$x %>% dplyr::filter(.data$skill == "Attack" & .data$phase == "Transition" & .data$team == datavolley::visiting_team(vsx$x)) %>%
-        dplyr::summarize(Err = sum(.data$evaluation_code == "="),
-                         Blo = sum(.data$evaluation_code == "/"),
-                         'Pts%' = prc(round(mean0(.data$evaluation_code == "#") * 100)),
-                         Tot = n())
-    if (vsx$style %in% c("ov1")) KiTvis <- dplyr::rename(KiTvis, "K%" = "Pts%")
-
-    kable(cbind(KiThome, KiTvis[4:1]),format = vsx$format, escape = FALSE, align = "c", table.attr = "class=\"widetable\"") %>%
-        kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12) %>%
-        column_spec(4, border_right = vsx$css$border) %>%
-        row_spec(0, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
-        add_header_above(c("Attack on dig" = 8), color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;")
+    if (which_team != "both") {
+        out %>% column_spec(1, border_left = vsx$css$border) %>% row_spec(1, extra_css = paste0("border-bottom:", vsx$css$border))
+    } else {
+        out
+    }
 }
