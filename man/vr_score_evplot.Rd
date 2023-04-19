@@ -6,6 +6,7 @@
 \usage{
 vr_score_evplot(
   x,
+  with_summary = FALSE,
   home_colour = "darkblue",
   visiting_colour = "darkred",
   font_size = 12
@@ -13,6 +14,8 @@ vr_score_evplot(
 }
 \arguments{
 \item{x}{datavolley or string: as returned by \code{datavolley::dv_read}, or the path to such a file}
+
+\item{with_summary}{logical: if \code{TRUE}, show team summary statistics. For beach, this is by end; for indoor summaries will be by set}
 
 \item{home_colour}{string: colour for home team}
 

@@ -316,7 +316,7 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     }
     on2 <- "On2" %in% names(P_sum)
     spcols <- grep("^starting_position_set", names(P_sum)) ## won't be present for beach
-    bcols <- if (vsx$style %in% c("ov1")) 2 + length(spcols) + c(1, 5, 9, 15 + 2 * on2) else NULL ## internal right-borders
+    bcols <- if (vsx$style %in% c("ov1")) 2 + length(spcols) + vsx$vote + c(1, 5, 9, 15 + 2 * on2) else NULL ## internal right-borders
 
     if (length(spcols) < 1) {
         set_col_hdr <- character()
@@ -428,6 +428,7 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
 }
 
 vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
+    ## NB this is almost certainly meaningless for beach
     which_team <- match.arg(which_team, c("home", "visiting"))
     out <- vsx$x %>% dplyr::filter(.data$skill == "Serve")
     if (which_team == "home") {
@@ -513,7 +514,9 @@ vr_content_team_each <- function(vsx, kable_format, which_team = "home") {
          )
 }
 
-vr_content_key <- function(vsx, kable_format) {
+vr_content_key <- function(vsx, kable_format, cols = 2) {
+    if (cols %% 2 != 0) stop("cols should be a multiple of 2")
+    cols <- max(2, cols)
     beach <- grepl("beach", vsx$file_type)
     receff_txt <- paste0("Reception efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Perf + Pos - Err - Overpasses) / N</span>")
     srveff_txt <- paste0("Serve efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Ace + Pos - Err - Poor) / N</span>")
@@ -546,12 +549,18 @@ vr_content_key <- function(vsx, kable_format) {
     if (vsx$style %in% c("ov1")) {
         out$Label[out$Label == "."] <- cell_spec("p", kable_format, color = "white", align = "c", background = "#999999", extra_css = "border:1px solid black;")
     }
+    if (cols > 2) {
+        if (nrow(out) %% 2 == 1) out <- bind_rows(out, tibble(Label = NA_character_, Description = NA_character_))
+        rows_per_col <- ceiling(nrow(out) / cols)
+        out <- do.call(cbind, lapply(seq(1, nrow(out), by = rows_per_col), function(i) out[i:min(nrow(out), (i + rows_per_col - 1L)), ]))
+    }
     out %>% kable(format = kable_format, align = c("r", "l"), escape = FALSE, col.names = NULL, table.attr = "class=\"widetable\"") %>%
         kable_styling(font_size = vsx$base_font_size * 7.5/12) %>%
         ## add outer framing to make the key visually separate from the content
-        column_spec(1, border_left = vsx$css$border) %>% column_spec(2, border_right = vsx$css$border) %>%
-        row_spec(1, extra_css = paste0("border-top:", vsx$css$border)) %>%
-        row_spec(11 + vsx$style %in% c("ov1") - 2 * beach, extra_css = paste0("border-bottom:", vsx$css$border))
+        column_spec(seq(1, ncol(out), by = 2), border_left = vsx$css$border) %>%
+        column_spec(ncol(out), border_right = vsx$css$border) %>%
+        row_spec(1, extra_css = paste0("padding-top:2px; border-top:", vsx$css$border)) %>%
+        row_spec(nrow(out), extra_css = paste0("padding-bottom:2px; border-bottom:", vsx$css$border))
 }
 
 ## kill on reception or in transition
