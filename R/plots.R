@@ -51,14 +51,15 @@ vr_score_evplot <- function(x, with_summary = FALSE, home_colour = "darkblue", v
                    opp_team_hv = if_else(.data$team_hv == "home", "visiting", "home")) %>%
             group_by(.data$block) %>%
             mutate(npts = length(unique(na.omit(.data$point_id))), ## how many points in the block
-                   point_id = intersect(.data$point_id, sc$point_id)[1]) ## first point in the block
+                   point_id0 = intersect(.data$point_id, sc$point_id)[1]) ## first point in the block
         ## if the last block in a set is short, merge it with the previous one
         smx <- smx %>% group_by(.data$set_number) %>% mutate(block_is_last = .data$block == max(.data$block, na.rm = TRUE),
                                                              min_block_in_set = min(.data$block, na.rm = TRUE)) %>% ungroup %>%
                        mutate(block = if_else (.data$npts < 5 & .data$block_is_last & .data$block > .data$min_block_in_set, .data$block - 1L, .data$block)) %>%
                        dplyr::select(-"block_is_last", -"min_block_in_set")
         smx <- left_join(smx %>% group_by(.data$block, .data$team_hv) %>%
-                         dplyr::summarize(point_id = .data$point_id[1], npts = .data$npts[1],
+                         dplyr::summarize(err_opps = length(unique(na.omit(.data$point_id[!is.na(.data$skill)]))), ## number of opportunities (rallies) we had to make errors
+                                          point_id = .data$point_id0[1], npts = .data$npts[1],
                                           `Nsrv` = sum(.data$skill == "Serve", na.rm = TRUE),
                                           Ace = sum(.data$evaluation == "Ace", na.rm = TRUE),
                                           `BP` = as.character(prc(round(sum(.data$skill == "Serve" & .data$point_won_by == .data$team, na.rm = TRUE) %/n/% sum(.data$skill == "Serve", na.rm = TRUE) * 100))),
@@ -69,8 +70,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, home_colour = "darkblue", v
                                           `K` = as.character(prc(round(sum(.data$skill == "Attack" & .data$evaluation == "Winning attack", na.rm = TRUE) %/n/% sum(.data$skill == "Attack", na.rm = TRUE) * 100))),
                                           Blk = sum(.data$evaluation == "Winning block", na.rm = TRUE),
                                           attw = sum(.data$skill == "Attack" & .data$evaluation == "Winning attack", na.rm = TRUE),
-                                          errs = sum(.data$skill %in% c("Serve", "Attack", "Set", "Freeball") & .data$evaluation == "Error", na.rm = TRUE) + sum(.data$skill == "Block" & .data$evaluation == "Invasion", na.rm = TRUE),
-                                          err_opps = length(unique(na.omit(.data$point_id[!is.na(.data$skill)])))) %>% ## number of opportunities (rallies) we had to make errors
+                                          errs = sum(.data$skill %in% c("Serve", "Attack", "Set", "Freeball") & .data$evaluation == "Error", na.rm = TRUE) + sum(.data$skill == "Block" & .data$evaluation == "Invasion", na.rm = TRUE)) %>%
                          ungroup,
                          smx %>% group_by(.data$block, .data$opp_team_hv) %>%
                          dplyr::summarize(Nsrv_opp = sum(.data$skill == "Serve", na.rm = TRUE),
@@ -105,36 +105,39 @@ vr_score_evplot <- function(x, with_summary = FALSE, home_colour = "darkblue", v
                     warning("todo, merge short ends at end of set")
                     next
                 }
-                frac2col <- function(n, N, side = 0L, cl_thr = 0.8, low = "#800000", mid = "#202020", high = "#008000") {
+                frac2col <- function(n, N, side = 0L, lthresh = 0.4, uthresh = 1 - lthresh, cl_thr = 0.8, low = "#800000", mid = "#202020", high = "#008000") {
+                    ## function to colour text, so we can highlight particularly good or poor performance in blocks
                     ## side = 0 => low is bad, high is good;
                     ##       -1 => higher is bad but ignore lower (i.e. errors)
                     ##        1 => higher is good but ignore lower (i.e. aces, blocks)
+                    ## thresh is performance threshold, used for N > 3
+                    ## cl_thresh is confidence limit threshold
                     if (N == 3) {
-                        if (n < 1 && side < 1) return(low) else if (n > 2 && side > -1) return(high)
-                    } else if (N < 4) return(mid)
+                        if ((n < 1 && side == 0) || (n > 2 && side < 0)) return(low) else if (n > 2 && side > -1) return(high)
+                    } else if (N < 4) {
+                        return(mid)
+                    }
                     cl <- diff(prop.test(n, N)$conf.int)
-                    if ((n / N) < 0.4 && cl < cl_thr && side == 0L) {
+                    if (((n/N < lthresh && side == 0L) || (n/N > uthresh && side < 0)) && cl < cl_thr) {
                         low
-                    } else if ((n / N) > 0.6 & cl < cl_thr && side < 0) {
-                        low
-                    } else if ((n / N) > 0.6 & cl < cl_thr && side > 0) {
+                    } else if (n/N > uthresh && side > -1 && cl < cl_thr) {
                         high
-                    } else if ((n / N) > 0.6 && cl < cl_thr) {
-                        high
-                    } else mid
+                    } else {
+                        mid
+                    }
                 }
                 txt <- paste0("<span style=\"color:", frac2col(tbx$BPw, tbx$Nsrv), ";\">BP", thinspc, tbx$BPw, "/", tbx$Nsrv, "</span>",
                               if (sets2) ", " else "<br />",
                               "<span style=\"color:", frac2col(tbx$SOw, tbx$Nsrv_opp), ";\">SO", thinspc, tbx$SOw, "/", tbx$Nsrv_opp,
                               "<br />",
-                              "<span style=\"color:", frac2col(tbx$attw, tbx$Natt), ";\">Att", thinspc, tbx$attw, "/", tbx$Natt,
+                              "<span style=\"color:", frac2col(tbx$attw, tbx$Natt, lthresh = 0.3, uthresh = 0.6), ";\">Att", thinspc, tbx$attw, "/", tbx$Natt,
                               if (sets2) ", " else "<br />",
-                              "<span style=\"color:", frac2col(tbx$errs, tbx$err_opps, side = -1L), ";\">Err", thinspc, tbx$errs,
+                              "<span style=\"color:", frac2col(tbx$Ace, tbx$Nsrv, side = 1L, uthresh = 0.3), ";\">Ace", thinspc, tbx$Ace, "/", tbx$Nsrv,
                               "<br />",
-                              "<span style=\"color:", frac2col(tbx$Ace, tbx$Nsrv, side = 1L), ";\">Ace", thinspc, tbx$Ace,
+                              "<span style=\"color:", frac2col(tbx$Blk, tbx$Natt_opp, side = 1L, uthresh = 0.25), ";\">Blk", thinspc, tbx$Blk, "/", tbx$Natt_opp,
                               if (sets2) ", " else "<br />",
-                              "<span style=\"color:", frac2col(tbx$Blk, tbx$Natt_opp, side = 1L), ";\">Blk", thinspc, tbx$Blk)
-                p <- p + ggplot2::annotate("richtext", label = txt, x = thispid - 0.3, y = if (tm == "visiting") yr0[1] - 0.5 else yr0[2] + 0.5,
+                              "<span style=\"color:", frac2col(tbx$errs, tbx$err_opps, side = -1L, uthresh = 0.35), ";\">Err", thinspc, tbx$errs) ## "/", tbx$err_opps,
+                p <- p + ggplot2::annotate(GeomRichText, label = txt, x = thispid - 0.3, y = if (tm == "visiting") yr0[1] - 0.5 else yr0[2] + 0.5,
                                            hjust = 0, vjust = if (tm == "visiting") "top" else "bottom", size = 1.75, family = "condensedfont", lineheight = 1.0,
                                            fill = NA, label.color = NA, ## remove background and outline
                                            label.padding = grid::unit(rep(0, 4), "pt")) ## no padding
