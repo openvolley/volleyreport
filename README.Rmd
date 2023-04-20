@@ -2,13 +2,9 @@
 output: github_document
 ---
 
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-    collapse = TRUE,
-    comment = "#>",
-    fig.path = "man/figures/README-",
-    out.width = "100%"
-)
+```{r opts, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.path = "man/figures/README-", out.width = "100%")
+
 ```
 
 # volleyreport
@@ -24,7 +20,7 @@ The volleyreport package provides functions for generating reports from volleyba
 
 ## Installation
 
-```{r eval=FALSE}
+```{r inst, eval=FALSE}
 
 options(repos = c(openvolley = "https://openvolley.r-universe.dev",
                   CRAN = "https://cloud.r-project.org"))
@@ -35,18 +31,20 @@ install.packages("volleyreport")
 
 ## install.packages("remotes") ## if needed
 remotes::install_github("openvolley/volleyreport")
+
 ```
 
 ## Usage
 
-```{r eval = FALSE}
+```{r usage, eval = FALSE}
 ## read dv file
 library(datavolley)
 library(volleyreport)
 x <- dv_read(dv_example_file())
 
 ## generate the report
-rpt <- vr_match_summary(x, style = "ov1", format = "paged_pdf")
+rpt <- vr_match_summary(x, icon = ov_logo(), style = "ov1", format = "paged_pdf")
+
 ```
 
 Which should give you something like:
@@ -55,7 +53,20 @@ Which should give you something like:
 library(datavolley)
 library(volleyreport)
 x <- dv_read(dv_example_file())
-rpt <- vr_match_summary(x, style = "ov1", format = "paged_png", outfile = "man/figures/README-example.png")
+rpt <- vr_match_summary(x, style = "ov1", format = "paged_png",
+                        outfile = "man/figures/README-example.png")
+
 ```
 
 <img src="man/figures/README-example.png" />
+
+Or for a beach file:
+
+```{r rptb, include = FALSE}
+rpt <- vr_match_summary(system.file("extdata/test/&2021ita-w-ross_klineman-pavan_melissa.dvw", package = "volleyreport"),
+                        style = "ov1", format = "paged_png", outfile = "man/figures/README-example-beach.png")
+
+```
+
+<img src="man/figures/README-example-beach.png" />
+

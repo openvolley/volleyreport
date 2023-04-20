@@ -35,9 +35,13 @@ library(volleyreport)
 x <- dv_read(dv_example_file())
 
 ## generate the report
-rpt <- vr_match_summary(x, style = "ov1", format = "paged_pdf")
+rpt <- vr_match_summary(x, icon = ov_logo(), style = "ov1", format = "paged_pdf")
 ```
 
 Which should give you something like:
 
 <img src="man/figures/README-example.png" />
+
+Or for a beach file:
+
+<img src="man/figures/README-example-beach.png" />
