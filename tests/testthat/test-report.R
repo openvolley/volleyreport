@@ -23,4 +23,7 @@ test_that("variety of example reports run", {
     rpt <- vr_match_summary(datavolley::dv_example_file(1), format = "paged_pdf")
     rpt <- vr_match_summary(datavolley::dv_example_file(1), format = "paged_pdf", vote = FALSE)
     rpt <- vr_match_summary(datavolley::dv_example_file(1), format = "paged_pdf", style = "ov1")
+
+    ## beach
+    rpt <- vr_match_summary(system.file("extdata/test/&2021ita-w-ross_klineman-pavan_melissa.dvw", package = "volleyreport"), format = "paged_pdf", style = "ov1")
 })
