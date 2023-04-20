@@ -3,6 +3,7 @@ Title: Reports from Volleyball Match Files
 Version: 0.6.99.9990
 Authors@R: c(person("Adrien", "Ickowicz", email = "ickowicz.adrien@gmail.com", role = c("aut", "cre")),
              person("Ben", "Raymond", role = "aut"),
+             person("Tyler", "Widdison", role = "aut"),
              person("Francesco", "Oleni", role = "ctb"),
              person("Willem", "de Wit", role = "ctb"),
              person("Marco", "Chiapello", role = "ctb"),
