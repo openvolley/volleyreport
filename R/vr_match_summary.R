@@ -511,6 +511,8 @@ vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "def
     assert_that(is.string(file_type))
     ## 2nd-ball attack
     x <- x %>% mutate(on2 = .data$skill == "Attack" & lag(.data$skill) %in% c("Reception", "Dig") & lag(.data$team) == .data$team & !is.na(.data$player_id) & .data$player_id != lag(.data$player_id))
+    chk <- x %>% dplyr::summarize(n_sets_scouted = sum(.data$skill == "Set" & .data$evaluation != "Error", na.rm = TRUE),
+                                  n_attacks_scouted = sum(.data$skill == "Attack" & (is.na(.data$on2) | !.data$on2), na.rm = TRUE))
     out <- if (by == "player") {
         x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Attack") %>% group_by(.data$player_id) %>%
             dplyr::summarize(Tot = n(),
@@ -546,7 +548,12 @@ vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "def
                                     `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)))
 
            }
-    if (!(grepl("beach", file_type) && style %in% c("ov1"))) out <- dplyr::select(out, -"On2", -"On2 K%")
+    if (!(grepl("beach", file_type) && style %in% c("ov1"))) {
+        out <- dplyr::select(out, -"On2", -"On2 K%")
+    } else {
+        ## also exclude the On2 columns if sets haven't been consistently scouted
+        if (chk$n_sets_scouted / chk$n_attacks_scouted < 0.5) out <- dplyr::select(out, -"On2", -"On2 K%")
+    }
     if (style %in% c("ov1")) {
         out <- dplyr::rename(out, Kill = "Pts", "K%" = "Pts%")
     } else {
