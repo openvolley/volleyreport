@@ -101,10 +101,6 @@ vr_score_evplot <- function(x, with_summary = FALSE, home_colour = "darkblue", v
         for (tm in c("home", "visiting")) {
             for (thispid in unique(smx$pid[smx$team_hv == tm])) {
                 tbx <- smx %>% dplyr::filter(.data$pid == thispid, .data$team_hv == tm)
-                if (tbx$npts < 5) {
-                    warning("todo, merge short ends at end of set")
-                    next
-                }
                 frac2col <- function(n, N, side = 0L, lthresh = 0.4, uthresh = 1 - lthresh, cl_thr = 0.8, low = "#800000", mid = "#202020", high = "#008000") {
                     ## function to colour text, so we can highlight particularly good or poor performance in blocks
                     ## side = 0 => low is bad, high is good;
@@ -117,7 +113,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, home_colour = "darkblue", v
                     } else if (N < 4) {
                         return(mid)
                     }
-                    cl <- diff(prop.test(n, N)$conf.int)
+                    cl <- diff(suppressWarnings(prop.test(n, N)$conf.int))
                     if (((n/N < lthresh && side == 0L) || (n/N > uthresh && side < 0)) && cl < cl_thr) {
                         low
                     } else if (n/N > uthresh && side > -1 && cl < cl_thr) {
