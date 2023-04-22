@@ -17,6 +17,7 @@ Imports:
   assertthat,
   datavolley,
   dplyr (>= 1.0.0),
+  fontawesome,
   ggplot2,
   ggtext,
   kableExtra,

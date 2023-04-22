@@ -212,34 +212,39 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     ## report icon image
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
     ## cheap and nasty parameterisation
-    vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style, shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = 11)
+    vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style,
+                shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = 11,
+                plot_summary = grepl("beach", file_type) && style %in% c("ov1"), plot_markers = if (grepl("beach", file_type) && style %in% c("ov1")) vr_plot_markers() else FALSE)
     vsx <- c(vsx, dots) ## extra parms
 
     rm(x, meta, refx, vote, style, shiny_progress, file_type, icon, remove_nonplaying)
 
     ## generate report
     output_options <- NULL
+    if (isTRUE(vsx$plot_summary) || is.data.frame(vsx$plot_markers)) showtext::showtext_auto()
     if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
     blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
-    if (format == "paged_html") {
-        rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = TRUE), clean = TRUE)
-        do.call(rmarkdown::render, rgs)
-    } else if (grepl("paged_", format)) {
-        rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = FALSE, copy_resources = TRUE), clean = TRUE)
-        do.call(rmarkdown::render, rgs)
-        rgs2 <- list(input = outfile, output = final_outfile, format = final_format)
-        if (format == "paged_png") rgs2$scale <- 2
-        if (length(chrome_print_extra_args) > 0) rgs2 <- c(rgs2, list(extra_args = chrome_print_extra_args))
-        do.call(ovpaged::chrome_print, rgs2)
-    } else {
-        out <- render(rmd_template, output_file = outfile, output_options = output_options)
-        if (final_format %in% c("pdf", "png")) {
-            safe_webshot(outfile, file = final_outfile)
-            final_outfile
-        } else {
-            out
-        }
-    }
+    f <- if (format == "paged_html") {
+             rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = TRUE), clean = TRUE)
+             do.call(rmarkdown::render, rgs)
+         } else if (grepl("paged_", format)) {
+             rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = FALSE, copy_resources = TRUE), clean = TRUE)
+             do.call(rmarkdown::render, rgs)
+             rgs2 <- list(input = outfile, output = final_outfile, format = final_format)
+             if (format == "paged_png") rgs2$scale <- 2
+             if (length(chrome_print_extra_args) > 0) rgs2 <- c(rgs2, list(extra_args = chrome_print_extra_args))
+             do.call(ovpaged::chrome_print, rgs2)
+         } else {
+             out <- render(rmd_template, output_file = outfile, output_options = output_options)
+             if (final_format %in% c("pdf", "png")) {
+                 safe_webshot(outfile, file = final_outfile)
+                 final_outfile
+             } else {
+                 out
+             }
+         }
+    if (isTRUE(vsx$plot_summary) || is.data.frame(vsx$plot_markers)) showtext::showtext_auto(enable = FALSE)
+    f
 }
 
 #' @export

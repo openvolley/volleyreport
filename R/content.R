@@ -523,6 +523,7 @@ vr_content_key <- function(vsx, kable_format, cols = 2) {
     srveff_txt <- paste0("Serve efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Ace + Pos - Err - Poor) / N</span>")
     ##out <- data.frame(Label = c("BP", "Err", "Pos%", if (vsx$style %in% c("default")) "W-L", if (vsx$style %in% c("ov1")) "K%" else "Pts", "Blo", if (vsx$style %in% c("default")) "Exc", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("expSO%", "expBP%") else c("srvEff%", "recEff%") }, if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", "*n*", "*n*", "."),
     ##                  Description = c("Break point", "Errors", "Positive +#", if (vsx$style %in% c("default")) "Won-Lost", if (vsx$style %in% c("ov1")) "Attack kill%" else "Points", "Blocked", if (vsx$style %in% c("default")) "Excellent", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("Expected SO%", "Expected BP%") else c(srveff_txt, receff_txt) }, if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills", "Starting position", "Starting setter", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute"))
+    this_markers <- if (is.data.frame(vsx$plot_markers)) vsx$plot_markers else if (isTRUE(vsx$plot_markers)) vr_plot_markers() else NULL
     out <- tribble(
         ~Label, ~Description,
         if (beach) "L/R/Blk/Def" else "", "Played left/right, as blocker/defender",
@@ -542,7 +543,10 @@ vr_content_key <- function(vsx, kable_format, cols = 2) {
         if (!beach) "*n*" else "", "Starting position",
         if (!beach) "*n*" else "", "Starting setter",
         if (beach) paste0("Set <span style='font-size:125%; vertical-align:middle;'>", circled1to6[1], "</span>") else "", "Served first in set",
-        if (!beach) "." else "", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute")
+        if (!beach) "." else "", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute",
+        if (!is.null(this_markers)) get_plot_marker("ace", this_markers, as = "svg") else "", "Ace",
+        if (!is.null(this_markers)) get_plot_marker("block", this_markers, as = "svg") else "", "Block kill",
+        if (!is.null(this_markers)) get_plot_marker("error", this_markers, as = "svg") else "", "Error")
     out <- out[nzchar(out$Label), ]
     nidx <- which(out$Label == "*n*")
     if (length(nidx) > 0) out$Label[nidx[1]] <- cell_spec("n", kable_format, color = "white", align = "c", background = "#444444", bold = TRUE)
