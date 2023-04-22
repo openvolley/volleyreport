@@ -515,6 +515,7 @@ vr_content_team_each <- function(vsx, kable_format, which_team = "home") {
 }
 
 vr_content_key <- function(vsx, kable_format, cols = 2) {
+    ## cols is a multiple of two: each pair of columns contains a label and its description
     if (cols %% 2 != 0) stop("cols should be a multiple of 2")
     cols <- max(2, cols)
     beach <- grepl("beach", vsx$file_type)
@@ -550,8 +551,8 @@ vr_content_key <- function(vsx, kable_format, cols = 2) {
         out$Label[out$Label == "."] <- cell_spec("p", kable_format, color = "white", align = "c", background = "#999999", extra_css = "border:1px solid black;")
     }
     if (cols > 2) {
-        if (nrow(out) %% 2 == 1) out <- bind_rows(out, tibble(Label = NA_character_, Description = NA_character_))
-        rows_per_col <- ceiling(nrow(out) / cols)
+        rows_per_col <- ceiling(2 * nrow(out) / cols)
+        out <- bind_rows(out, tibble(Label = NA_character_, Description = NA_character_)[rep(1, rows_per_col * cols / 2 - nrow(out)), ]) ## add blank rows to pad the bottom
         out <- do.call(cbind, lapply(seq(1, nrow(out), by = rows_per_col), function(i) out[i:min(nrow(out), (i + rows_per_col - 1L)), ]))
     }
     out %>% kable(format = kable_format, align = c("r", "l"), escape = FALSE, col.names = NULL, table.attr = "class=\"widetable\"") %>%
