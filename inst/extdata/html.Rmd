@@ -211,6 +211,7 @@ rgs <- vsx$court_plots_args
 rgs$x <- structure(list(meta = vsx$meta, plays = vsx$x), class = "datavolley")
 if (!"icons" %in% names(rgs)) rgs$icons <- vsx$plot_icons
 if (!"attack_plot_colour" %in% names(rgs)) rgs$attack_plot_colour <- vsx$css$header_background
+if (!"reception_plot_colour" %in% names(rgs)) rgs$reception_plot_colour <- vsx$css$header_background
 p <- do.call(vsx$court_plots_fun, rgs)
 ## p can have a "icon_names" attr, which tells us the names of the (fontawesome) icons that were used in the plots
 if (length(attr(p, "icon_names")) > 0) icon_names_for_key <- c(icon_names_for_key, attr(p, "icon_names"))

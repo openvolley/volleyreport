@@ -230,9 +230,9 @@ vr_court_plots <- function(x, ...) {
     }
     assert_that(inherits(x, c("datavolley", "peranavolley")), msg = "x should be a datavolley object")
     px <- datavolley::plays(x)
-    p1 <- vr_reception_plot(px, team = "home")
+    p1 <- vr_reception_plot(px, team = "home", ...)
     p2 <- vr_attack_plot(px, team = "home", ...)
-    p3 <- vr_reception_plot(px, team = "visiting")
+    p3 <- vr_reception_plot(px, team = "visiting", ...)
     p4 <- vr_attack_plot(px, team = "visiting", ...)
     if (!is.null(p1) || !is.null(p2) || !is.null(p3) || !is.null(p4)) {
         getrsz <- function(z) { rh <- attr(z, "rel_size"); if (is.null(rh)) 1.0 else rh }
@@ -247,7 +247,7 @@ vr_court_plots <- function(x, ...) {
     }
 }
 
-vr_reception_plot <- function(x, team = "home", font_size = 7, ...) {
+vr_reception_plot <- function(x, team = "home", font_size = 7, reception_plot_colour = vr_css()$header_background, ...) {
     assert_that(is.string(team), !is.na(team))
     beach <- grepl("beach", guess_data_type(x))
     target_team <- if (team == "home") datavolley::home_team(x) else if (team == "visiting") datavolley::visiting_team(x) else team
@@ -262,23 +262,33 @@ vr_reception_plot <- function(x, team = "home", font_size = 7, ...) {
                               TRUE ~ .data$ry))
     ## summarize serve start and end locations, to be drawn as line segments
     sx <- rx %>% count(.data$sx, .data$sy, .data$rx, .data$ry)
+    ## not-quite-white-to-whatever colour map based on reception_plot_colour
+    cpal <- tryCatch(tail(colorRampPalette(c("#FFFFFF", reception_plot_colour))(21), -4), error = function(e) rev(tail(hcl.colors(21, palette = "Blues"), -4)))
+    val2col <- colorRamp(c(cpal[1], cpal[length(cpal)]))
     ## receptions, to be shown as tiles
     rx <- rx %>% dplyr::filter(.data$skill == "Reception") %>% ## exclude serve errors now
         group_by(.data$rx, .data$ry) %>%
         dplyr::summarize(N = n(), `SO %` = round(mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100, 1),
                          text = paste0("N=", .data$N, "\nSO=", .data$`SO %`, "%")) %>%
-        ungroup
+        ungroup %>%
+        mutate(textcol = get_text_col((.data$N - min(.data$N)) / (max(.data$N) - min(.data$N)), mapper = val2col))
     ggplot() + geom_tile(data = rx, aes(x = .data$rx, y = .data$ry, fill = .data$N)) +
         ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, zone_font_size = 0,##font_size * 0.7,
                 base_size = font_size, court = "lower", line_width = 0.3) + ## "full", ylim = c(0, 5)) +
         ##geom_segment(data = sx, aes(x = .data$sx, y = .data$sy, xend = .data$rx, yend = .data$ry, linewidth = .data$n), colour = "grey80",
         ##             arrow = grid::arrow(angle = 15, length = unit(2, "mm"), type = "closed")) +
-        geom_text(data = rx, aes(x = .data$rx, y = .data$ry, label = .data$text), size = 1.5, colour = "white") +
+        geom_text(data = rx, aes(x = .data$rx, y = .data$ry, label = .data$text, colour = .data$textcol), size = 1.5) +
         ##scale_linewidth(guide = "none", range = c(0.5, 1)) +
         theme(legend.direction = "horizontal", legend.position = "top") +
-        scale_fill_gradient(label = NULL, name = "N") +
+        scale_fill_gradientn(colors = cpal, label = NULL, name = "N") +
+        scale_colour_manual(values = c("white", "black"), guide = "none") +
         ggplot2::labs(caption = paste(strwrap(paste0(target_team, " reception"), 25, simplify = FALSE)[[1]], collapse = "\n")) + theme(plot.caption = element_text(hjust = 0.5))
 }
+
+## given value v that will be mapped to a fill colour via mapper, should we use white (FALSE) or black (TRUE) text?
+## use very approximate perceptual lightness of colour
+get_text_col <- function(v, mapper) apply(mapper(v), 1, function(z) (z[1] * 299 + z[2] * 587 + z[3] * 114) / 1000 / 255) > 0.7
+
 
 vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plot_style = "guess", attack_plot_colour = vr_css()$header_background, font_size = 7, ...) {
     assert_that(is.string(team), !is.na(team))
@@ -294,6 +304,11 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
         cmiss <- sum(is.na(ax$end_coordinate))
         attack_plot_style <- if (cmiss <= szmiss) "coordinates_lines" else if (szmiss <= zmiss) "subzones_heatmap" else "zones"
     }
+    ## white-to-whatever colour map based on attack_plot_colour
+    cpalw <- tryCatch(colorRampPalette(c("#FFFFFF", attack_plot_colour))(21), error = function(e) rev(hcl.colors(21, palette = "Purples")))
+    ## and not including white
+    cpal <- tryCatch(tail(colorRampPalette(c("#FFFFFF", attack_plot_colour))(21), -4), error = function(e) rev(tail(hcl.colors(21, palette = "Purples"), -4)))
+    val2col <- colorRamp(c(cpal[1], cpal[length(cpal)]))
     if (attack_plot_style == "zones") {
         ax <- ax %>% dplyr::filter(!is.na(.data$end_zone))
         if (nrow(ax) < 1) return(NULL)
@@ -301,12 +316,14 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
             group_by(.data$ex, .data$ey) %>%
             dplyr::summarize(N = n(), `Kill %` = round(mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100, 1),
                              text = paste0("N=", .data$N, "\nK=", .data$`Kill %`, "%")) %>%
-            ungroup
+            ungroup %>%
+            mutate(textcol = get_text_col((.data$N - min(.data$N)) / (max(.data$N) - min(.data$N)), mapper = val2col))
         p <- ggplot() + geom_tile(data = ax, aes(x = .data$ex, y = .data$ey, fill = .data$N)) +
             ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, zone_font_size = 0,
                     base_size = font_size, court = "upper", line_width = 0.3) +
-            geom_text(data = ax, aes(x = .data$ex, y = .data$ey, label = .data$text), size = 1.5, colour = "black") +
-            scale_fill_gradientn(colors = rev(tail(hcl.colors(21, palette = "Purples"), -4)), labels = NULL) + theme(legend.direction = "horizontal", legend.position = "top")
+            geom_text(data = ax, aes(x = .data$ex, y = .data$ey, label = .data$text, colour = .data$textcol), size = 1.5) +
+            scale_colour_manual(values = c("white", "black"), guide = "none") +
+            scale_fill_gradientn(colors = cpal, labels = NULL) + theme(legend.direction = "horizontal", legend.position = "top")
         attr(p, "rel_size") <- 1.0
     } else if (attack_plot_style == "coordinates_lines") {
         ax <- ax %>% dplyr::filter(!is.na(.data$start_coordinate), !is.na(.data$end_coordinate))
@@ -366,7 +383,7 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
         }
         hx <- ovlytics::ov_heatmap_kde(x = ax %>% mutate(N = 1) %>% group_by(.data$attack_side), resolution = sub("_heatmap", "", attack_plot_style), court = "upper")
         p <- ggplot(hx, aes(.data$x, .data$y, fill = .data$density)) +
-            scale_fill_gradientn(colors = tryCatch(colorRampPalette(c("#FFFFFF", attack_plot_colour))(21), error = function(e) rev(hcl.colors(21, palette = "Purples"))), guide = "none") +
+            scale_fill_gradientn(colors = cpalw, guide = "none") +
             geom_raster() + facet_wrap(~attack_side, ncol = 2)
         if (FALSE) {
             ## line segments
