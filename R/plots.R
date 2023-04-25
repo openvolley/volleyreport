@@ -268,8 +268,8 @@ vr_reception_plot <- function(x, team = "home", font_size = 7, reception_plot_co
     ## receptions, to be shown as tiles
     rx <- rx %>% dplyr::filter(.data$skill == "Reception") %>% ## exclude serve errors now
         group_by(.data$rx, .data$ry) %>%
-        dplyr::summarize(N = n(), `SO %` = round(mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100, 1),
-                         text = paste0("N=", .data$N, "\nSO=", .data$`SO %`, "%")) %>%
+        dplyr::summarize(N = n(), `SO %` = mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100,
+                         text = paste0("N=", .data$N, "\nSO=", round(.data$`SO %`), "%")) %>%
         ungroup %>%
         mutate(textcol = get_text_col((.data$N - min(.data$N)) / (max(.data$N) - min(.data$N)), mapper = val2col))
     ggplot() + geom_tile(data = rx, aes(x = .data$rx, y = .data$ry, fill = .data$N)) +
@@ -312,10 +312,22 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
     if (attack_plot_style == "zones") {
         ax <- ax %>% dplyr::filter(!is.na(.data$end_zone))
         if (nrow(ax) < 1) return(NULL)
-        ax <- cbind(ax, dv_xy(ax$start_zone, end = "lower", xynames = c("sx", "sy")), dv_xy(ax$end_zone, end = "upper", xynames = c("ex", "ey"))) %>%
-            group_by(.data$ex, .data$ey) %>%
-            dplyr::summarize(N = n(), `Kill %` = round(mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100, 1),
-                             text = paste0("N=", .data$N, "\nK=", .data$`Kill %`, "%")) %>%
+        ax <- cbind(ax, dv_xy(ax$start_zone, end = "lower", xynames = c("sx", "sy")), dv_xy(ax$end_zone, end = "upper", xynames = c("ex", "ey")))
+        if (beach) {
+            ax <- mutate(ax, attack_side = case_when(.data$start_zone %in% c(4, 7, 5) ~ "From left",
+                                                     .data$start_zone %in% c(3, 8, 6) ~ "From middle",
+                                                     .data$start_zone %in% c(2, 9, 1) ~ "From right"),
+                         attack_side = factor(.data$attack_side, levels = c("From left", "From middle", "From right")))
+        } else {
+            ## TODO change this to separate quick/slide/pipe from other
+            ax <- mutate(ax, attack_side = case_when(.data$start_zone %in% c(4, 7, 5) ~ "From left",
+                                                     .data$start_zone %in% c(3, 8, 6) ~ "From middle",
+                                                     .data$start_zone %in% c(2, 9, 1) ~ "From right"),
+                         attack_side = factor(.data$attack_side, levels = c("From left", "From middle", "From right")))
+        }
+        ax <- ax %>% group_by(.data$ex, .data$ey, .data$attack_side) %>%
+            dplyr::summarize(N = n(), `Kill %` = mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100,
+                             text = paste0("N=", .data$N, "\nK=", round(.data$`Kill %`), "%")) %>%
             ungroup %>%
             mutate(textcol = get_text_col((.data$N - min(.data$N)) / (max(.data$N) - min(.data$N)), mapper = val2col))
         p <- ggplot() + geom_tile(data = ax, aes(x = .data$ex, y = .data$ey, fill = .data$N)) +
@@ -323,7 +335,8 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
                     base_size = font_size, court = "upper", line_width = 0.3) +
             geom_text(data = ax, aes(x = .data$ex, y = .data$ey, label = .data$text, colour = .data$textcol), size = 1.5) +
             scale_colour_manual(values = c("white", "black"), guide = "none") +
-            scale_fill_gradientn(colors = cpal, labels = NULL) + theme(legend.direction = "horizontal", legend.position = "top")
+            scale_fill_gradientn(colors = cpal, labels = NULL, guide = "none") + ##theme(legend.direction = "horizontal", legend.position = "top") +
+            facet_wrap(~attack_side, ncol = 2)
         attr(p, "rel_size") <- 1.0
     } else if (attack_plot_style == "coordinates_lines") {
         ax <- ax %>% dplyr::filter(!is.na(.data$start_coordinate), !is.na(.data$end_coordinate))
