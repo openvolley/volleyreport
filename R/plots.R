@@ -280,7 +280,7 @@ vr_reception_plot <- function(x, team = "home", font_size = 7, ...) {
         ggplot2::labs(caption = paste(strwrap(paste0(target_team, " reception"), 25, simplify = FALSE)[[1]], collapse = "\n")) + theme(plot.caption = element_text(hjust = 0.5))
 }
 
-vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plot_style = "guess", font_size = 7, ...) {
+vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plot_style = "guess", attack_plot_colour = vr_css()$header_background, font_size = 7, ...) {
     assert_that(is.string(team), !is.na(team))
     attack_plot_style <- match.arg(attack_plot_style, c("guess", "zones", "subzones_heatmap", "coordinates_lines", "coordinates_heatmap"))
     beach <- grepl("beach", guess_data_type(x))
@@ -366,7 +366,7 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
         }
         hx <- ovlytics::ov_heatmap_kde(x = ax %>% mutate(N = 1) %>% group_by(.data$attack_side), resolution = sub("_heatmap", "", attack_plot_style), court = "upper")
         p <- ggplot(hx, aes(.data$x, .data$y, fill = .data$density)) +
-            scale_fill_gradientn(colors = rev(hcl.colors(21, palette = "Purples")), guide = "none") +
+            scale_fill_gradientn(colors = tryCatch(colorRampPalette(c("#FFFFFF", attack_plot_colour))(21), error = function(e) rev(hcl.colors(21, palette = "Purples"))), guide = "none") +
             geom_raster() + facet_wrap(~attack_side, ncol = 2)
         if (FALSE) {
             ## line segments
