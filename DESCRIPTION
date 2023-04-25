@@ -12,9 +12,10 @@ Authors@R: c(person("Adrien", "Ickowicz", email = "ickowicz.adrien@gmail.com", r
 Description: Functions for generating reports from volleyball match files.
 URL: https://volleyreport.openvolley.org, https://github.com/openvolley/volleyreport
 BugReports: https://github.com/openvolley/volleyreport/issues
-Depends: R (>= 3.3.0)
+Depends: R (>= 3.6.0)
 Imports:
   assertthat,
+  cowplot,
   datavolley,
   dplyr (>= 1.0.0),
   fontawesome,
@@ -23,6 +24,7 @@ Imports:
   kableExtra,
   knitr,
   methods,
+  ovlytics,
   ovpaged (>= 0.0.6),
   rmarkdown,
   showtext,
@@ -39,4 +41,4 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
-Remotes: openvolley/datavolley, openvolley/ovpaged
+Remotes: openvolley/datavolley, openvolley/ovlytics, openvolley/ovpaged

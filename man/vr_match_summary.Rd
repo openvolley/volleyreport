@@ -15,6 +15,9 @@ vr_match_summary(
   css = vr_css(),
   remove_nonplaying = TRUE,
   style = "default",
+  court_plots_function = "vr_court_plots",
+  court_plots_args = list(attack_plot_style = "guess"),
+  plot_icons = TRUE,
   skill_evaluation_decode = "guess",
   shiny_progress = FALSE,
   chrome_print_extra_args = NULL,
@@ -45,6 +48,12 @@ vr_css()
 \item "default" - the standard FIVB match report
 \item "ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes
 }}
+
+\item{court_plots_function}{string or function: a function, or name of a function, that takes a datavolley object and produces a plot object. Supply your own function here to override the court plots that are included in the report for some values of \code{style}}
+
+\item{court_plots_args}{list: arguments to pass to the court plot function}
+
+\item{plot_icons}{logical or data.frame: some values of \code{style} will include plots of various kinds in the report. Set \code{plot_icons} to \code{FALSE} for no icons, \code{TRUE} to use the icons specified by \code{\link[=vr_plot_icons]{vr_plot_icons()}}, or a data.frame as returned by \code{\link[=vr_plot_icons]{vr_plot_icons()}} to control the icons that will be used. Note that only (free) fontawesome icons are supported}
 
 \item{skill_evaluation_decode}{: as for \code{\link[datavolley:read_dv]{datavolley::dv_read()}}}
 

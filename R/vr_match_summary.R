@@ -11,6 +11,9 @@
 #' @param style string: can be
 #' * "default" - the standard FIVB match report
 #' * "ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes
+#' @param court_plots_function string or function: a function, or name of a function, that takes a datavolley object and produces a plot object. Supply your own function here to override the court plots that are included in the report for some values of `style`
+#' @param court_plots_args list: arguments to pass to the court plot function
+#' @param plot_icons logical or data.frame: some values of `style` will include plots of various kinds in the report. Set `plot_icons` to `FALSE` for no icons, `TRUE` to use the icons specified by [vr_plot_icons()], or a data.frame as returned by [vr_plot_icons()] to control the icons that will be used. Note that only (free) fontawesome icons are supported
 #' @param skill_evaluation_decode : as for [datavolley::dv_read()]
 #' @param shiny_progress logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope
 #' @param chrome_print_extra_args character: additional parameters to pass as `extra_args` to [pagedown::chrome_print()] (only relevant if using a "paged_*" format)
@@ -23,7 +26,7 @@
 #'   if (interactive()) browseURL(f)
 #' }
 #' @export
-vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", skill_evaluation_decode = "guess", shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
+vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", court_plots_function = "vr_court_plots", court_plots_args = list(attack_plot_style = "guess"), plot_icons = TRUE, skill_evaluation_decode = "guess", shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
     if (is.string(x) && file.exists(x)) {
         if (grepl("\\.(dvw|vsm|xml)$", x, ignore.case = TRUE)) {
             x <- datavolley::dv_read(x, skill_evaluation_decode = skill_evaluation_decode)
@@ -31,7 +34,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
             stop("unknown file format: ", x)
         }
     }
-    assert_that(inherits(x, c("datavolley", "peranavolley")))
+    assert_that(inherits(x, c("datavolley", "peranavolley")), msg = "x should be a datavolley object")
     assert_that(is.string(format))
     assert_that(is.flag(shiny_progress), !is.na(shiny_progress))
     format <- tolower(format)
@@ -43,6 +46,10 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
         }
     }
     style <- check_report_style(style)
+    court_plots_function <- tryCatch(match.fun(court_plots_function), error = function(e) {
+        stop("could not match court_plots_function to a function")
+    })
+
     dots <- list(...)
     if ("footnotes" %in% names(dots)) {
         footnotes <- dots$footnotes
@@ -211,17 +218,19 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
 
     ## report icon image
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
+    ## other plot icons
+    if (is.logical(plot_icons) && isTRUE(plot_icons)) plot_icons <- vr_plot_icons()
     ## cheap and nasty parameterisation
     vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style,
                 shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = 11,
-                plot_summary = grepl("beach", file_type) && style %in% c("ov1"), plot_markers = if (grepl("beach", file_type) && style %in% c("ov1")) vr_plot_markers() else FALSE)
+                plot_summary = grepl("beach", file_type) && style %in% c("ov1"), plot_icons = plot_icons, court_plots_fun = court_plots_function)
     vsx <- c(vsx, dots) ## extra parms
 
     rm(x, meta, refx, vote, style, shiny_progress, file_type, icon, remove_nonplaying)
 
     ## generate report
     output_options <- NULL
-    if (isTRUE(vsx$plot_summary) || is.data.frame(vsx$plot_markers)) showtext::showtext_auto()
+    if (isTRUE(vsx$plot_summary) || is.data.frame(vsx$plot_icons)) showtext::showtext_auto()
     if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
     blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
     f <- if (format == "paged_html") {
@@ -243,7 +252,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
                  out
              }
          }
-    if (isTRUE(vsx$plot_summary) || is.data.frame(vsx$plot_markers)) showtext::showtext_auto(enable = FALSE)
+    if (isTRUE(vsx$plot_summary) || is.data.frame(vsx$plot_icons)) showtext::showtext_auto(enable = FALSE)
     f
 }
 

@@ -26,4 +26,12 @@ test_that("variety of example reports run", {
 
     ## beach
     rpt <- vr_match_summary(system.file("extdata/test/&2021ita-w-ross_klineman-pavan_melissa.dvw", package = "volleyreport"), format = "paged_pdf", style = "ov1")
+    ## changing icons
+    rpt <- vr_match_summary(system.file("extdata/test/&2021ita-w-ross_klineman-pavan_melissa.dvw", package = "volleyreport"), format = "paged_pdf", style = "ov1", plot_icons = FALSE)
+    rpt <- vr_match_summary(system.file("extdata/test/&2021ita-w-ross_klineman-pavan_melissa.dvw", package = "volleyreport"), format = "paged_pdf", style = "ov1", plot_icons = TRUE)
+    ## change icons around
+    pltic <- vr_plot_icons()
+    ridx <- sample.int(nrow(pltic))
+    pltic[, c("icon_event", "description")] <- pltic[ridx, c("icon_event", "description")]
+    rpt <- vr_match_summary(system.file("extdata/test/&2021ita-w-ross_klineman-pavan_melissa.dvw", package = "volleyreport"), format = "paged_pdf", style = "ov1", plot_icons = pltic)
 })
