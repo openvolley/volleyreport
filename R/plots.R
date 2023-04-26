@@ -271,38 +271,40 @@ vr_reception_plot <- function(x, team = "home", font_size = 7, reception_plot_co
         dplyr::summarize(N = n(), `SO %` = mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100,
                          text = paste0("N=", .data$N, "\nSO=", round(.data$`SO %`), "%")) %>%
         ungroup %>%
-        mutate(textcol = get_text_col((.data$N - min(.data$N)) / (max(.data$N) - min(.data$N)), mapper = val2col))
-    ggplot() + geom_tile(data = rx, aes(x = .data$rx, y = .data$ry, fill = .data$N)) +
-        ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, zone_font_size = 0,##font_size * 0.7,
+        mutate(text_bw = white_or_black((.data$N - min(.data$N)) / (max(.data$N) - min(.data$N)), mapper = val2col))
+    ggplot() + geom_tile(data = rx, aes(x = .data$rx, y = .data$ry, fill = .data$N), width = 1, height = 1) +
+        ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, show_zones = FALSE,##font_size * 0.7,
                 base_size = font_size, court = "lower", line_width = 0.3) + ## "full", ylim = c(0, 5)) +
         ##geom_segment(data = sx, aes(x = .data$sx, y = .data$sy, xend = .data$rx, yend = .data$ry, linewidth = .data$n), colour = "grey80",
         ##             arrow = grid::arrow(angle = 15, length = unit(2, "mm"), type = "closed")) +
-        geom_text(data = rx, aes(x = .data$rx, y = .data$ry, label = .data$text, colour = .data$textcol), size = 1.5) +
+        geom_text(data = rx %>% dplyr::filter(!.data$text_bw), aes(x = .data$rx, y = .data$ry, label = .data$text), size = 1.5, colour = "white") +
+        geom_text(data = rx %>% dplyr::filter(.data$text_bw), aes(x = .data$rx, y = .data$ry, label = .data$text), size = 1.5, colour = "black") +
         ##scale_linewidth(guide = "none", range = c(0.5, 1)) +
         theme(legend.direction = "horizontal", legend.position = "top") +
         scale_fill_gradientn(colors = cpal, label = NULL, name = "N") +
-        scale_colour_manual(values = c("white", "black"), guide = "none") +
         ggplot2::labs(caption = paste(strwrap(paste0(target_team, " reception"), 25, simplify = FALSE)[[1]], collapse = "\n")) + theme(plot.caption = element_text(hjust = 0.5))
 }
 
 ## given value v that will be mapped to a fill colour via mapper, should we use white (FALSE) or black (TRUE) text?
 ## use very approximate perceptual lightness of colour
-get_text_col <- function(v, mapper) apply(mapper(v), 1, function(z) (z[1] * 299 + z[2] * 587 + z[3] * 114) / 1000 / 255) > 0.7
+white_or_black <- function(v, mapper) apply(mapper(v), 1, function(z) (z[1] * 299 + z[2] * 587 + z[3] * 114) / 1000 / 255) > 0.7
 
 
 vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plot_style = "guess", attack_plot_colour = vr_css()$header_background, font_size = 7, ...) {
     assert_that(is.string(team), !is.na(team))
-    attack_plot_style <- match.arg(attack_plot_style, c("guess", "zones", "subzones_heatmap", "coordinates_lines", "coordinates_heatmap"))
+    attack_plot_style <- match.arg(attack_plot_style, c("guess", "zones", "cones", "subzones_heatmap", "coordinates_lines", "coordinates_heatmap"))
     beach <- grepl("beach", guess_data_type(x))
     target_team <- if (team == "home") datavolley::home_team(x) else if (team == "visiting") datavolley::visiting_team(x) else team
     ax <- x %>% dplyr::filter(.data$skill == "Attack", .data$team == target_team)
+    if (nrow(ax) < 1) return(NULL)
     sysfonts::font_add("fa6s", regular = system.file("fontawesome/webfonts/fa-solid-900.ttf", package = "fontawesome", mustWork = TRUE))
     if (attack_plot_style == "guess") {
         ## guess style, coordinates as segments or zones or subzones
+        conemiss <- sum(is.na(ax$end_cone))
         zmiss <- sum(is.na(ax$end_zone))
         szmiss <- sum(is.na(ax$end_subzone) | is.na(ax$end_zone))
         cmiss <- sum(is.na(ax$end_coordinate))
-        attack_plot_style <- if (cmiss <= szmiss) "coordinates_lines" else if (szmiss <= zmiss) "subzones_heatmap" else "zones"
+        attack_plot_style <- if (cmiss <= szmiss && cmiss < 0.2 * nrow(ax)) "coordinates_lines" else if (szmiss <= zmiss && szmiss < 0.2 * nrow(ax)) "subzones_heatmap" else if (conemiss <= zmiss && conemiss < 0.2 * nrow(ax)) "cones" else "zones"
     }
     ## white-to-whatever colour map based on attack_plot_colour
     cpalw <- tryCatch(colorRampPalette(c("#FFFFFF", attack_plot_colour))(21), error = function(e) rev(hcl.colors(21, palette = "Purples")))
@@ -329,13 +331,68 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
             dplyr::summarize(N = n(), `Kill %` = mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100,
                              text = paste0("N=", .data$N, "\nK=", round(.data$`Kill %`), "%")) %>%
             ungroup %>%
-            mutate(textcol = get_text_col((.data$N - min(.data$N)) / (max(.data$N) - min(.data$N)), mapper = val2col))
+            mutate(text_bw = white_or_black((.data$N - min(.data$N)) / (max(.data$N) - min(.data$N)), mapper = val2col))
         p <- ggplot() + geom_tile(data = ax, aes(x = .data$ex, y = .data$ey, fill = .data$N)) +
-            ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, zone_font_size = 0,
+            ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, show_zones = FALSE,
                     base_size = font_size, court = "upper", line_width = 0.3) +
-            geom_text(data = ax, aes(x = .data$ex, y = .data$ey, label = .data$text, colour = .data$textcol), size = 1.5) +
-            scale_colour_manual(values = c("white", "black"), guide = "none") +
+            geom_text(data = ax %>% dplyr::filter(!.data$text_bw), aes(x = .data$ex, y = .data$ey, label = .data$text), size = 1.5, colour = "white") +
+            geom_text(data = ax %>% dplyr::filter(.data$text_bw), aes(x = .data$ex, y = .data$ey, label = .data$text), size = 1.5, colour = "black") +
             scale_fill_gradientn(colors = cpal, labels = NULL, guide = "none") + ##theme(legend.direction = "horizontal", legend.position = "top") +
+            facet_wrap(~attack_side, ncol = 2)
+        attr(p, "rel_size") <- 1.0
+    } else if (attack_plot_style == "cones") {
+        ## these don't really work very well
+        ##
+        ## data for testing
+        ##ax$end_cone <- sample.int(n = 7, size = nrow(ax), replace = TRUE); ax$end_cone[ax$start_zone %in% c(3, 8, 6) & runif(nrow(ax)) > 0.9] <- 8L
+        ax <- ax %>% dplyr::filter(!is.na(.data$end_cone))
+        if (nrow(ax) < 1) return(NULL)
+        ## need to collapse start zones by side, so that we don't get overlapped cones
+        ax <- mutate(ax, start_zone = case_when(.data$start_zone %in% c(4, 7, 5) ~ 4L,
+                                                .data$start_zone %in% c(3, 8, 6) ~ 3L,
+                                                .data$start_zone %in% c(2, 9, 1) ~ 2),
+                     attack_side = case_when(.data$start_zone == 4 ~ "From left",
+                                             .data$start_zone == 3 ~ "From middle",
+                                             .data$start_zone == 2 ~ "From right"),
+                     attack_side = factor(.data$attack_side, levels = c("From left", "From middle", "From right")))
+        ## create data.frame for polygons
+        px <- ax %>% count(.data$start_zone, .data$attack_side, .data$end_cone, name = "N")
+        px <- bind_cols(px, dv_cone2xy(start_zones = px$start_zone, end_cones = px$end_cone, end = "upper", as = "polygons"))
+        px <- tibble(x = unlist(px$ex), y = unlist(px$ey), id = rep(seq_len(nrow(px)), each = 4), N = rep(px$N, each = 4), attack_side = rep(px$attack_side, each = 4))
+        ## and data.frame for labels
+        ax <- cbind(ax, dv_xy(ax$start_zone, end = "lower", xynames = c("sx", "sy")),
+                    dv_cone2xy(start_zones = ax$start_zone, end_cones = ax$end_cone, end = "upper", xynames = c("ex", "ey"), as = "points")) %>%
+            mutate(sy = 3.5,
+                   ## modify label y-position
+                   ey = case_when(.data$attack_side == "From middle" & .data$end_cone %in% 2:6 ~ 5.4,
+                                  .data$attack_side == "From middle" ~ 4.8,
+                                  TRUE ~ .data$ey),
+                   ## label angle
+                   la = atan2(.data$ey - .data$sy, .data$ex - .data$sx) / pi * 180,
+                   la = if_else(.data$la > 90, .data$la - 180, .data$la),
+                   la = case_when(.data$attack_side == "From left" & .data$end_cone == 1 ~ 90,
+                                  .data$attack_side == "From right" & .data$end_cone == 1 ~ -90,
+                                  .data$attack_side == "From middle" ~ 90,
+                                  TRUE ~ .data$la),
+                   ## label justification
+                   lhj = case_when(.data$attack_side == "From middle" & .data$end_cone %in% 2:6 ~ 0,
+                                   .data$attack_side == "From middle" ~ 1,
+                                   .data$attack_side == "From right" & .data$end_cone == 1 ~ -0.1,
+                                   .data$attack_side == "From left" & .data$end_cone == 1 ~ 1.2,
+                                   .data$la > 0 & (.data$ey > 4.5 | .data$ex > 3) ~ 1.2,
+                                   .data$ex > 0.5 & .data$ex < 3.5 & .data$ey < 5 ~ 0.5,
+                                   TRUE ~ -0.1))
+        ax <- ax %>% group_by(.data$sx, .data$sy, .data$ex, .data$ey, .data$la, .data$lhj, .data$attack_side) %>%
+            dplyr::summarize(N = n(), `Kill %` = mean(.data$point_won_by == .data$team, na.rm = TRUE) * 100,
+                             text = paste0("N=", .data$N, if_else(.data$attack_side == "From middle", "\n", ","), "K=", round(.data$`Kill %`), "%")) %>% ungroup %>%
+            mutate(text_bw = white_or_black((.data$N - min(.data$N)) / (max(.data$N) - min(.data$N)), mapper = val2col))
+
+        p <- ggplot() + ggplot2::geom_polygon(data = px, aes(.data$x, .data$y, group = .data$id, fill = .data$N), colour = "grey80", linewidth = 0.3) +
+            ggcourt(labels = NULL, show_zone_lines = FALSE, show_3m_line = !beach, label_font_size = font_size * 0.8, show_zones = FALSE, base_size = font_size, court = "upper", line_width = 0.3) +
+            geom_text(data = ax %>% dplyr::filter(!.data$text_bw), aes(x = .data$ex, y = .data$ey, label = .data$text, angle = .data$la, hjust = .data$lhj), size = 1.5, colour = "white", lineheight = 1.0) +
+            geom_text(data = ax %>% dplyr::filter(.data$text_bw), aes(x = .data$ex, y = .data$ey, label = .data$text, angle = .data$la, hjust = .data$lhj), size = 1.5, colour = "black", lineheight = 1.0) +
+            scale_fill_gradientn(colors = cpal, labels = NULL, guide = "none") +
+            theme(strip.background = ggplot2::element_rect(fill = NA, linewidth = 0, linetype = "blank"), strip.text.x = element_text(margin = ggplot2::margin(t = 0, b = 3))) +
             facet_wrap(~attack_side, ncol = 2)
         attr(p, "rel_size") <- 1.0
     } else if (attack_plot_style == "coordinates_lines") {
@@ -351,7 +408,7 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
                                                    .data$evaluation == "Error" ~ "error",
                                                    TRUE ~ "in_play"))
         if (is.data.frame(icons)) ax <- left_join(ax, icons %>% dplyr::select("icon_event", "icon_name", icon = "unicode"), by = "icon_event")
-        p <- ggplot() + ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, zone_font_size = 0,
+        p <- ggplot() + ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, show_zones = FALSE,
                                 base_size = font_size, court = "full", ylim = c(2.5, NA_real_), line_width = 0.3)
         if (any(midx)) p <- p + geom_segment(data = ax[midx, ], aes(x = .data$start_coordinate_x, y = .data$start_coordinate_y, xend = .data$mid_coordinate_x, yend = .data$mid_coordinate_y), colour = "grey80", alpha = 0.5) +
                            geom_segment(data = ax[midx, ], aes(x = .data$mid_coordinate_x, y = .data$mid_coordinate_y, xend = .data$end_coordinate_x, yend = .data$end_coordinate_y), colour = "grey80", alpha = 0.5)
@@ -411,7 +468,7 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
             }
             p <- p + scale_linewidth(guide = "none", range = c(0.4, 0.8))
         }
-        p <- p + ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, zone_font_size = 0, base_size = font_size, xlim = c(0.25, 3.75), line_width = 0.3, court = "upper") ## court = "full", ylim = c(2.5, 6.75)
+        p <- p + ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, show_zones = FALSE, base_size = font_size, line_width = 0.3, court = "upper", xlim = if (grepl("coordinates", attack_plot_style)) c(0.25, 3.75) else c(0.5, 3.5), ylim = if (grepl("coordinates", attack_plot_style)) c(3.5, 6.75) else c(3.5, 6.5)) ## court = "full", ylim = c(2.5, 6.75)
         attr(p, "rel_size") <- 1.05
     } else {
         p <- NULL
