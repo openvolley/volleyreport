@@ -304,7 +304,8 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
         zmiss <- sum(is.na(ax$end_zone))
         szmiss <- sum(is.na(ax$end_subzone) | is.na(ax$end_zone))
         cmiss <- sum(is.na(ax$end_coordinate))
-        attack_plot_style <- if (cmiss <= szmiss && cmiss < 0.2 * nrow(ax)) "coordinates_lines" else if (szmiss <= zmiss && szmiss < 0.2 * nrow(ax)) "subzones_heatmap" else if (conemiss <= zmiss && conemiss < 0.2 * nrow(ax)) "cones" else "zones"
+        attack_plot_style <- if (cmiss <= szmiss && cmiss < 0.2 * nrow(ax)) "coordinates_lines" else if (szmiss < zmiss && szmiss < 0.2 * nrow(ax)) "subzones_heatmap" else if (conemiss <= zmiss && conemiss < 0.2 * nrow(ax)) "cones" else "zones"
+        ## note that szmiss can never be less than zmiss, so we default to a zone plot in prference to a subzone plot
     }
     ## white-to-whatever colour map based on attack_plot_colour
     cpalw <- tryCatch(colorRampPalette(c("#FFFFFF", attack_plot_colour))(21), error = function(e) rev(hcl.colors(21, palette = "Purples")))
