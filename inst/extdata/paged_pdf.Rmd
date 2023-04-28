@@ -46,7 +46,7 @@ if (!is.null(vsx$header_extra_pre)) cat(vsx$header_extra_pre, "\n")
 
 if (!is.null(vsx$icon)) {
     cat("<table class=\"mtbl\"><tr><td width=\"15%\">\n")
-    cat("<p style=\"margin:0;\"><img src=\"", vsx$icon, "\" style=\"max-width: 90%; max-height: 23mm;\" /></p>\n", sep = "")
+    cat("<p style=\"margin:0;\"><img src=\"", vsx$icon, "\" style=\"max-width:90%; max-height:18mm;\" /></p>\n", sep = "")
     cat("</td>\n")
     cat("<td width=\"85%\">\n")
 }
@@ -168,11 +168,6 @@ cat("</td></tr></table>\n")
 
 ```{r}
 if (vsx$shiny_progress) try(shiny::setProgress(value = 0.8, message = "Generating footer"), silent = TRUE)
-```
-
-```{r hvspace2, warning = FALSE, results = "asis"}
-if (beach) cat("<div style=\"height:6mm\"></div>\n")
-
 ```
 
 ```{r courtplots, warning = FALSE, eval = vsx$style %in% c("ov1") && beach, results = "asis", fig.height = 60 / 25.4, fig.width = 210 / 25.4}
