@@ -13,7 +13,7 @@
 #' * "ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes
 #' @param court_plots_function string or function: a function, or name of a function, that takes a datavolley object and produces a plot object. Supply your own function here to override the court plots that are included in the report for some values of `style`
 #' @param court_plots_args list: named list of arguments to pass to the court plot function
-#' @param plot_icons logical or data.frame: some values of `style` will include plots of various kinds in the report. Set `plot_icons` to `FALSE` for no icons, `TRUE` to use the icons specified by [vr_plot_icons()], or a data.frame as returned by [vr_plot_icons()] to control the icons that will be used. Note that only (free) fontawesome icons are supported
+#' @param plot_icons logical or data.frame: some values of `style` will include plots of various kinds in the report. Currently `plot_icons` defaults to `TRUE` for beach reports, otherwise `FALSE`. Set `plot_icons` to `FALSE` for no icons, `TRUE` to use the icons specified by [vr_plot_icons()], or a data.frame as returned by [vr_plot_icons()] to control the icons that will be used. Note that only (free) fontawesome icons are supported
 #' @param skill_evaluation_decode : as for [datavolley::dv_read()]
 #' @param shiny_progress logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope
 #' @param chrome_print_extra_args character: additional parameters to pass as `extra_args` to [pagedown::chrome_print()] (only relevant if using a "paged_*" format)
@@ -26,7 +26,7 @@
 #'   if (interactive()) browseURL(f)
 #' }
 #' @export
-vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", court_plots_function = "vr_court_plots", court_plots_args = list(), plot_icons = TRUE, skill_evaluation_decode = "guess", shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
+vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", court_plots_function = "vr_court_plots", court_plots_args = list(), plot_icons, skill_evaluation_decode = "guess", shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
     if (is.string(x) && file.exists(x)) {
         if (grepl("\\.(dvw|vsm|xml)$", x, ignore.case = TRUE)) {
             x <- datavolley::dv_read(x, skill_evaluation_decode = skill_evaluation_decode)
@@ -223,6 +223,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     ## report icon image
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
     ## other plot icons
+    if (missing(plot_icons)) plot_icons <- grepl("beach", file_type)
     if (is.logical(plot_icons) && isTRUE(plot_icons)) plot_icons <- vr_plot_icons()
     ## cheap and nasty parameterisation
     vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style,
