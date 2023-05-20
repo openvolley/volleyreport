@@ -531,10 +531,16 @@ vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "def
     team_select <- team
     style <- check_report_style(style)
     assert_that(is.string(file_type))
-    ## 2nd-ball attack
-    x <- x %>% mutate(on2 = .data$skill == "Attack" & lag(.data$skill) %in% c("Reception", "Dig") & lag(.data$team) == .data$team & !is.na(.data$player_id) & .data$player_id != lag(.data$player_id))
-    chk <- x %>% dplyr::summarize(n_sets_scouted = sum(.data$skill == "Set" & .data$evaluation != "Error", na.rm = TRUE),
-                                  n_attacks_scouted = sum(.data$skill == "Attack" & (is.na(.data$on2) | !.data$on2), na.rm = TRUE))
+    ## 2nd-ball attack. Don't include attacks after a block touch
+    x <- x %>% mutate(attack_followed_block_touch = .data$skill == "Attack" &
+                          ((lag(.data$skill == "Block") & lag(.data$team) == .data$team) | ## attack immediately after block touch
+                           (grepl("beach", file_type) & lag(.data$skill == "Block", 2) & lag(.data$team, 2) == .data$team & lag(.data$team) == .data$team)), ## block touch then another touch (e.g. set or dig) then attack
+                      on2 = !.data$attack_followed_block_touch & .data$skill == "Attack" &
+                          ((lag(.data$skill) %in% c("Reception", "Dig") & lag(.data$team) == .data$team & !is.na(.data$player_id) & .data$player_id != lag(.data$player_id)) |
+                           ## allow for common 2nd touch entries in the attack description (will help if e.g. digs not scouted)
+                           grepl("\\b(2nd Touch|Second touch|2TAttack|On 2)\\b", .data$attack_description, ignore.case = TRUE)))
+    chk <- x %>% dplyr::summarize(n_trans_digs_scouted = sum(.data$skill == "Dig" & .data$phase == "Transition" & .data$evaluation != "Error", na.rm = TRUE),
+                                  n_trans_attacks_scouted = sum(.data$skill == "Attack" & .data$phase == "Transition", na.rm = TRUE))
     out <- if (by == "player") {
         x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Attack") %>% group_by(.data$player_id) %>%
             dplyr::summarize(Tot = n(),
@@ -573,8 +579,8 @@ vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "def
     if (!(grepl("beach", file_type) && style %in% c("ov1"))) {
         out <- dplyr::select(out, -"On2", -"On2 K%")
     } else {
-        ## also exclude the On2 columns if sets haven't been consistently scouted
-        if (chk$n_sets_scouted / chk$n_attacks_scouted < 0.5) out <- dplyr::select(out, -"On2", -"On2 K%")
+        ## also exclude the On2 columns if digs haven't been consistently scouted (assume receptions have)
+        if (chk$n_trans_digs_scouted / chk$n_trans_attacks_scouted < 0.3) out <- dplyr::select(out, -"On2", -"On2 K%")
     }
     if (style %in% c("ov1")) {
         out <- dplyr::rename(out, Kill = "Pts", "K%" = "Pts%")
