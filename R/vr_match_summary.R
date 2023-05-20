@@ -46,8 +46,11 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
         }
     }
     style <- check_report_style(style)
+    ## court_plots_function is either a user-defind function, or more likely the vr_court_plots function in this package
     court_plots_function <- tryCatch(match.fun(court_plots_function), error = function(e) {
-        stop("could not match court_plots_function to a function")
+        tryCatch(get(court_plots_function, envir = asNamespace("volleyreport"), mode = "function", inherits = FALSE), error = function(e) {
+            stop("could not match court_plots_function to a function")
+        })
     })
     if (!is.list(court_plots_args) || length(names(court_plots_args)) != length(court_plots_args) || any(is.na(names(court_plots_args)) | !nzchar(names(court_plots_args)))) {
         warning("court_plot_args should be a named list, ignoring")
