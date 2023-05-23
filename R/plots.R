@@ -230,10 +230,16 @@ vr_court_plots <- function(x, ...) {
     }
     assert_that(inherits(x, c("datavolley", "peranavolley")), msg = "x should be a datavolley object")
     px <- datavolley::plays(x)
-    p1 <- vr_reception_plot(px, team = "home", ...)
-    p2 <- vr_attack_plot(px, team = "home", ...)
-    p3 <- vr_reception_plot(px, team = "visiting", ...)
-    p4 <- vr_attack_plot(px, team = "visiting", ...)
+    dots <- list(...)
+    if (!"attack_plot_style" %in% names(dots) || tolower(dots$attack_plot_style) %eq% "guess") {
+        ## if plot style is guess, try and guess on the basis of the full data, otherwise if it happens plot by plot we can get different plot styles in the same report (for home compared to away team)
+        ax <- dplyr::filter(px, .data$skill == "Attack")
+        if (nrow(ax) > 0) dots$attack_plot_style <- guess_attack_plot_style(ax)
+    }
+    p1 <- do.call(vr_reception_plot, c(list(px, team = "home"), dots))
+    p2 <- do.call(vr_attack_plot, c(list(px, team = "home"), dots))
+    p3 <- do.call(vr_reception_plot, c(list(px, team = "visiting"), dots))
+    p4 <- do.call(vr_attack_plot, c(list(px, team = "visiting"), dots))
     if (!is.null(p1) || !is.null(p2) || !is.null(p3) || !is.null(p4)) {
         getrsz <- function(z) { rh <- attr(z, "rel_size"); if (is.null(rh)) 1.0 else rh }
         p <- cowplot::plot_grid(p1, p2, p3, p4, ncol = 4, rel_widths = c(getrsz(p1), getrsz(p2), getrsz(p3), getrsz(p4)), align = "h", axis = "b")
@@ -289,6 +295,14 @@ vr_reception_plot <- function(x, team = "home", font_size = 7, reception_plot_co
 ## use very approximate perceptual lightness of colour
 white_or_black <- function(v, mapper) apply(mapper(v), 1, function(z) (z[1] * 299 + z[2] * 587 + z[3] * 114) / 1000 / 255) > 0.7
 
+guess_attack_plot_style <- function(ax) {
+    conemiss <- mean(is.na(ax$end_cone))
+    zmiss <- mean(is.na(ax$end_zone))
+    szmiss <- mean(is.na(ax$end_subzone) | is.na(ax$end_zone))
+    cmiss <- mean(is.na(ax$end_coordinate))
+    if (cmiss <= (szmiss + 0.05) && cmiss < 0.2 * nrow(ax)) "coordinates_lines" else if (szmiss < zmiss && szmiss < 0.2 * nrow(ax)) "subzones_heatmap" else if (conemiss <= zmiss && conemiss < 0.2 * nrow(ax)) "cones" else "zones"
+    ## note that szmiss can never be less than zmiss, so we default to a zone plot in prference to a subzone plot
+}
 
 vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plot_style = "guess", attack_plot_colour = vr_css()$header_background, font_size = 7, ...) {
     assert_that(is.string(team), !is.na(team))
@@ -298,15 +312,7 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
     ax <- x %>% dplyr::filter(.data$skill == "Attack", .data$team == target_team)
     if (nrow(ax) < 1) return(NULL)
     sysfonts::font_add("fa6s", regular = system.file("fontawesome/webfonts/fa-solid-900.ttf", package = "fontawesome", mustWork = TRUE))
-    if (attack_plot_style == "guess") {
-        ## guess style, coordinates as segments or zones or subzones
-        conemiss <- sum(is.na(ax$end_cone))
-        zmiss <- sum(is.na(ax$end_zone))
-        szmiss <- sum(is.na(ax$end_subzone) | is.na(ax$end_zone))
-        cmiss <- sum(is.na(ax$end_coordinate))
-        attack_plot_style <- if (cmiss <= szmiss && cmiss < 0.2 * nrow(ax)) "coordinates_lines" else if (szmiss < zmiss && szmiss < 0.2 * nrow(ax)) "subzones_heatmap" else if (conemiss <= zmiss && conemiss < 0.2 * nrow(ax)) "cones" else "zones"
-        ## note that szmiss can never be less than zmiss, so we default to a zone plot in prference to a subzone plot
-    }
+    if (attack_plot_style == "guess") attack_plot_style <- guess_attack_plot_style(ax)
     ## white-to-whatever colour map based on attack_plot_colour
     cpalw <- tryCatch(colorRampPalette(c("#FFFFFF", attack_plot_colour))(21), error = function(e) rev(hcl.colors(21, palette = "Purples")))
     ## and not including white
