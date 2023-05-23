@@ -81,15 +81,28 @@ beach_guess_roles_sides <- function(x, which_team = "home", threshold = 0.7) {
                                                          prop_left = .data$n_left / (.data$n_left + .data$n_right),
                                                          prop_right = .data$n_right / (.data$n_left + .data$n_right))
 
-    bdx <- bdx %>% full_join(lrx, by = "player_id") %>%
-        mutate(player_beach_side = case_when(.data$prop_left > threshold ~ "L",
-                                .data$prop_right > threshold ~ "R"),
-               player_beach_role = case_when(.data$bd > threshold ~ "Blk",
-                                             .data$bd < (1 - threshold) ~ "Def"))
-    ## since this is a single match, if we have inferred left/right for one player and not the other, take the complement
-## not sure yet if this is wise
-##    if (sum(is.na(bdx$player_beach_side)) == 1) bdx$player_beach_side[is.na(bdx$player_beach_side)] <- setdiff(c("Left", "Right", NA_character_), bdx$player_beach_side)
-    ## ditto role
-##    if (sum(is.na(bdx$player_beach_role)) == 1) bdx$player_beach_role[is.na(bdx$player_beach_role)] <- setdiff(c("Blocker", "Defender", NA_character_), bdx$player_beach_role)
+    bdx <- bdx %>% full_join(lrx, by = "player_id") %>% dplyr::filter(!is.na(.data$player_id), !.data$player_id %in% bdx$player_id[duplicated(bdx$player_id)])
+    if (nrow(bdx) == 2) {
+        bdx <- bdx %>% mutate(player_beach_side = case_when(.data$prop_left > threshold ~ "L",
+                                                            .data$prop_right > threshold ~ "R"),
+                              player_beach_role = case_when(.data$bd > threshold ~ "Blk",
+                                                            .data$bd < (1 - threshold) ~ "Def"))
+        ## since this is a single match, if we have inferred left/right for one player and not the other, take the complement
+        if (sum(is.na(bdx$player_beach_side)) == 1) {
+            nidx <- is.na(bdx$player_beach_side)
+            if (bdx$player_beach_side[!nidx] == "L" && bdx$prop_right[nidx] > 0.5) {
+                bdx$player_beach_side[nidx] <- "R"
+            } else if (bdx$player_beach_side[!nidx] == "R" && bdx$prop_left[nidx] > 0.5) {
+                bdx$player_beach_side[nidx] <- "L"
+            }
+        }
+        ## ditto role? not sure about this yet
+        ##    if (sum(is.na(bdx$player_beach_role)) == 1) bdx$player_beach_role[is.na(bdx$player_beach_role)] <- setdiff(c("Blocker", "Defender", NA_character_), bdx$player_beach_role)
+        ## catastrophe check, don't allow duplicates
+        if (any(duplicated(bdx$player_beach_side))) player_beach_side <- NA_character_
+        if (any(duplicated(bdx$player_beach_role))) player_beach_role <- NA_character_
+    } else {
+        bdx$player_beach_side <- bdx$player_beach_role <- NA_character_
+    }
     bdx %>% dplyr::select("player_id", "player_beach_side", "player_beach_role") %>% dplyr::filter(!is.na(.data$player_id), !.data$player_id %in% bdx$player_id[duplicated(bdx$player_id)])
 }
