@@ -90,9 +90,9 @@ beach_guess_roles_sides <- function(x, which_team = "home", threshold = 0.7) {
         ## since this is a single match, if we have inferred left/right for one player and not the other, take the complement
         if (sum(is.na(bdx$player_beach_side)) == 1) {
             nidx <- is.na(bdx$player_beach_side)
-            if (bdx$player_beach_side[!nidx] == "L" && bdx$prop_right[nidx] > 0.5) {
+            if (isTRUE(bdx$player_beach_side[!nidx] == "L" && bdx$prop_right[nidx] > 0.5)) {
                 bdx$player_beach_side[nidx] <- "R"
-            } else if (bdx$player_beach_side[!nidx] == "R" && bdx$prop_left[nidx] > 0.5) {
+            } else if (isTRUE(bdx$player_beach_side[!nidx] == "R" && bdx$prop_left[nidx] > 0.5)) {
                 bdx$player_beach_side[nidx] <- "L"
             }
         }
