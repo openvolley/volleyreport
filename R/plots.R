@@ -59,9 +59,9 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
     if (is.null(file_type) || !file_type %in% c("indoor", "beach", "perana_indoor", "perana_beach")) file_type <- guess_data_type(px)
     beach <- grepl("beach", file_type)
     sc <- px %>% group_by(.data$point_id) %>% dplyr::slice_tail(n = 1) %>% ungroup %>%
-        dplyr::select("point_id", "set_number", "home_team", "home_team_score", "visiting_team", "visiting_team_score") %>% distinct %>% na.omit() %>%
-        mutate(ok = lead(.data$home_team_score) != .data$home_team_score | lead(.data$visiting_team_score) != .data$visiting_team_score)
-    sc$ok[nrow(sc)] <- TRUE ## filter on `ok` to discard e.g. timeouts, subs, and other non-score-change events
+        dplyr::select("point_id", "set_number", "home_team", "home_team_score", "home_score_start_of_point", "visiting_team", "visiting_team_score", "visiting_score_start_of_point") %>% distinct %>% na.omit() %>%
+        mutate(ok = .data$home_score_start_of_point != .data$home_team_score | .data$visiting_score_start_of_point != .data$visiting_team_score)
+    ## filter on `ok` to discard e.g. timeouts, subs, and other non-score-change events
     sc <- sc %>% dplyr::filter(.data$ok) %>% mutate(pid = dplyr::row_number(), diff = .data$home_team_score - .data$visiting_team_score, teamcolor = case_when(.data$diff < 0 ~ visiting_colour, TRUE ~ home_colour)) %>% dplyr::select(-"ok")
     if (nrow(sc) < 2) return(NULL)
     ## icons for blocks, aces, errors
