@@ -226,12 +226,12 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     ## report icon image
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
     ## other plot icons
-    if (missing(plot_icons)) plot_icons <- grepl("beach", file_type)
+    if (missing(plot_icons)) plot_icons <- style %in% c("ov1")
     if (is.logical(plot_icons) && isTRUE(plot_icons)) plot_icons <- vr_plot_icons()
     ## cheap and nasty parameterisation
     vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style,
                 shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = 11,
-                plot_summary = grepl("beach", file_type) && style %in% c("ov1"), plot_icons = plot_icons, court_plots_fun = court_plots_function, court_plots_args = court_plots_args)
+                plot_summary = style %in% c("ov1"), plot_icons = plot_icons, court_plots_fun = court_plots_function, court_plots_args = court_plots_args)
     vsx <- c(vsx, dots) ## extra parms
 
     rm(x, meta, refx, vote, style, shiny_progress, file_type, icon, remove_nonplaying)
