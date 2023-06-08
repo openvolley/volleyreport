@@ -85,7 +85,12 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
                                            TRUE ~ floor((.data$score_tot - 1) / 5) + 1L),
                          block = as.integer(as.factor(paste0("S", .data$set_number, "E", .data$block)))) ## block within set
         } else {
-            px$block <- px$set_number ## todo later, by score splits
+            px <- px %>% group_by(.data$set_number) %>%
+                mutate(score_tot = .data$home_team_score + .data$visiting_team_score,
+                       set_score_tot = max(.data$score_tot, na.rm = TRUE),
+                       ## 3 per set, evenly spaced. TODO could probably fit 4 per set in 3-set matches?
+                       block = floor((.data$score_tot - 1) / .data$set_score_tot * 3) + 1L) %>%
+                ungroup %>% mutate(block = as.integer(as.factor(paste0("S", .data$set_number, "E", .data$block)))) ## block within set
         }
         ## calculate summary stats by block and team
         smx <- px %>% dplyr::filter(!is.na(.data$block), !is.na(.data$team)) %>%
@@ -174,7 +179,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
                               "<span style=\"color:", frac2col(tbx$Blk, tbx$Natt_opp, side = 1L, uthresh = 0.25), ";\">Blk", thinspc, tbx$Blk, slash, tbx$Natt_opp,
                               if (sets2) ", " else "<br />",
                               "<span style=\"color:", frac2col(tbx$errs, tbx$err_opps, side = -1L, uthresh = 0.35), ";\">Err", thinspc, tbx$errs) ## slash, tbx$err_opps,
-                p <- p + annotate(GeomRichText, label = txt, x = thispid - 0.3, y = if (tm == "visiting") yr0[1] - 1.5 else yr0[2] + 1.5,
+                p <- p + annotate(GeomRichText, label = txt, x = thispid - sets2 * 0.3, y = if (tm == "visiting") yr0[1] - 1.5 else yr0[2] + 1.5,
                                            hjust = 0, vjust = if (tm == "visiting") "top" else "bottom", size = 2, lineheight = 1.0, family = "condensedfont",
                                            fill = NA, label.color = NA, label.padding = grid::unit(rep(0, 4), "pt")) ## remove background and outline, no padding
             }
