@@ -53,7 +53,7 @@ vr_css()
 
 \item{court_plots_args}{list: named list of arguments to pass to the court plot function}
 
-\item{plot_icons}{logical or data.frame: some values of \code{style} will include plots of various kinds in the report. Currently \code{plot_icons} defaults to \code{TRUE} for \code{style = "ov1"}, otherwise \code{FALSE}. Set \code{plot_icons} to \code{FALSE} for no icons, \code{TRUE} to use the icons specified by \code{\link[=vr_plot_icons]{vr_plot_icons()}}, or a data.frame as returned by \code{\link[=vr_plot_icons]{vr_plot_icons()}} to control the icons that will be used. Note that only (free) fontawesome icons are supported}
+\item{plot_icons}{logical or data.frame: some values of \code{style} will include plots of various kinds in the report. Currently \code{plot_icons} defaults to \code{TRUE} for \code{style = "ov1"} on a beach match, otherwise \code{FALSE} (plot icons generally tend to be visually distracting with indoor, particularly the error icons). Set \code{plot_icons} to \code{FALSE} for no icons, \code{TRUE} to use the icons specified by \code{\link[=vr_plot_icons]{vr_plot_icons()}}, or a data.frame as returned by \code{\link[=vr_plot_icons]{vr_plot_icons()}} to control the icons that will be used. Note that only (free) fontawesome icons are supported}
 
 \item{skill_evaluation_decode}{: as for \code{\link[datavolley:read_dv]{datavolley::dv_read()}}}
 
