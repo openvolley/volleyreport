@@ -89,8 +89,8 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
             px <- px %>% group_by(.data$set_number) %>%
                 mutate(score_tot = .data$home_team_score + .data$visiting_team_score,
                        set_score_tot = max(.data$score_tot, na.rm = TRUE),
-                       ## 3 per set, evenly spaced. TODO could probably fit 4 per set in 3-set matches?
-                       block = floor((.data$score_tot - 1) / .data$set_score_tot * 3) + 1L) %>%
+                       ## 3 per set, evenly spaced, 2 in 5+th set. TODO could probably fit 4 per set in 3-set matches?
+                       block = floor((.data$score_tot - 1) / .data$set_score_tot * if_else(.data$set_number < 5, 3, 2)) + 1L) %>%
                 ungroup %>% mutate(block = as.integer(as.factor(paste0("S", .data$set_number, "E", .data$block)))) ## block within set
         }
         ## calculate summary stats by block and team
@@ -185,7 +185,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
                                            fill = NA, label.color = NA, label.padding = grid::unit(rep(0, 4), "pt")) ## remove background and outline, no padding
             }
         }
-        yr <- c(min(yr[1], yr0[1] - 6L - (!sets2) * 2), max(yr[2], yr0[2] + 6L + (!sets2) * 2))
+        yr <- c(min(yr[1], yr0[1] - 6L - (!sets2) * 3), max(yr[2], yr0[2] + 6L + (!sets2) * 3))
     }
     icon_names <- character()
     if (use_icons && !all(is.na(sc$icon_event))) {
