@@ -228,10 +228,25 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     ## other plot icons
     if (missing(plot_icons)) plot_icons <- style %in% c("ov1") && grepl("beach", file_type)
     if (is.logical(plot_icons) && isTRUE(plot_icons)) plot_icons <- vr_plot_icons()
+    if (style %in% c("ov1")) {
+        ## include the plot summary stats by block?
+        plotsum <- if (grepl("beach", file_type)) {
+                       TRUE
+                   } else {
+                       ## if we have a full page, we have to omit them and just show the score evolution bars
+                       nhp <- sum(apply(meta$players_h[, grep("starting_position", names(meta$players_h))], 1, function(z) !all(is.na(z))))
+                       nvp <- sum(apply(meta$players_v[, grep("starting_position", names(meta$players_v))], 1, function(z) !all(is.na(z))))
+                       nsets <- sum(meta$teams$sets_won)
+                       ##message("PS: ", nhp, " + ", nvp, " + ", nsets, " = ", plotsum)
+                       ((nhp * 4 + 18) + (nvp * 4 + 18) + (4.5 * nsets + 8.5)) < 160 ## kind of a height measure of the team tables + set summaries. Rule of thumb, more than this and the plot won't fit
+                   }
+    } else {
+        plotsum <- FALSE
+    }
     ## cheap and nasty parameterisation
     vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style,
                 shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = 11,
-                plot_summary = style %in% c("ov1"), plot_icons = plot_icons, court_plots_fun = court_plots_function, court_plots_args = court_plots_args)
+                plot_summary = plotsum, plot_icons = plot_icons, court_plots_fun = court_plots_function, court_plots_args = court_plots_args)
     vsx <- c(vsx, dots) ## extra parms
 
     rm(x, meta, refx, vote, style, shiny_progress, file_type, icon, remove_nonplaying)
