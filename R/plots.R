@@ -1,5 +1,6 @@
-vr_content_score_evplot <- function(vsx, font_size = 6) {
-    vr_score_evplot(structure(list(meta = vsx$meta, plays = vsx$x), class = "datavolley"), with_summary = vsx$plot_summary, icons = vsx$plot_icons, home_colour = vsx$css$header_background, visiting_colour = vsx$css$header_background, font_size = font_size)
+vr_content_score_evplot <- function(vsx, with_summary, font_size = 6) {
+    if (missing(with_summary)) with_summary <- vsx$plot_summary
+    vr_score_evplot(structure(list(meta = vsx$meta, plays = vsx$x), class = "datavolley"), with_summary = with_summary, icons = vsx$plot_icons, home_colour = vsx$css$header_background, visiting_colour = vsx$css$header_background, font_size = font_size)
 }
 
 #' @rdname vr_score_evplot
@@ -128,9 +129,9 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
         smx <- smx %>% left_join(sc %>% dplyr::distinct(.data$point_id, .data$pid), by = "point_id") ## so we can plot by pid
         blockx <- unique(smx$pid) - 0.5 ## -0.5 so that the vertical line aligns with the left edge of the corresponding bar
     }
-    p <- ggplot(sc, aes(x = .data$pid, y = .data$diff)) + theme_minimal(base_size = font_size) +
-        ggplot2::coord_cartesian(clip = "off") + ## to stop team names being clipped, see below
-        geom_vline(xintercept = setx, col = "black", alpha = 0.5, size = 0.25) +
+    p <- ggplot(sc, aes(x = .data$pid, y = .data$diff)) + theme_minimal(base_size = font_size)
+    if (with_summary) p <- p + ggplot2::coord_cartesian(clip = "off") ## to stop team names being clipped, see below
+    p <- p + geom_vline(xintercept = setx, col = "black", alpha = 0.5, size = 0.25) +
         geom_hline(yintercept = 0, col = "black", alpha = 0.5, size = 0.25) +
         geom_col(aes(fill = .data$teamcolor), width = 1.0, col = NA)
     if (!is.null(blockx)) p <- p + geom_vline(xintercept = setdiff(blockx, setx), col = "#555555", linetype = "dashed", alpha = 0.5, size = 0.25)
@@ -209,10 +210,17 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
     p <- p + scale_fill_manual(values = c(home_colour, visiting_colour), guide = "none") + labs(x = NULL, y = "Score\ndifference") +
         scale_x_continuous(labels = paste0("Set ", seq_along(setx)), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005)) +
         scale_y_continuous(breaks = function(z) c(rev(seq(0, yr[1], by = -4)), seq(0, yr[2], by = 4)[-1]), limits = yr, labels = abs)
-    ## team names, use linebreaks to shift leftwards of the y-axis, and rely on the margin to stop them being cropped
-    p <- p + annotate(geom = "text", label = paste0(datavolley::home_team(x), "\n\n\n"), x = 0, y = yr[2], angle = 90, hjust = 1, vjust = 0, size = font_size * 0.35278, fontface = "bold") +
-        annotate(geom = "text", label = paste0(datavolley::visiting_team(x), "\n\n\n"), x = 0, y = yr[1], angle = 90, hjust = 0, vjust = 0, size = font_size * 0.35278, fontface = "bold") +
-        theme(plot.margin = ggplot2::margin(0, 0, 0, 2, unit = "lines"))
+    ## team names
+    if (with_summary) {
+        ## put them vertically along the y-axis, use linebreaks to shift leftwards of the y-axis, and rely on the margin to stop them being cropped
+        p <- p + annotate(geom = "text", label = paste0(datavolley::home_team(x), "\n\n\n"), x = 0, y = yr[2], angle = 90, hjust = 1, vjust = 0, size = font_size * 0.35278, fontface = "bold") +
+            annotate(geom = "text", label = paste0(datavolley::visiting_team(x), "\n\n\n"), x = 0, y = yr[1], angle = 90, hjust = 0, vjust = 0, size = font_size * 0.35278, fontface = "bold") +
+            theme(plot.margin = ggplot2::margin(0, 0, 0, 2, unit = "lines"))
+    } else {
+        ## put them above/below the plot
+        p <- p + annotate(geom = "text", label = datavolley::home_team(x), x = 1, y = if (!is.null(smx)) yr[2] else diff(yr) * 0.9 + yr[1], hjust = 0, size = font_size * 0.35278, fontface = "bold") +
+            annotate(geom = "text", label = datavolley::visiting_team(x), x = 1, y = if (!is.null(smx)) yr[1] else diff(yr) * 0.1 + yr[1], hjust = 0, size = font_size * 0.35278, fontface = "bold")
+    }
     if (length(icon_names) > 0) attr(p, "icon_names") <- icon_names
     p
 }
