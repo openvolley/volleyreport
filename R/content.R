@@ -344,7 +344,7 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     ch <- c(setNames(2, teamfun(vsx$x)), if (length(spcols) > 0) setNames(min(6, length(spcols)), "Set"), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP + srvEff, "Reception" = 3 + Rexc + expSO + recEff, "Attack" = 5 + 2 * on2 + attEff, "Blo" = 1)
     calign <- c(rep("l", 2), rep("r", ncol(P_sum) - 2)) ## right-align everything after the player names and starting position columns
     out <- kable(P_sum, format = "html", escape = FALSE, col.names = cn, table.attr = "class=\"widetable\"", align = calign) %>%
-        kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
+        kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 10/12) %>%
         column_spec(2, width = if (!grepl("beach", vsx$file_type)) "46mm" else "36mm") %>%
         add_header_above(ch, color = vsx$css$header_colour, background = vsx$css$header_background, bold = TRUE, line = FALSE, extra_css = "padding-bottom:2px;") %>% row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
         column_spec(1, border_left = vsx$css$border) %>%
@@ -418,7 +418,7 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
     bcols <- if (vsx$style %in% c("ov1")) 1 + cumsum(c(0, 4, 3 + BP + expBP + srvEff, 3 + Rexc + SO + expSO + recEff, 5 + 2 * on2 + attEff)) else NULL ## internal right-borders
     calign <- c("l", rep("r", ncol(thisSS) - 1)) ## right-align everything after the set number
     out <- kable(thisSS,format = "html", escape = FALSE, col.names = c("","Ser", "Atk", "Blo", "Op.Err", "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (BP) "BP%", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (SO) "SO%", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", if (on2) c("(On2)", "(On2 K%)"), "Pts"), table.attr = "class=\"widetable\"", align = calign) %>%
-        kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 11/12) %>%
+        kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 10/12) %>%
         add_header_above(c("Set" = 1, "Points" = 4, "Serve" = 3 + BP + expBP + srvEff, "Reception" = 3 + SO + Rexc + expSO + recEff, "Attack" = 5 + 2 * on2 + attEff, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;") %>%
         row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
         column_spec(1, border_left = vsx$css$border) %>%
@@ -577,7 +577,7 @@ vr_content_key <- function(vsx, kable_format, rows, cols = 2, icon_names = chara
 
 ## kill on reception or in transition
 ##  eval_codes ignored for transition
-vr_content_kill_rec_trans <- function(vsx, which_team = "both", rec_trans = "rec", kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)") {
+vr_content_kill_rec_trans <- function(vsx, which_team = "both", rec_trans = "rec", kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)", hide_col_names = FALSE) {
     which_team <- match.arg(which_team, c("home", "visiting", "both"))
     rec_trans <- match.arg(rec_trans, c("rec", "trans")) ## on reception or in transition?
     if (which_team %in% c("home", "both")) {
@@ -606,12 +606,12 @@ vr_content_kill_rec_trans <- function(vsx, which_team = "both", rec_trans = "rec
         if (vsx$style %in% c("ov1")) Kvis <- dplyr::rename(Kvis, "K%" = "Pts%")
     }
 
-    hd <- setNames(which_team %in% c("home", "both") * 4 + which_team %in% c("visiting", "both") * 4, hdr)
+    hd <- if (!is.null(hdr)) setNames(which_team %in% c("home", "both") * 4 + which_team %in% c("visiting", "both") * 4, hdr) else NULL
     tbl_content <- if (which_team == "home") Khome else if (which_team == "visiting") Kvis else cbind(Khome, Kvis[4:1])
-    out <- kable(tbl_content, format = kable_format, escape = FALSE, align = "c", table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12) %>%
-        row_spec(0, color = vsx$css$header_colour, background = vsx$css$header_background) %>%
-        column_spec(4, border_right = vsx$css$border) %>%
-        add_header_above(hd, color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;")
+    out <- kable(tbl_content, format = kable_format, escape = FALSE, align = "c", col.names = if (hide_col_names) NULL else names(tbl_content), table.attr = "class=\"widetable\"") %>% kable_styling(bootstrap_options = c("condensed"), font_size = vsx$base_font_size * 10/12) %>%
+        column_spec(4, border_right = vsx$css$border)
+    if (!hide_col_names) out <- out %>% row_spec(0, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 9/12)
+    if (!is.null(hdr)) out <- out %>% add_header_above(hd, color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = paste0("padding-bottom:2px;", if (hide_col_names) paste0("border-bottom:", vsx$css$border)), font_size = vsx$base_font_size * 9/12)
     if (which_team != "both") {
         out %>% column_spec(1, border_left = vsx$css$border) %>% row_spec(1, extra_css = paste0("border-bottom:", vsx$css$border))
     } else {
