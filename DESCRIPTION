@@ -16,7 +16,7 @@ Depends: R (>= 3.6.0)
 Imports:
   assertthat,
   cowplot,
-  datavolley,
+  datavolley (>= 1.5.4),
   dplyr (>= 1.0.0),
   fontawesome,
   ggplot2,
