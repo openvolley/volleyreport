@@ -237,8 +237,9 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
                        nhp <- sum(apply(meta$players_h[, grep("starting_position", names(meta$players_h))], 1, function(z) !all(is.na(z))))
                        nvp <- sum(apply(meta$players_v[, grep("starting_position", names(meta$players_v))], 1, function(z) !all(is.na(z))))
                        nsets <- sum(meta$teams$sets_won)
-                       ##message("PS: ", nhp, " + ", nvp, " + ", nsets, " = ", plotsum)
-                       ((nhp * 4 + 18) + (nvp * 4 + 18) + (4.5 * nsets + 8.5)) < 160 ## kind of a height measure of the team tables + set summaries. Rule of thumb, more than this and the plot won't fit
+                       ht <- ((nhp * 4 + 18) + (nvp * 4 + 18) + (4.5 * nsets + 8.5)) ## kind of a height measure of the team tables + set summaries
+                       ##message("PS: ", nhp, " + ", nvp, " + ", nsets, " = ", ht)
+                       ht < 160 ## rule of thumb, more than this and the plot won't fit
                    }
     } else {
         plotsum <- FALSE
