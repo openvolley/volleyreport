@@ -155,19 +155,21 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
                     ##        1 => higher is good but ignore lower (i.e. aces, blocks)
                     ## thresh is performance threshold, used for N > 3
                     ## cl_thresh is confidence limit threshold
-                    if (N == 3) {
-                        if ((n < 1 && side == 0) || (n > 2 && side < 0)) return(low) else if (n > 2 && side > -1) return(high)
-                    } else if (N < 4) {
-                        return(mid)
-                    }
-                    cl <- diff(suppressWarnings(prop.test(n, N)$conf.int))
-                    if (((n/N < lthresh && side == 0L) || (n/N > uthresh && side < 0)) && cl < cl_thr) {
-                        low
-                    } else if (n/N > uthresh && side > -1 && cl < cl_thr) {
-                        high
-                    } else {
-                        mid
-                    }
+                    tryCatch({
+                        if (N == 3) {
+                            if ((n < 1 && side == 0) || (n > 2 && side < 0)) return(low) else if (n > 2 && side > -1) return(high)
+                        } else if (N < 4) {
+                            return(mid)
+                        }
+                        cl <- diff(suppressWarnings(prop.test(n, N)$conf.int))
+                        if (((n/N < lthresh && side == 0L) || (n/N > uthresh && side < 0)) && cl < cl_thr) {
+                            low
+                        } else if (n/N > uthresh && side > -1 && cl < cl_thr) {
+                            high
+                        } else {
+                            mid
+                        }
+                    }, error = function(e) mid)
                 }
                 txt <- paste0("<span style=\"color:", frac2col(tbx$BPw, tbx$Nsrv), ";\">BP", thinspc, tbx$BPw, slash, tbx$Nsrv, "</span>",
                               if (sets2) ", " else "<br />",
