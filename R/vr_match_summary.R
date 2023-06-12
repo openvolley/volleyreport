@@ -105,6 +105,10 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     file_type <- NULL ## indoor (datavolley) or perana_indoor or potentially beach
     if ("file_meta" %in% names(x)) file_type <- x$file_meta$file_type
     x <- datavolley::plays(x)
+    ## fix a legacy issue where home_score_start_of_point and visiting_score_start_of_point had incorrect NAs for some types of file
+    temp <- x %>% group_by(.data$point_id) %>% dplyr::summarize(home_score_start_of_point = single_unique_value_or_na_int(.data$home_score_start_of_point),
+                                                                visiting_score_start_of_point = single_unique_value_or_na_int(.data$visiting_score_start_of_point)) %>% ungroup
+    x <- x %>% dplyr::select(-"home_score_start_of_point", -"visiting_score_start_of_point") %>% left_join(temp, by = "point_id")
     if (is.null(file_type)) {
         ## figure out what data type we have
         file_type <- guess_data_type(x)

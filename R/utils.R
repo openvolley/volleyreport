@@ -3,6 +3,10 @@
 single_value_or_na <- function(x) if (length(x) == 1) x else NA
 single_value_or_na_char <- function(x) if (length(x) == 1) x else NA_character_
 single_value_or_na_int <- function(x) if (length(x) == 1) x else NA_integer_
+single_unique_value_or_na_int <- function(x) {
+    u <- unique(na.omit(x))
+    if (length(u) == 1) u else NA_integer_
+}
 
 ## mean but if empty vector passed, NA
 mean0 <- function(x, ...) {
