@@ -20,6 +20,7 @@ vr_match_summary(
   court_plots_args = list(),
   plot_icons,
   skill_evaluation_decode = "guess",
+  single_page_tries = 1L,
   shiny_progress = FALSE,
   chrome_print_extra_args = NULL,
   ...
@@ -59,6 +60,8 @@ vr_css()
 \item{plot_icons}{logical or data.frame: some values of \code{style} will include plots of various kinds in the report. Currently \code{plot_icons} defaults to \code{TRUE} for \code{style = "ov1"} on a beach match, otherwise \code{FALSE} (plot icons generally tend to be visually distracting with indoor, particularly the error icons). Set \code{plot_icons} to \code{FALSE} for no icons, \code{TRUE} to use the icons specified by \code{\link[=vr_plot_icons]{vr_plot_icons()}}, or a data.frame as returned by \code{\link[=vr_plot_icons]{vr_plot_icons()}} to control the icons that will be used. Note that only (free) fontawesome icons are supported}
 
 \item{skill_evaluation_decode}{: as for \code{\link[datavolley:read_dv]{datavolley::dv_read()}}}
+
+\item{single_page_tries}{integer: experimental! Ideally we want a single-page report, but until the report is rendered to PDF we don't know for sure whether it will fit on one page. If \code{single_page_tries} is greater than 1, we will try re-rendering the report (trying up to this many times). If it does not fit on a single page, the \code{base_font_size} will be progressively reduced on each try. Note that this only applies to \code{format} "paged_pdf"}
 
 \item{shiny_progress}{logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope}
 

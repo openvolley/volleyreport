@@ -17,6 +17,7 @@
 #' @param plot_icons logical or data.frame: some values of `style` will include plots of various kinds in the report. Currently `plot_icons` defaults to `TRUE` for `style = "ov1"` on a beach match, otherwise `FALSE` (plot icons generally tend to be visually distracting with indoor, particularly the error icons). Set `plot_icons` to `FALSE` for no icons, `TRUE` to use the icons specified by [vr_plot_icons()], or a data.frame as returned by [vr_plot_icons()] to control the icons that will be used. Note that only (free) fontawesome icons are supported
 #' @param skill_evaluation_decode : as for [datavolley::dv_read()]
 #' @param shiny_progress logical: if \code{TRUE}, the report generation process will issue \code{shiny::setProgress()} calls. The call to \code{vr_match_summary} should therefore be wrapped in a \code{shiny::withProgress()} scope
+#' @param single_page_tries integer: experimental! Ideally we want a single-page report, but until the report is rendered to PDF we don't know for sure whether it will fit on one page. If `single_page_tries` is greater than 1, we will try re-rendering the report (trying up to this many times). If it does not fit on a single page, the `base_font_size` will be progressively reduced on each try. Note that this only applies to `format` "paged_pdf"
 #' @param chrome_print_extra_args character: additional parameters to pass as `extra_args` to [pagedown::chrome_print()] (only relevant if using a "paged_*" format)
 #' @param ... : additional parameters passed to the rmarkdown template
 #' @return The path to the report file
@@ -27,7 +28,7 @@
 #'   if (interactive()) browseURL(f)
 #' }
 #' @export
-vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", base_font_size = 11, court_plots_function = "vr_court_plots", court_plots_args = list(), plot_icons, skill_evaluation_decode = "guess", shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
+vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", base_font_size = 11, court_plots_function = "vr_court_plots", court_plots_args = list(), plot_icons, skill_evaluation_decode = "guess", single_page_tries = 1L, shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
     if (is.string(x) && file.exists(x)) {
         if (grepl("\\.(dvw|vsm|xml)$", x, ignore.case = TRUE)) {
             x <- datavolley::dv_read(x, skill_evaluation_decode = skill_evaluation_decode)
@@ -266,27 +267,34 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     ## generate report
     output_options <- NULL
     if (isTRUE(vsx$plot_summary) || isTRUE(vsx$use_plot_icons)) showtext::showtext_auto()
-    if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
-    blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
-    f <- if (format == "paged_html") {
-             rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = TRUE), clean = TRUE)
-             do.call(rmarkdown::render, rgs)
-         } else if (grepl("paged_", format)) {
-             rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = FALSE, copy_resources = TRUE), clean = TRUE)
-             do.call(rmarkdown::render, rgs)
-             rgs2 <- list(input = outfile, output = final_outfile, format = final_format)
-             if (format == "paged_png") rgs2$scale <- 2
-             if (length(chrome_print_extra_args) > 0) rgs2 <- c(rgs2, list(extra_args = chrome_print_extra_args))
-             do.call(ovpaged::chrome_print, rgs2)
-         } else {
-             out <- render(rmd_template, output_file = outfile, output_options = output_options)
-             if (final_format %in% c("pdf", "png")) {
-                 safe_webshot(outfile, file = final_outfile)
-                 final_outfile
+    max_tries <- if (format == "paged_pdf" && isTRUE(single_page_tries > 1)) single_page_tries else 1L
+    for (this_try in seq_len(max_tries)) {
+        vsx$base_font_size <- base_font_size * (0.95^(this_try - 1)) ## progressively smaller font
+        if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
+        blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
+        f <- if (format == "paged_html") {
+                 rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = TRUE), clean = TRUE)
+                 do.call(rmarkdown::render, rgs)
+             } else if (grepl("paged_", format)) {
+                 rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = FALSE, copy_resources = TRUE), clean = TRUE)
+                 do.call(rmarkdown::render, rgs)
+                 rgs2 <- list(input = outfile, output = final_outfile, format = final_format)
+                 if (format == "paged_png") rgs2$scale <- 2
+                 if (length(chrome_print_extra_args) > 0) rgs2 <- c(rgs2, list(extra_args = chrome_print_extra_args))
+                 do.call(ovpaged::chrome_print, rgs2)
              } else {
-                 out
+                 out <- render(rmd_template, output_file = outfile, output_options = output_options)
+                 if (final_format %in% c("pdf", "png")) {
+                     safe_webshot(outfile, file = final_outfile)
+                     final_outfile
+                 } else {
+                     out
+                 }
              }
-         }
+        if (this_try < max_tries) {
+            if (tryCatch(pdftools::pdf_info(f)$pages < 2, error = function(e) TRUE)) break ## bail out if we've achieved a single page
+        }
+    }
     if (isTRUE(vsx$plot_summary) || isTRUE(vsx$use_plot_icons)) showtext::showtext_auto(enable = FALSE)
     f
 }
