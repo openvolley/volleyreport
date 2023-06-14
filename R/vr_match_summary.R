@@ -303,7 +303,7 @@ check_report_style <- function(style) {
 }
 
 #' Generate points table
-#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
+#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::dv_read}
 #' @param team string: team name
 #' @param by string: "player" or "set"
 #' @param vote logical: if \code{TRUE}, include vote detail
@@ -354,7 +354,7 @@ vr_points <- function(x, team, by = "player", vote = FALSE, style = "default") {
 }
 
 #' Calculate vote
-#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
+#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::dv_read}
 #' @param team string: team name
 #' @export
 vr_vote <- function(x, team) {
@@ -445,7 +445,7 @@ vr_vote <- function(x, team) {
 
 
 #' Generate serve table
-#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
+#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::dv_read}
 #' @param team string: team name
 #' @param by string: "player" or "set"
 #' @param refx data.frame: see [vr_match_summary()]
@@ -491,7 +491,7 @@ vr_serve <- function(x, team, by = "player", refx, style = "default"){
 }
 
 #' Generate reception table
-#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
+#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::dv_read}
 #' @param team string: team name
 #' @param by string: "player" or "set"
 #' @param refx data.frame: see [vr_match_summary()]
@@ -542,7 +542,7 @@ vr_reception <- function(x, team, by = "player", refx, style = "default", file_t
 }
 
 #' Generate attack table
-#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
+#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::dv_read}
 #' @param team string: team name
 #' @param by string: "player" or "set"
 #' @param file_type string: "indoor", "perana_indoor", "beach", "perana_beach"
@@ -615,7 +615,7 @@ vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "def
 }
 
 #' Generate block table
-#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}
+#' @param x datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::dv_read}
 #' @param team string: team name
 #' @param by string: "player" or "set"
 #' @param style string: see [vr_match_summary()]

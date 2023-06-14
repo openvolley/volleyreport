@@ -7,7 +7,7 @@
 vr_points(x, team, by = "player", vote = FALSE, style = "default")
 }
 \arguments{
-\item{x}{datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::read_dv}}
+\item{x}{datavolleyplays: the \code{plays} component of an object as returned by \code{datavolley::dv_read}}
 
 \item{team}{string: team name}
 

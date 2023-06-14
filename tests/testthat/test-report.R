@@ -1,6 +1,6 @@
 context("reporting")
 
-dvx <- datavolley::read_dv(datavolley::dv_example_file(1), insert_technical_timeouts=FALSE)
+dvx <- datavolley::dv_read(datavolley::dv_example_file(1), insert_technical_timeouts=FALSE)
 
 test_that("minimal HTML example report runs", {
     skip_if_not(rmarkdown::pandoc_available(version = "1.12.3"))
