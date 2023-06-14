@@ -43,7 +43,3 @@ A ggplot object
 \description{
 Score evolution plot
 }
-\examples{
-vr_score_evplot(dv_example_file())
-
-}

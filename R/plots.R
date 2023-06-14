@@ -42,9 +42,6 @@ get_plot_icon <- function(what, icons, as = "unicode") {
 #'
 #' @return A ggplot object
 #'
-#' @examples
-#' vr_score_evplot(dv_example_file())
-#'
 #' @export
 vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, home_colour = "darkblue", visiting_colour = "darkred", low_colour = "#800000", mid_colour = "#202020", high_colour = "#008000", font_size = 12) {
     if (missing(icons) || !is.data.frame(icons)) icons <- vr_plot_icons()
