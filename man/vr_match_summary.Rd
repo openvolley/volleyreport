@@ -15,6 +15,7 @@ vr_match_summary(
   css = vr_css(),
   remove_nonplaying = TRUE,
   style = "default",
+  base_font_size = 11,
   court_plots_function = "vr_court_plots",
   court_plots_args = list(),
   plot_icons,
@@ -48,6 +49,8 @@ vr_css()
 \item "default" - the standard FIVB match report
 \item "ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes
 }}
+
+\item{base_font_size}{numeric: the base font size (the font sizes in different parts of the report are scaled relative to this)}
 
 \item{court_plots_function}{string or function: a function, or name of a function, that takes a datavolley object and produces a plot object. Supply your own function here to override the court plots that are included in the report for some values of \code{style}}
 
