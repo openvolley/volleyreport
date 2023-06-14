@@ -520,9 +520,8 @@ vr_content_key <- function(vsx, kable_format, rows, cols = 2, icon_names = chara
     beach <- grepl("beach", vsx$file_type)
     receff_txt <- paste0("Reception efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Perf + Pos - Err - Overpasses) / N</span>")
     srveff_txt <- paste0("Serve efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Ace + Pos - Err - Poor) / N</span>")
-    ##out <- data.frame(Label = c("BP", "Err", "Pos%", if (vsx$style %in% c("default")) "W-L", if (vsx$style %in% c("ov1")) "K%" else "Pts", "Blo", if (vsx$style %in% c("default")) "Exc", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("expSO%", "expBP%") else c("srvEff%", "recEff%") }, if (vsx$style %in% c("ov1")) "P*x*" else "Earned pts", "*n*", "*n*", "."),
-    ##                  Description = c("Break point", "Errors", "Positive +#", if (vsx$style %in% c("default")) "Won-Lost", if (vsx$style %in% c("ov1")) "Attack kill%" else "Points", "Blocked", if (vsx$style %in% c("default")) "Excellent", if (vsx$style %in% c("ov1")) { if (!is.null(vsx$refx)) c("Expected SO%", "Expected BP%") else c(srveff_txt, receff_txt) }, if (vsx$style %in% c("ov1")) "Setter in *x*" else "Aces, attack and block kills", "Starting position", "Starting setter", if (vsx$style %in% c("ov1")) "Substituted for player p" else "Substitute"))
-    this_icons <- if (is.data.frame(vsx$plot_icons)) vsx$plot_icons else if (isTRUE(vsx$plot_icons)) vr_plot_icons() else NULL
+    this_icons <- if (is.data.frame(vsx$plot_icons)) vsx$plot_icons else if (isTRUE(vsx$plot_icons) || length(na.omit(icon_names)) > 0) vr_plot_icons() else NULL
+    ## TODO make sure icons are passed properly for timeouts
     out <- tribble(
         ~Label, ~Description,
         if (beach) "L/R/Blk/Def" else "", "Played left/right, as blocker/defender",

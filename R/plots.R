@@ -11,7 +11,8 @@ vr_plot_icons <- function() {
                    "kill", "star", "\uf005", "Attack kill",
                    "block", "hand", "\uf256", "Block kill",
                    "error", "triangle-exclamation", "\uf071", "Error",
-                   "in_play", "circle", "\u6f", "In play")
+                   "in_play", "circle", "\u6f", "In play",
+                   "timeout", "clock", "\uf017", "Timeout")
     out$svg <- vapply(out$icon_name, function(nm) as.character(fontawesome::fa(nm)), FUN.VALUE = "", USE.NAMES = FALSE)
     out
 }
@@ -49,7 +50,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
         use_icons <- TRUE
     } else {
         use_icons <- isTRUE(icons)
-        if (use_icons) icons <- vr_plot_icons()
+        icons <- vr_plot_icons()
     }
     if (is.string(x) && file.exists(x) && grepl("\\.(dvw|xml|vsm)$", x, ignore.case = TRUE)) {
         x <- datavolley::dv_read(x, skill_evaluation_decode = "guess")
@@ -60,20 +61,24 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
     if (is.null(file_type) || !file_type %in% c("indoor", "beach", "perana_indoor", "perana_beach")) file_type <- guess_data_type(px)
     beach <- grepl("beach", file_type)
     sc <- px %>% group_by(.data$point_id) %>% dplyr::slice_tail(n = 1) %>% ungroup %>%
-        dplyr::select("point_id", "set_number", "home_team", "home_team_score", "home_score_start_of_point", "visiting_team", "visiting_team_score", "visiting_score_start_of_point") %>% distinct %>% na.omit() %>%
-        mutate(ok = .data$home_score_start_of_point != .data$home_team_score | .data$visiting_score_start_of_point != .data$visiting_team_score)
+        dplyr::select("point_id", "set_number", "home_team", "home_team_score", "home_score_start_of_point", "visiting_team", "visiting_team_score", "visiting_score_start_of_point") %>% distinct %>% na.omit()
+    sc$timeout <- sc$point_id %in% px$point_id[which(px$skill == "Timeout")]
+    sc <- sc %>% mutate(ok = .data$home_score_start_of_point != .data$home_team_score | .data$visiting_score_start_of_point != .data$visiting_team_score | .data$timeout)
     ## filter on `ok` to discard e.g. timeouts, subs, and other non-score-change events
     sc <- sc %>% dplyr::filter(.data$ok) %>% mutate(pid = dplyr::row_number(), diff = .data$home_team_score - .data$visiting_team_score, teamcolor = case_when(.data$diff < 0 ~ visiting_colour, TRUE ~ home_colour)) %>% dplyr::select(-"ok")
+    ## shift timeouts to previous pid and renumber them
+    sc <- sc %>% mutate(pid = if_else(.data$timeout, lag(.data$pid), .data$pid), pid = order(.data$pid))
     if (nrow(sc) < 2) return(NULL)
-    ## icons for blocks, aces, errors
-    if (use_icons) {
-        sc <- left_join(sc, px %>% mutate(evaluation = case_when(.data$skill %in% c("Serve", "Attack", "Set", "Freeball") & .data$evaluation == "Error" ~ "Unforced error",
-                                                                 .data$skill == "Block" & .data$evaluation == "Invasion" ~ "Unforced error",
-                                                                 TRUE ~ .data$evaluation)) %>%
-                            dplyr::filter(.data$evaluation %in% c("Ace", "Winning block", "Unforced error")) %>%
-                            mutate(icon_team = if_else(.data$home_team == .data$team, "home", "visiting")) %>%
-                            dplyr::select("point_id", icon_event = "evaluation", "icon_team"), by = "point_id")
-    }
+    ## if use_icons is TRUE, show icons for blocks, aces, errors. Show timeout icons regardless
+    sc <- left_join(sc, px %>% mutate(evaluation = case_when(.data$skill %in% c("Serve", "Attack", "Set", "Freeball") & .data$evaluation == "Error" ~ "Unforced error",
+                                                             .data$skill == "Block" & .data$evaluation == "Invasion" ~ "Unforced error",
+                                                             .data$timeout ~ "Timeout",
+                                                             TRUE ~ .data$evaluation)) %>%
+                        dplyr::filter(.data$evaluation %in% c("Ace", "Winning block", "Unforced error", "Timeout")) %>%
+                        mutate(icon_team = if_else(.data$home_team == .data$team, "home", "visiting")) %>%
+                        dplyr::select("point_id", icon_event = "evaluation", "icon_team"), by = "point_id")
+    if (!use_icons) sc <- mutate(sc, icon_event = if_else(.data$icon_event == "Timeout", .data$icon_event, NA_character_)) ## only keep timeouts if use_icons is not TRUE
+    use_icons <- TRUE ## set to TRUE now so that timeouts are shown
     setx <- c(0, sc$pid[which(diff(sc$set_number) > 0)]) + 0.5
     sc <- mutate(sc, set_number = paste0("Set ", .data$set_number))
     yr <- c(min(-4, min(sc$diff, na.rm = TRUE)), max(4, max(sc$diff, na.rm = TRUE))) ## y-range, at least -4 to +4
@@ -192,22 +197,29 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
     icon_names <- character()
     if (use_icons && !all(is.na(sc$icon_event))) {
         sysfonts::font_add("fa6s", regular = system.file("fontawesome/webfonts/fa-solid-900.ttf", package = "fontawesome", mustWork = TRUE))
-        ex <- sc %>% dplyr::filter(!is.na(.data$icon_event)) %>%
+        ex <- sc %>%
+            ## find the larger diff of this point and the next, so that timeout icons don't overlap either (these are offset to the right a bit)
+            mutate(tempdiff = case_when(.data$icon_team == "home" & .data$icon_event == "Timeout" ~ pmax(.data$diff, lead(.data$diff), na.rm = TRUE),
+                                        .data$icon_team == "visiting" & .data$icon_event == "Timeout" ~ pmin(.data$diff, lead(.data$diff), na.rm = TRUE),
+                                        TRUE ~ .data$diff)) %>%
+            dplyr::filter(!is.na(.data$icon_event)) %>%
             ## convert icon_event entries to what we expect to see in the icons table
             mutate(icon_event = case_when(.data$icon_event == "Ace" ~ "ace",
                                           .data$icon_event == "Winning block" ~ "block",
-                                          .data$icon_event == "Unforced error" ~ "error"),
-                   iy = case_when(.data$icon_team == "home" & .data$diff > 0 & .data$diff < max(.data$diff, na.rm = TRUE) ~ .data$diff + 1,
-                                  .data$icon_team == "home" & .data$diff > 0 ~ .data$diff + 0.5,
-                                  .data$icon_team == "home" ~ 1,
-                                  .data$icon_team == "visiting" & .data$diff < 0 & .data$diff > min(.data$diff, na.rm = TRUE) ~ .data$diff - 1,
-                                  .data$icon_team == "visiting" & .data$diff < 0 ~ .data$diff - 0.5,
-                                  .data$icon_team == "visiting" ~ -1)) %>%
+                                          .data$icon_event == "Unforced error" ~ "error",
+                                          .data$icon_event == "Timeout" ~ "timeout"),
+                   pid = if_else(.data$icon_event == "timeout", .data$pid + 0.5, .data$pid), ## shift half a point to the right to indicate that the timeout was called after this point ended
+                   iy = case_when(.data$icon_team == "home" & .data$tempdiff > 0 ~ .data$tempdiff + 0.5,
+                                  .data$icon_team == "home" ~ 0.5,
+                                  .data$icon_team == "visiting" & .data$tempdiff < 0 ~ .data$tempdiff - 0.5,
+                                  .data$icon_team == "visiting" ~ -0.5),
+                   vju = if_else(.data$icon_team == "home", 0, 1)) %>% ## vertical justification
             dplyr::filter(!is.na(.data$icon_event))
+        ## TODO need to do more work to avoid overlapping icons, e.g. look for adjacent icons and shift one up/down if needed
         ex <- left_join(ex, icons %>% dplyr::select("icon_event", "icon_name", icon = "unicode"), by = "icon_event")
         icon_names <- unique(na.omit(ex$icon_name))
-        p <- p + geom_text(data = ex, aes(y = .data$iy, label = .data$icon, colour = .data$icon_event), family = "fa6s", size = 1.75) +
-            scale_colour_manual(values = c(ace = "#008000", error = "#800000", block = "#008000"), guide = "none")
+        p <- p + geom_text(data = ex, aes(y = .data$iy, label = .data$icon, colour = .data$icon_event, vjust = .data$vju), family = "fa6s", size = 1.75) +
+            scale_colour_manual(values = c(ace = "#008000", error = "#800000", block = "#008000", timeout = "#707070"), guide = "none")
     }
     p <- p + scale_fill_manual(values = c(home_colour, visiting_colour), guide = "none") + labs(x = NULL, y = "Score\ndifference") +
         scale_x_continuous(labels = paste0("Set ", seq_along(setx)), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005)) +
