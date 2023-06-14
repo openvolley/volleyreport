@@ -192,9 +192,9 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
     if (use_icons && !all(is.na(sc$icon_event))) {
         sysfonts::font_add("fa6s", regular = system.file("fontawesome/webfonts/fa-solid-900.ttf", package = "fontawesome", mustWork = TRUE))
         ex <- sc %>%
-            ## find the larger diff of this point and the next, so that timeout icons don't overlap either (these are offset to the right a bit)
-            mutate(tempdiff = case_when(.data$icon_team == "home" & .data$icon_event == "Timeout" ~ pmax(.data$diff, lead(.data$diff), na.rm = TRUE),
-                                        .data$icon_team == "visiting" & .data$icon_event == "Timeout" ~ pmin(.data$diff, lead(.data$diff), na.rm = TRUE),
+            ## find the larger diff of this point and the ones next to it, so that icons don't overlap adjacent bars (timeouts on beach only, because these are offset to the right a bit. But all icons with indoor, since there tend to be a lot of them)
+            mutate(tempdiff = case_when(.data$icon_team == "home" & (!beach | .data$icon_event == "Timeout") ~ pmax(.data$diff, lag(.data$diff), lead(.data$diff), na.rm = TRUE),
+                                        .data$icon_team == "visiting" & (!beach | .data$icon_event == "Timeout") ~ pmin(.data$diff, lag(.data$diff), lead(.data$diff), na.rm = TRUE),
                                         TRUE ~ .data$diff)) %>%
             dplyr::filter(!is.na(.data$icon_event)) %>%
             ## convert icon_event entries to what we expect to see in the icons table
@@ -209,7 +209,16 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
                                   .data$icon_team == "visiting" ~ -0.5),
                    vju = if_else(.data$icon_team == "home", 0, 1)) %>% ## vertical justification
             dplyr::filter(!is.na(.data$icon_event))
-        ## TODO need to do more work to avoid overlapping icons, e.g. look for adjacent icons and shift one up/down if needed
+        ## shenanigans to try and avoid overlapping icons, look for adjacent icons and shift one up/down
+        adjseq <- c(1, 0, -1, 0)
+        nadj <- function() { adji <<- adji + 1; if (adji > length(adjseq)) adji <<- 1; adjseq[adji] }
+        iidx <- which(ex$icon_team == "home")
+        ex$nadj <- NA_integer_
+        adji <- 0; for (ii in seq_along(iidx)[-1]) { if (abs(ex$pid[iidx[ii]] - ex$pid[iidx[ii - 1]]) <= 1 && ex$tempdiff[iidx[ii]] < max(sc$diff, na.rm = TRUE) && ex$tempdiff[iidx[ii]] == ex$tempdiff[iidx[ii - 1]]) { ex$iy[iidx[ii]] <- ex$iy[iidx[ii]] + nadj() } else adji <- 0 }
+        ex$iy[iidx] <- pmax(0.5, ex$iy[iidx])
+        iidx <- which(ex$icon_team == "visiting")
+        adji <- 2; for (ii in seq_along(iidx)[-1]) { if (abs(ex$pid[iidx[ii]] - ex$pid[iidx[ii - 1]]) <= 1 && ex$tempdiff[iidx[ii]] > min(sc$diff, na.rm = TRUE) && ex$tempdiff[iidx[ii]] == ex$tempdiff[iidx[ii - 1]]) { ex$iy[iidx[ii]] <- ex$iy[iidx[ii]] + nadj() } else adji <- 2 }
+        ex$iy[iidx] <- pmin(-0.5, ex$iy[iidx])
         ex <- left_join(ex, icons %>% dplyr::select("icon_event", "icon_name", icon = "unicode"), by = "icon_event")
         icon_names <- unique(na.omit(ex$icon_name))
         p <- p + geom_text(data = ex, aes(y = .data$iy, label = .data$icon, colour = .data$icon_event, vjust = .data$vju), family = "fa6s", size = 1.75) +
