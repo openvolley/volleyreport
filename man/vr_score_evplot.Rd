@@ -10,7 +10,8 @@ vr_plot_icons()
 vr_score_evplot(
   x,
   with_summary = FALSE,
-  icons = FALSE,
+  use_icons = FALSE,
+  icons,
   home_colour = "darkblue",
   visiting_colour = "darkred",
   low_colour = "#800000",
@@ -24,7 +25,9 @@ vr_score_evplot(
 
 \item{with_summary}{logical: if \code{TRUE}, show team summary statistics. For beach, this is by end; for indoor summaries will be by set}
 
-\item{icons}{logical or data.frame: either \code{FALSE} for no icons, \code{TRUE} to use the icons specified by \code{\link[=vr_plot_icons]{vr_plot_icons()}}, or a data.frame as returned by \code{\link[=vr_plot_icons]{vr_plot_icons()}}. Note that only (free) fontawesome icons are supported}
+\item{use_icons}{logical: add icons for ace/error/block kill?. Note that timeout icons are always added}
+
+\item{icons}{data.frame: a data.frame as returned by \code{\link[=vr_plot_icons]{vr_plot_icons()}}. Note that only (free) fontawesome icons are supported}
 
 \item{home_colour}{string: colour for home team}
 

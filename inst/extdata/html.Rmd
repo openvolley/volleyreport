@@ -12,7 +12,7 @@ tf_abs <- function(f) system.file(file.path("extdata", f), package = "volleyrepo
 kable_format <- "html"
 
 beach <- isTRUE(grepl("beach", vsx$file_type))
-if (isTRUE(vsx$plot_summary) || isTRUE(vsx$plot_icons)) showtext::showtext_opts(dpi = 175 * 2.2) ## not sure why this multiplier is needed
+if (isTRUE(vsx$plot_summary) || isTRUE(vsx$use_plot_icons)) showtext::showtext_opts(dpi = 175 * 2.2) ## not sure why this multiplier is needed
 
 icon_names_for_key <- character()
 
@@ -196,6 +196,7 @@ if (vsx$shiny_progress) try(shiny::setProgress(value = 0.8, message = "Generatin
 cat("<div style=\"height:5mm\"></div>\n") ## space
 rgs <- vsx$court_plots_args
 rgs$x <- structure(list(meta = vsx$meta, plays = vsx$x), class = "datavolley")
+if (!"use_icons" %in% names(rgs)) rgs$use_icons <- TRUE
 if (!"icons" %in% names(rgs)) rgs$icons <- vsx$plot_icons
 if (!"attack_plot_colour" %in% names(rgs)) rgs$attack_plot_colour <- vsx$css$header_background
 if (!"reception_plot_colour" %in% names(rgs)) rgs$reception_plot_colour <- vsx$css$header_background

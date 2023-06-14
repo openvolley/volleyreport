@@ -1,6 +1,6 @@
 vr_content_score_evplot <- function(vsx, with_summary, font_size = 6) {
     if (missing(with_summary)) with_summary <- vsx$plot_summary
-    vr_score_evplot(structure(list(meta = vsx$meta, plays = vsx$x), class = "datavolley"), with_summary = with_summary, icons = vsx$plot_icons, home_colour = vsx$css$header_background, visiting_colour = vsx$css$header_background, font_size = font_size)
+    vr_score_evplot(structure(list(meta = vsx$meta, plays = vsx$x), class = "datavolley"), with_summary = with_summary, use_icons = vsx$use_plot_icons, icons = vsx$plot_icons, home_colour = vsx$css$header_background, visiting_colour = vsx$css$header_background, font_size = font_size)
 }
 
 #' @rdname vr_score_evplot
@@ -33,7 +33,8 @@ get_plot_icon <- function(what, icons, as = "unicode") {
 #'
 #' @param x datavolley or string: as returned by \code{datavolley::dv_read}, or the path to such a file
 #' @param with_summary logical: if `TRUE`, show team summary statistics. For beach, this is by end; for indoor summaries will be by set
-#' @param icons logical or data.frame: either `FALSE` for no icons, `TRUE` to use the icons specified by [vr_plot_icons()], or a data.frame as returned by [vr_plot_icons()]. Note that only (free) fontawesome icons are supported
+#' @param use_icons logical: add icons for ace/error/block kill?. Note that timeout icons are always added
+#' @param icons data.frame: a data.frame as returned by [vr_plot_icons()]. Note that only (free) fontawesome icons are supported
 #' @param home_colour string: colour for home team
 #' @param visiting_colour string: colour for visiting team
 #' @param low_colour,mid_colour,high_colour string: colours for low, mid, and high performance (used for `with_summary` only)
@@ -45,13 +46,9 @@ get_plot_icon <- function(what, icons, as = "unicode") {
 #' vr_score_evplot(dv_example_file())
 #'
 #' @export
-vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour = "darkblue", visiting_colour = "darkred", low_colour = "#800000", mid_colour = "#202020", high_colour = "#008000", font_size = 12) {
-    if (is.data.frame(icons)) {
-        use_icons <- TRUE
-    } else {
-        use_icons <- isTRUE(icons)
-        icons <- vr_plot_icons()
-    }
+vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, home_colour = "darkblue", visiting_colour = "darkred", low_colour = "#800000", mid_colour = "#202020", high_colour = "#008000", font_size = 12) {
+    if (missing(icons) || !is.data.frame(icons)) icons <- vr_plot_icons()
+    use_icons <- isTRUE(use_icons)
     if (is.string(x) && file.exists(x) && grepl("\\.(dvw|xml|vsm)$", x, ignore.case = TRUE)) {
         x <- datavolley::dv_read(x, skill_evaluation_decode = "guess")
     }
@@ -67,7 +64,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
     ## filter on `ok` to discard e.g. timeouts, subs, and other non-score-change events
     sc <- sc %>% dplyr::filter(.data$ok) %>% mutate(pid = dplyr::row_number(), diff = .data$home_team_score - .data$visiting_team_score, teamcolor = case_when(.data$diff < 0 ~ visiting_colour, TRUE ~ home_colour)) %>% dplyr::select(-"ok")
     ## shift timeouts to previous pid and renumber them
-    sc <- sc %>% mutate(pid = if_else(.data$timeout, lag(.data$pid), .data$pid), pid = order(.data$pid))
+    sc <- sc %>% mutate(pid = if_else(.data$timeout, lag(.data$pid), .data$pid), pid = as.integer(as.factor(.data$pid)))
     if (nrow(sc) < 2) return(NULL)
     ## if use_icons is TRUE, show icons for blocks, aces, errors. Show timeout icons regardless
     sc <- left_join(sc, px %>% mutate(evaluation = case_when(.data$skill %in% c("Serve", "Attack", "Set", "Freeball") & .data$evaluation == "Error" ~ "Unforced error",
@@ -138,7 +135,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
     if (with_summary) p <- p + ggplot2::coord_cartesian(clip = "off") ## to stop team names being clipped, see below
     p <- p + geom_vline(xintercept = setx, col = "black", alpha = 0.5, size = 0.25) +
         geom_hline(yintercept = 0, col = "black", alpha = 0.5, size = 0.25) +
-        geom_col(aes(fill = .data$teamcolor), width = 1.0, col = NA)
+        geom_col(aes(fill = .data$teamcolor), width = 1.0, col = NA, position = "identity")
     if (!is.null(blockx)) p <- p + geom_vline(xintercept = setdiff(blockx, setx), col = "#555555", linetype = "dashed", alpha = 0.5, size = 0.25)
     p <- p + theme(strip.background = element_rect(fill = "white"), axis.text.x = element_text(hjust = 0))
     sets2 <- length(unique(na.omit(px$set_number))) < 3 ## only 2 sets
@@ -245,7 +242,8 @@ vr_score_evplot <- function(x, with_summary = FALSE, icons = FALSE, home_colour 
 # @param team string: team name or "home" or "visiting"
 # @param font_size scalar: font size
 # @param attack_plot_style string: style for the attack plot: either "zones", "subzones_heatmap", "coordinates_lines", "coordinates_heatmap", or "guess"
-# @param icons logical or data.frame: either `FALSE` for no icons, `TRUE` to use the icons specified by [vr_plot_icons()], or a data.frame as returned by [vr_plot_icons()]. Note that only (free) fontawesome icons are supported
+# @param use_icons logical: add icons for ace/error/block kill?
+# @param icons data.frame: a data.frame as returned by [vr_plot_icons()]. Note that only (free) fontawesome icons are supported
 #' @param ... : passed to downstream functions
 #'
 #' @return A ggplot object
@@ -334,7 +332,7 @@ guess_attack_plot_style <- function(ax) {
     ## note that szmiss can never be less than zmiss, so we default to a zone plot in prference to a subzone plot
 }
 
-vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plot_style = "guess", attack_plot_colour = vr_css()$header_background, font_size = 7, ...) {
+vr_attack_plot <- function(x, team = "home", use_icons = TRUE, icons = vr_plot_icons(), attack_plot_style = "guess", attack_plot_colour = vr_css()$header_background, font_size = 7, ...) {
     assert_that(is.string(team), !is.na(team))
     attack_plot_style <- match.arg(attack_plot_style, c("guess", "zones", "cones", "subzones_heatmap", "coordinates_lines", "coordinates_heatmap"))
     beach <- grepl("beach", guess_data_type(x))
@@ -444,7 +442,7 @@ vr_attack_plot <- function(x, team = "home", icons = vr_plot_icons(), attack_plo
                                                    .data$evaluation == "Blocked" ~ "block",
                                                    .data$evaluation == "Error" ~ "error",
                                                    TRUE ~ "in_play"))
-        if (is.data.frame(icons)) ax <- left_join(ax, icons %>% dplyr::select("icon_event", "icon_name", icon = "unicode"), by = "icon_event")
+        if (isTRUE(use_icons)) ax <- left_join(ax, icons %>% dplyr::select("icon_event", "icon_name", icon = "unicode"), by = "icon_event")
         p <- ggplot() + ggcourt(labels = NULL, show_3m_line = !beach, label_font_size = font_size * 0.8, show_zones = FALSE,
                                 base_size = font_size, court = "full", ylim = c(2.5, NA_real_), line_width = 0.3)
         if (any(midx)) p <- p + geom_segment(data = ax[midx, ], aes(x = .data$start_coordinate_x, y = .data$start_coordinate_y, xend = .data$mid_coordinate_x, yend = .data$mid_coordinate_y), colour = "grey80", alpha = 0.5) +

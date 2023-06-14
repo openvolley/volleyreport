@@ -520,8 +520,7 @@ vr_content_key <- function(vsx, kable_format, rows, cols = 2, icon_names = chara
     beach <- grepl("beach", vsx$file_type)
     receff_txt <- paste0("Reception efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Perf + Pos - Err - Overpasses) / N</span>")
     srveff_txt <- paste0("Serve efficiency<br /><span style=\"font-size:", vsx$base_font_size * 5/12, "pt\">(Ace + Pos - Err - Poor) / N</span>")
-    this_icons <- if (is.data.frame(vsx$plot_icons)) vsx$plot_icons else if (isTRUE(vsx$plot_icons) || length(na.omit(icon_names)) > 0) vr_plot_icons() else NULL
-    ## TODO make sure icons are passed properly for timeouts
+    this_icons <- if (is.data.frame(vsx$plot_icons)) vsx$plot_icons else vr_plot_icons()
     out <- tribble(
         ~Label, ~Description,
         if (beach) "L/R/Blk/Def" else "", "Played left/right, as blocker/defender",

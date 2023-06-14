@@ -53,8 +53,8 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
         })
     })
     if (!is.list(court_plots_args) || length(names(court_plots_args)) != length(court_plots_args) || any(is.na(names(court_plots_args)) | !nzchar(names(court_plots_args)))) {
-        warning("court_plot_args should be a named list, ignoring")
-        court_plot_args <- list()
+        warning("court_plots_args should be a named list, ignoring")
+        court_plots_args <- list()
     }
 
     dots <- list(...)
@@ -235,7 +235,9 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
     ## other plot icons
     if (missing(plot_icons)) plot_icons <- style %in% c("ov1") && grepl("beach", file_type)
-    if (is.logical(plot_icons) && isTRUE(plot_icons)) plot_icons <- vr_plot_icons()
+    use_plot_icons <- is.data.frame(plot_icons) || (is.logical(plot_icons) && isTRUE(plot_icons))
+    if (!is.data.frame(plot_icons)) plot_icons <- vr_plot_icons()
+    ## so use_plot_icons tells us whether to include plot icons, and plot_icons are the actual icons (in a df)
     if (style %in% c("ov1")) {
         ## include the plot summary stats by block?
         plotsum <- if (grepl("beach", file_type)) {
@@ -255,14 +257,14 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     ## cheap and nasty parameterisation
     vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style,
                 shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = 11,
-                plot_summary = plotsum, plot_icons = plot_icons, court_plots_fun = court_plots_function, court_plots_args = court_plots_args)
+                plot_summary = plotsum, plot_icons = plot_icons, use_plot_icons = use_plot_icons, court_plots_fun = court_plots_function, court_plots_args = court_plots_args)
     vsx <- c(vsx, dots) ## extra parms
 
     rm(x, meta, refx, vote, style, shiny_progress, file_type, icon, remove_nonplaying)
 
     ## generate report
     output_options <- NULL
-    if (isTRUE(vsx$plot_summary) || is.data.frame(vsx$plot_icons)) showtext::showtext_auto()
+    if (isTRUE(vsx$plot_summary) || isTRUE(vsx$use_plot_icons)) showtext::showtext_auto()
     if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
     blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
     f <- if (format == "paged_html") {
@@ -284,7 +286,7 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
                  out
              }
          }
-    if (isTRUE(vsx$plot_summary) || is.data.frame(vsx$plot_icons)) showtext::showtext_auto(enable = FALSE)
+    if (isTRUE(vsx$plot_summary) || isTRUE(vsx$use_plot_icons)) showtext::showtext_auto(enable = FALSE)
     f
 }
 
