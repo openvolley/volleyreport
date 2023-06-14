@@ -566,7 +566,7 @@ vr_content_key <- function(vsx, kable_format, rows, cols = 2, icon_names = chara
         out <- do.call(cbind, lapply(seq(1, nrow(out), by = rows_per_col), function(i) out[i:min(nrow(out), (i + rows_per_col - 1L)), ]))
     }
     out %>% kable(format = kable_format, align = c("r", "l"), escape = FALSE, col.names = NULL, table.attr = "class=\"widetable\"") %>%
-        kable_styling(font_size = vsx$base_font_size * 7.5/12) %>%
+        kable_styling(font_size = vsx$base_font_size * 6.5/12) %>%
         ## add outer framing to make the key visually separate from the content
         column_spec(seq(1, ncol(out), by = 2), border_left = vsx$css$border) %>%
         column_spec(ncol(out), border_right = vsx$css$border) %>%
