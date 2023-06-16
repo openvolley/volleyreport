@@ -240,60 +240,51 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     use_plot_icons <- is.data.frame(plot_icons) || (is.logical(plot_icons) && isTRUE(plot_icons))
     if (!is.data.frame(plot_icons)) plot_icons <- vr_plot_icons()
     ## so use_plot_icons tells us whether to include plot icons, and plot_icons are the actual icons (in a df)
-    if (style %in% c("ov1")) {
-        ## include the plot summary stats by block?
-        plotsum <- if (grepl("beach", file_type)) {
-                       TRUE
-                   } else {
-                       ## if we have a full page, we have to omit them and just show the score evolution bars
-                       nhp <- sum(apply(meta$players_h[, grep("starting_position", names(meta$players_h))], 1, function(z) !all(is.na(z))))
-                       nvp <- sum(apply(meta$players_v[, grep("starting_position", names(meta$players_v))], 1, function(z) !all(is.na(z))))
-                       nsets <- sum(meta$teams$sets_won)
-                       ht <- ((nhp * 4 + 18) + (nvp * 4 + 18) + (4.5 * nsets + 8.5)) ## kind of a height measure of the team tables + set summaries
-                       ##message("PS: ", nhp, " + ", nvp, " + ", nsets, " = ", ht)
-                       ht < 160 ## rule of thumb, more than this and the plot won't fit
-                   }
-    } else {
-        plotsum <- FALSE
-    }
     ## cheap and nasty parameterisation
     vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style,
                 shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = base_font_size,
-                plot_summary = plotsum, plot_icons = plot_icons, use_plot_icons = use_plot_icons, court_plots_fun = court_plots_function, court_plots_args = court_plots_args)
+                plot_summary = style %in% c("ov1"), ## but modified in loop below
+                plot_icons = plot_icons, use_plot_icons = use_plot_icons, court_plots_fun = court_plots_function, court_plots_args = court_plots_args)
     vsx <- c(vsx, dots) ## extra parms
 
-    rm(x, meta, refx, vote, style, shiny_progress, file_type, icon, remove_nonplaying)
+    rm(x, meta, refx, vote, shiny_progress, file_type, icon, remove_nonplaying)
 
     ## generate report
     output_options <- NULL
     if (isTRUE(vsx$plot_summary) || isTRUE(vsx$use_plot_icons)) showtext::showtext_auto()
     max_tries <- if (format == "paged_pdf" && isTRUE(single_page_tries > 1)) single_page_tries else 1L
-    for (this_try in seq_len(max_tries)) {
-        vsx$base_font_size <- base_font_size * (0.95^(this_try - 1)) ## progressively smaller font
-        if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
-        blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
-        f <- if (format == "paged_html") {
-                 rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = TRUE), clean = TRUE)
-                 do.call(rmarkdown::render, rgs)
-             } else if (grepl("paged_", format)) {
-                 rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = FALSE, copy_resources = TRUE), clean = TRUE)
-                 do.call(rmarkdown::render, rgs)
-                 rgs2 <- list(input = outfile, output = final_outfile, format = final_format)
-                 if (format == "paged_png") rgs2$scale <- 2
-                 if (length(chrome_print_extra_args) > 0) rgs2 <- c(rgs2, list(extra_args = chrome_print_extra_args))
-                 do.call(ovpaged::chrome_print, rgs2)
-             } else {
-                 out <- render(rmd_template, output_file = outfile, output_options = output_options)
-                 if (final_format %in% c("pdf", "png")) {
-                     safe_webshot(outfile, file = final_outfile)
-                     final_outfile
+    for (try_with_full_plot in unique(c(style %in% c("ov1"), FALSE))) {
+        ok <- FALSE
+        vsx$plot_summary <- try_with_full_plot
+        for (this_try in seq_len(max_tries)) {
+            vsx$base_font_size <- base_font_size * (0.95^(this_try - 1)) ## progressively smaller font
+            if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
+            blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
+            f <- if (format == "paged_html") {
+                     rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = TRUE), clean = TRUE)
+                     do.call(rmarkdown::render, rgs)
+                 } else if (grepl("paged_", format)) {
+                     rgs <- list(input = rmd_template, output_file = outfile, output_options = list(self_contained = FALSE, copy_resources = TRUE), clean = TRUE)
+                     do.call(rmarkdown::render, rgs)
+                     rgs2 <- list(input = outfile, output = final_outfile, format = final_format)
+                     if (format == "paged_png") rgs2$scale <- 2
+                     if (length(chrome_print_extra_args) > 0) rgs2 <- c(rgs2, list(extra_args = chrome_print_extra_args))
+                     do.call(ovpaged::chrome_print, rgs2)
                  } else {
-                     out
+                     out <- render(rmd_template, output_file = outfile, output_options = output_options)
+                     if (final_format %in% c("pdf", "png")) {
+                         safe_webshot(outfile, file = final_outfile)
+                         final_outfile
+                     } else {
+                         out
+                     }
                  }
-             }
-        if (this_try < max_tries) {
-            if (tryCatch(pdftools::pdf_info(f)$pages < 2, error = function(e) TRUE)) break ## bail out if we've achieved a single page
+            if (tryCatch(pdftools::pdf_info(f)$pages < 2, error = function(e) TRUE)) {
+                ok <- TRUE
+                break ## bail out if we've achieved a single page
+            }
         }
+        if (ok) break
     }
     if (isTRUE(vsx$plot_summary) || isTRUE(vsx$use_plot_icons)) showtext::showtext_auto(enable = FALSE)
     f
