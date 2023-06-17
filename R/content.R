@@ -191,7 +191,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
                starting_position_set6 = case_when(!is.na(.data$starting_position_set6) & .data$role %eq% "libero" ~ "L",
                                                   TRUE ~ stringr::str_replace(starting_position_set6, '\\*', '.'))) %>%
         dplyr::select(-"role") %>%
-        left_join(volleyreport::vr_points(vsx$x, teamfun(vsx$x), vote = vsx$vote, style = vsx$style) %>% dplyr::select("player_id", if (vsx$vote) "vote", "Tot", if (vsx$style %in% "default") c("BP", "W-L")), by = "player_id") %>%
+        left_join(volleyreport::vr_points(vsx$x, teamfun(vsx$x), vote = vsx$vote, style = vsx$style) %>% dplyr::select("player_id", if (vsx$vote) "vote", if (vsx$style %in% c("ov1")) "Won" else "Tot", if (vsx$style %in% "default") c("BP", "W-L")), by = "player_id") %>%
         left_join(volleyreport::vr_serve(vsx$x, teamfun(vsx$x), refx = vsx$refx, style = vsx$style), by = "player_id", suffix = c(".pts", ".ser")) %>%
         left_join(volleyreport::vr_reception(vsx$x, teamfun(vsx$x), refx = vsx$refx, file_type = vsx$file_type, style = vsx$style), by = "player_id", suffix = c(".ser", ".rec")) %>%
         left_join(volleyreport::vr_attack(vsx$x, teamfun(vsx$x), file_type = vsx$file_type, style = vsx$style), by = "player_id", suffix = c(".rec", ".att")) %>%
@@ -305,11 +305,8 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     P_sum <- vr_content_team_summary(vsx = vsx, kable_format = kable_format, which_team = which_team)
     Rexc <- "(Exc%)" %in% names(P_sum) ## perana have only R#+, not R#
     expSO <- "expSO%" %in% names(P_sum)
-    SO <- "SO%" %in% names(P_sum)
-    modSO <- "modSO%" %in% names(P_sum)
     recEff <- "recEff%" %in% names(P_sum)
     expBP <- "expBP%" %in% names(P_sum)
-    BP <- "BP%" %in% names(P_sum)
     srvEff <- "srvEff%" %in% names(P_sum)
     attEff <- "attEff%" %in% names(P_sum)
     if (which_team == "home") {
@@ -319,7 +316,7 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     }
     on2 <- "On2" %in% names(P_sum)
     spcols <- grep("^starting_position_set", names(P_sum)) ## won't be present for beach
-    bcols <- if (vsx$style %in% c("ov1")) 2 + length(spcols) + vsx$vote + cumsum(c(1, 3 + expBP + srvEff + BP, 3 + Rexc + expSO + recEff + modSO + SO, 5 + attEff + 2 * on2)) else NULL ## internal right-borders
+    bcols <- if (vsx$style %in% c("ov1")) 2 + length(spcols) + vsx$vote + cumsum(c(1, 3 + expBP + srvEff, 3 + Rexc + expSO + recEff, 5 + attEff + 2 * on2)) else NULL ## internal right-borders
 
     if (length(spcols) < 1) {
         set_col_hdr <- character()
@@ -340,11 +337,11 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
             }
         })
     }
-
+    if (vsx$style %in% c("ov1")) P_sum <- P_sum %>% dplyr::filter(.data$name != "Team total")
     ## col names
-    cn <- c("", "", set_col_hdr, if (vsx$vote) "Vote", "Tot", if (vsx$style %in% c("default")) c("BP", "W-L"), "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", if (srvEff) "Eff%", if (BP) "BP%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", if (recEff) "Eff%", if (modSO) "modSO%", if (SO) "SO%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", if (on2) c("(On2)", "(On2 K%)"), "Pts")
+    cn <- c("", "", set_col_hdr, if (vsx$vote) "Vote", if (vsx$style %in% c("ov1")) "Won" else "Tot", if (vsx$style %in% c("default")) c("BP", "W-L"), "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", if (srvEff) "Eff%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", if (recEff) "Eff%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", if (on2) c("(On2)", "(On2 K%)"), "Pts")
     ## header above col names
-    ch <- c(setNames(2, teamfun(vsx$x)), if (length(spcols) > 0) setNames(min(6, length(spcols)), "Set"), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP + srvEff + BP, "Reception" = 3 + Rexc + expSO + recEff + modSO + SO, "Attack" = 5 + 2 * on2 + attEff, "Blo" = 1)
+    ch <- c(setNames(2, teamfun(vsx$x)), if (length(spcols) > 0) setNames(min(6, length(spcols)), "Set"), "Points" = 1 + 2 * vsx$style %in% c("default") + vsx$vote, "Serve" = 3 + expBP + srvEff, "Reception" = 3 + Rexc + expSO + recEff, "Attack" = 5 + 2 * on2 + attEff, "Blo" = 1)
     calign <- c(rep("l", 2), rep("r", ncol(P_sum) - 2)) ## right-align everything after the player names and starting position columns
     col_widths <- list(number = if (grepl("beach", vsx$file_type)) 0 else 4, name = if (!grepl("beach", vsx$file_type)) 40 else 36,
                        sets = 8, points = 12) ## TODO put these outside of the function so that they are visible from the set summary func
@@ -357,8 +354,8 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
     if (length(spcols) > 0) out <- out %>% column_spec(2 + seq_len(min(6, length(spcols))), width = paste0(col_widths$sets, cwu))
     out <- out %>% column_spec(2 + (if (length(spcols) > 0) min(6, length(spcols)) else 0) + 1, width = paste0(col_widths$points, cwu)) %>%
         column_spec(ncol(P_sum), border_right = vsx$css$border) %>%
-        row_spec(which(P_sum$name == "Team total"), background = "lightgrey") %>%
         row_spec(nrow(P_sum), extra_css = paste0("border-bottom:", vsx$css$border, "; padding-bottom:2px;"))
+    if ("Team total" %in% P_sum$name) out <- out %>% row_spec(which(P_sum$name == "Team total"), background = "lightgrey")
     if (length(bcols) > 0) out <- out %>% column_spec(bcols, border_right = "1px solid #CCC")
     out
 }
@@ -398,7 +395,7 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
         left_join(volleyreport::vr_reception(vsx$x, teamfun(vsx$x), by = "set", refx = vsx$refx, file_type = vsx$file_type, style = vsx$style), by = "set_number", suffix = c(".ser", ".rec") ) %>%
         left_join(volleyreport::vr_attack(vsx$x, teamfun(vsx$x), by = "set", file_type = vsx$file_type, style = vsx$style), by = "set_number", suffix = c(".rec", ".att") ) %>%
         left_join(volleyreport::vr_block(vsx$x, teamfun(vsx$x), by = "set", style = vsx$style), by = "set_number") %>%
-        mutate(set_number = paste("Set", .data$set_number)) %>% mutate(across(where(is.numeric), ~na_if(., 0)))
+        mutate(set_number = if_else(grepl("Total", .data$set_number), "Total", paste("Set", .data$set_number))) %>% mutate(across(where(is.numeric), ~na_if(., 0)))
     Rexc <- !isTRUE(grepl("perana", vsx$file_type)) && "(Exc%)" %in% names(thisSS) ## perana have only R#+, not R#
     if (!Rexc && "(Exc%)" %in% names(thisSS)) thisSS <- dplyr::select(thisSS, -"(Exc%)")
     expSO <- "expSO%" %in% names(thisSS)
@@ -410,6 +407,7 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
     modSO <- "modSO%" %in% names(thisSS)
     SO <- "SO%" %in% names(thisSS)
     attEff <- "attEff%" %in% names(thisSS)
+    won <- "Won" %in% names(thisSS)
     ## for beach, we aren't showing the set columns with starting positions so indicate first-serving team in each set in this table instead
     if (grepl("beach", vsx$file_type)) {
         try({
@@ -425,15 +423,17 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
         })
     }
     on2 <- "On2" %in% names(thisSS)
-    bcols <- if (vsx$style %in% c("ov1")) 1 + cumsum(c(0, 4, 3 + BP + expBP + srvEff, 3 + Rexc + modSO + expSO + recEff + SO, 5 + 2 * on2 + attEff)) else NULL ## internal right-borders
+    bcols <- if (vsx$style %in% c("ov1")) 1 + cumsum(c(0, 4 + won, 3 + BP + expBP + srvEff, 3 + Rexc + modSO + expSO + recEff + SO, 5 + 2 * on2 + attEff)) else NULL ## internal right-borders
     calign <- c("l", rep("r", ncol(thisSS) - 1)) ## right-align everything after the set number
-    out <- kable(thisSS,format = "html", escape = FALSE, col.names = c("","Ser", "Atk", "Blo", "Op.Err", "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", if (srvEff) "Eff%", if (BP) "BP%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", if (recEff) "Eff%", if (modSO) "modSO%", if (SO) "SO%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", if (on2) c("(On2)", "(On2 K%)"), "Pts"), table.attr = "class=\"widetable\"", align = calign) %>%
+    cn <- c("", if (won) "Won", "Ser", "Atk", "Blo", "Op.Err", "Tot", "Err", if (vsx$style %in% c("ov1")) "Ace" else "Pts", if (expBP) "expBP%", if (srvEff) "Eff%", if (BP) "BP%", "Tot", "Err", "Pos%", if (Rexc) "(Exc%)", if (expSO) "expSO%", if (recEff) "Eff%", if (modSO) "modSO%", if (SO) "SO%", "Tot", "Err", "Blo", if (vsx$style %in% c("ov1")) "Kill" else "Pts", if (vsx$style %in% c("ov1")) "K%" else "Pts%", if (attEff) "Eff%", if (on2) c("(On2)", "(On2 K%)"), "Pts")
+    out <- kable(thisSS,format = "html", escape = FALSE, col.names = cn, table.attr = "class=\"widetable\"", align = calign) %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 10/12) %>%
-        add_header_above(c("Set" = 1, "Points" = 4, "Serve" = 3 + BP + expBP + srvEff, "Reception" = 3 + modSO + Rexc + expSO + recEff + SO, "Attack" = 5 + 2 * on2 + attEff, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;") %>%
+        add_header_above(c("Set" = 1, "Points" = 4 + won, "Serve" = 3 + BP + expBP + srvEff, "Reception" = 3 + modSO + Rexc + expSO + recEff + SO, "Attack" = 5 + 2 * on2 + attEff, "Blo" = 1), color = vsx$css$header_colour, background = vsx$css$header_background, line = FALSE, extra_css = "padding-bottom:2px;") %>%
         row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background, font_size = vsx$base_font_size * 10/12) %>%
         column_spec(1, border_left = vsx$css$border) %>%
         column_spec(ncol(thisSS), border_right = vsx$css$border)
     if (length(bcols) > 0) out <- out %>% column_spec(bcols, border_right = "1px solid #CCC")
+    if ("Total" %in% thisSS$set_number) out <- out %>% row_spec(which(thisSS$set_number == "Total"), background = "lightgrey")
     row_spec(out, nrow(thisSS), extra_css = paste0("border-bottom:", vsx$css$border))
 }
 

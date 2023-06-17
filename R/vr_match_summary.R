@@ -324,8 +324,8 @@ vr_points <- function(x, team, by = "player", vote = FALSE, style = "default") {
     blocked_is_err <- style %in% c("default")
     if (by == "player") {
         vr_pts <- x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player") %>% group_by(.data$player_id) %>%
-            dplyr::summarize(Tot = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block")),
-                             BP = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block") & .data$serving_team == team_select),
+            dplyr::summarize(Tot = sum(.data$evaluation %in% c("Ace", "Winning attack", "Winning block")),
+                             BP = sum(.data$evaluation %in% c("Ace", "Winning attack", "Winning block") & .data$serving_team == team_select),
                              Nerr = sum((.data$evaluation %eq% "Error" & .data$skill %in% c("Serve", "Reception", "Attack", if (inc_set_errs) "Set", if (inc_freeball_errs) "Freeball")) | (inc_block_errs & .data$evaluation %eq% "Invasion" & .data$skill %eq% "Block") | (blocked_is_err & .data$evaluation %eq% "Blocked" & .data$skill %eq% "Attack")),
                              `W-L` = .data$Tot - .data$Nerr) %>%
             dplyr::select(-"Nerr")
@@ -336,8 +336,8 @@ vr_points <- function(x, team, by = "player", vote = FALSE, style = "default") {
             bind_rows(
                 x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player") %>%
                 dplyr::summarize(player_id = "Team total",
-                                 Tot = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block")),
-                                 BP = sum(.data$evaluation_code == "#" & .data$skill %in% c("Serve", "Attack", "Block") & .data$serving_team == team_select),
+                                 Tot = sum(.data$evaluation %in% c("Ace", "Winning attack", "Winning block")),
+                                 BP = sum(.data$evaluation %in% c("Ace", "Winning attack", "Winning block") & .data$serving_team == team_select),
                                  Nerr = sum((.data$evaluation %eq% "Error" & .data$skill %in% c("Serve", "Reception", "Attack", if (inc_set_errs) "Set", if (inc_freeball_errs) "Freeball")) | (inc_block_errs & .data$evaluation %eq% "Invasion" & .data$skill %eq% "Block") | (blocked_is_err & .data$evaluation %eq% "Blocked" & .data$skill %eq% "Attack")),
                                  `W-L` = .data$Tot - .data$Nerr) %>%
                 dplyr::select(-"Nerr"))
@@ -345,13 +345,22 @@ vr_points <- function(x, team, by = "player", vote = FALSE, style = "default") {
     } else if (by == "set") {
         x$team_points <- if (team_select %eq% datavolley::home_team(x)) x$home_team_score else if (team_select %eq% datavolley::visiting_team(x)) x$visiting_team_score else NA_integer_
         vr_pts <- x %>% dplyr::filter(!is.na(.data$set_number)) %>% group_by(.data$set_number) %>%
-            dplyr::summarize(Ser = sum(.data$evaluation_code == "#" & .data$skill == "Serve" & .data$team %in% team_select, na.rm = TRUE),
-                             Atk = sum(.data$evaluation_code == "#" & .data$skill == "Attack" & .data$team %in% team_select, na.rm = TRUE),
-                             Blo = sum(.data$evaluation_code == "#" & .data$skill == "Block" & .data$team %in% team_select, na.rm = TRUE),
-                             "Op.Er" = suppressWarnings(max(.data$team_points, na.rm = TRUE)) - .data$Ser - .data$Atk - .data$Blo)
+            dplyr::summarize(Tot = sum(.data$evaluation %in% c("Ace", "Winning attack", "Winning block") & .data$team %in% team_select, na.rm = TRUE),
+                             Ser = sum(.data$evaluation == "Ace" & .data$team %in% team_select, na.rm = TRUE),
+                             Atk = sum(.data$evaluation == "Winning attack" & .data$team %in% team_select, na.rm = TRUE),
+                             Blo = sum(.data$evaluation == "Winning block" & .data$team %in% team_select, na.rm = TRUE),
+                             "Op.Er" = suppressWarnings(max(.data$team_points, na.rm = TRUE)) - .data$Ser - .data$Atk - .data$Blo) %>% ungroup %>%
+            mutate(set_number = as.character(.data$set_number))
         vr_pts$`Op.Er`[is.infinite(vr_pts$`Op.Er`)] <- 0L ## if no points scores, max will return -Inf
+        if (style %in% c("ov1")) {## add total
+            vr_pts <- bind_rows(vr_pts,
+                                x %>% dplyr::filter(!is.na(.data$set_number)) %>%
+                                dplyr::summarize(set_number = "Total", Tot = sum(vr_pts$Tot, na.rm = TRUE), Ser = sum(vr_pts$Ser, na.rm = TRUE), Atk = sum(vr_pts$Atk, na.rm = TRUE), Blo = sum(vr_pts$Blo, na.rm = TRUE), "Op.Er" = sum(vr_pts$`Op.Er`, na.rm = TRUE)))
+        } else {
+            vr_pts <- vr_pts %>% dplyr::select(-"Tot")
+        }
     }
-    vr_pts
+    if (style %in% c("ov1")) vr_pts %>% dplyr::rename(Won = "Tot") else vr_pts
 }
 
 #' Calculate vote
@@ -464,25 +473,33 @@ vr_serve <- function(x, team, by = "player", refx, style = "default"){
                                     Err = sum(.data$evaluation %eq% "Error"),
                                     Pts = sum(.data$evaluation %eq% "Ace"),
                                     `srvEff%` = prc(round(serve_eff(.data$evaluation) * 100)),
-                                    `expBP%` = prc(round(mean0(.data$expBP) * 100)),
-                                    `BP%` = prc(round(mean0(.data$point_won_by == .data$team) * 100))) %>%
+                                    `expBP%` = prc(round(mean0(.data$expBP) * 100))) %>%
                    bind_rows(
                        x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Serve") %>%
                        dplyr::summarize(player_id = "Team total", Tot = n(),
                                         Err = sum(.data$evaluation %eq% "Error"),
                                         Pts = sum(.data$evaluation %eq% "Ace"),
                                         `srvEff%` = prc(round(serve_eff(.data$evaluation) * 100)),
-                                        `expBP%` = prc(round(mean0(.data$expBP) * 100)),
-                                        `BP%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)))
+                                        `expBP%` = prc(round(mean0(.data$expBP) * 100)))
                    )
            } else if(by == "set") {
-               x %>% dplyr::filter(.data$team %in% team_select, .data$skill == "Serve") %>% group_by(.data$set_number) %>%
+               bind_rows(
+                   x %>% dplyr::filter(.data$team %in% team_select, .data$skill == "Serve") %>% group_by(.data$set_number) %>%
                    dplyr::summarize(Tot = n(),
                                     Err = sum(.data$evaluation %eq% "Error"),
                                     Pts = sum(.data$evaluation %eq% "Ace"),
                                     `srvEff%` = prc(round(serve_eff(.data$evaluation) * 100)),
                                     `expBP%` = prc(round(mean0(.data$expBP) * 100)),
+                                    `BP%` = prc(round(mean0(.data$point_won_by == .data$team) * 100))) %>% ungroup %>% mutate(set_number = as.character(.data$set_number)),
+                   ## total
+                   x %>% dplyr::filter(.data$team %in% team_select, .data$skill == "Serve") %>%
+                   dplyr::summarize(set_number = "Total", Tot = n(),
+                                    Err = sum(.data$evaluation %eq% "Error"),
+                                    Pts = sum(.data$evaluation %eq% "Ace"),
+                                    `srvEff%` = prc(round(serve_eff(.data$evaluation) * 100)),
+                                    `expBP%` = prc(round(mean0(.data$expBP) * 100)),
                                     `BP%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)))
+               )
            }
     if (style %in% c("ov1")) {
         out <- if (is.null(refx)) dplyr::select(out, -"expBP%") else dplyr::select(out, -"srvEff%")
@@ -513,9 +530,7 @@ vr_reception <- function(x, team, by = "player", refx, style = "default", file_t
                              `Pos%` = prc(round(mean0(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100),
                              `(Exc%)` = prc(round(mean0(.data$evaluation_code %in% c("#")), 2)*100, before = "(", after = "%)"),
                              `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
-                             `expSO%` = prc(round(mean0(.data$expSO) * 100)),
-                             `modSO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
-                             `SO%` = NA_character_) %>%
+                             `expSO%` = prc(round(mean0(.data$expSO) * 100))) %>%
             bind_rows(
                 x %>% dplyr::filter(.data$team %in% team_select, .data$player_id != "unknown player", .data$skill == "Reception") %>% 
                 dplyr::summarize(player_id = "Team total", Tot = n(),
@@ -523,20 +538,29 @@ vr_reception <- function(x, team, by = "player", refx, style = "default", file_t
                                  `Pos%` = prc(round(mean0(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100),
                                  `(Exc%)` = prc(round(mean0(.data$evaluation_code %in% c("#")), 2)*100, before = "(", after = "%)"),
                                  `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
-                                 `expSO%` = prc(round(mean0(.data$expSO) * 100)),
-                                 `modSO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100))) %>%
-                bind_cols(x %>% dplyr::filter(.data$receiving_team %in% team_select, .data$skill == "Serve") %>% dplyr::summarize(`SO%` = prc(round(mean0(.data$point_won_by != .data$team) * 100))) %>% ungroup)
+                                 `expSO%` = prc(round(mean0(.data$expSO) * 100)))
             )
     } else if (by == "set") {
-        x %>% dplyr::filter(.data$team %in% team_select, .data$skill == "Reception") %>% group_by(.data$set_number) %>%
-            dplyr::summarize(Tot = n(),
-                             Err = sum(.data$evaluation %eq% "Error"),
-                             `Pos%` = prc(round(mean0(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100),
-                             `(Exc%)` = prc(round(mean0(.data$evaluation_code %in% c("#")), 2)*100, before = "(", after = "%)"),
-                             `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
-                             `expSO%` = prc(round(mean0(.data$expSO) * 100)),
-                             `modSO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100))) %>%
-            left_join(x %>% dplyr::filter(.data$receiving_team %in% team_select, .data$skill == "Serve") %>% group_by(.data$set_number) %>% dplyr::summarize(`SO%` = prc(round(mean0(.data$point_won_by != .data$team) * 100))) %>% ungroup, by = "set_number")
+        bind_rows(x %>% dplyr::filter(.data$team %in% team_select, .data$skill == "Reception") %>% group_by(.data$set_number) %>%
+                  dplyr::summarize(Tot = n(),
+                                   Err = sum(.data$evaluation %eq% "Error"),
+                                   `Pos%` = prc(round(mean0(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100),
+                                   `(Exc%)` = prc(round(mean0(.data$evaluation_code %in% c("#")), 2)*100, before = "(", after = "%)"),
+                                   `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
+                                   `expSO%` = prc(round(mean0(.data$expSO) * 100)),
+                                   `modSO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100))) %>% ungroup %>%
+                  left_join(x %>% dplyr::filter(.data$receiving_team %in% team_select, .data$skill == "Serve") %>% group_by(.data$set_number) %>% dplyr::summarize(`SO%` = prc(round(mean0(.data$point_won_by != .data$team) * 100))) %>% ungroup, by = "set_number") %>% mutate(set_number = as.character(.data$set_number)),
+                  ## total
+                  x %>% dplyr::filter(.data$team %in% team_select, .data$skill == "Reception") %>%
+                  dplyr::summarize(set_number = "Total", Tot = n(),
+                                   Err = sum(.data$evaluation %eq% "Error"),
+                                   `Pos%` = prc(round(mean0(.data$evaluation_code %in% c("+", "#", "#+")), 2)*100),
+                                   `(Exc%)` = prc(round(mean0(.data$evaluation_code %in% c("#")), 2)*100, before = "(", after = "%)"),
+                                   `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
+                                   `expSO%` = prc(round(mean0(.data$expSO) * 100)),
+                                   `modSO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100))) %>%
+                  bind_cols(x %>% dplyr::filter(.data$receiving_team %in% team_select, .data$skill == "Serve") %>% dplyr::summarize(`SO%` = prc(round(mean0(.data$point_won_by != .data$team) * 100))) %>% ungroup)
+                  )
     }
     if (style %in% c("ov1")) {
         out <- dplyr::select(out, -"(Exc%)")
@@ -575,7 +599,7 @@ vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "def
             dplyr::summarize(Tot = n(),
                       Err = sum(.data$evaluation %eq% "Error"),
                       Blo = sum(.data$evaluation %eq% "Blocked"),
-                      `Pts` = sum(.data$evaluation %eq% "Winning attack"),
+                      Pts = sum(.data$evaluation %eq% "Winning attack"),
                       `Pts%` = prc(round(mean0(.data$evaluation %eq% "Winning attack"), 2)*100),
                       `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)),
                       On2 = sum(.data$on2, na.rm = TRUE),
@@ -585,23 +609,35 @@ vr_attack <- function(x, team, by = "player", file_type = "indoor", style = "def
                 dplyr::summarize(player_id = "Team total", Tot = n(),
                                  Err = sum(.data$evaluation %eq% "Error"),
                                  Blo = sum(.data$evaluation %eq% "Blocked"),
-                                 `Pts` = sum(.data$evaluation %eq% "Winning attack"),
+                                 Pts = sum(.data$evaluation %eq% "Winning attack"),
                                  `Pts%` = prc(round(mean0(.data$evaluation %eq% "Winning attack"), 2)*100),
                                  `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)),
                                  On2 = sum(.data$on2, na.rm = TRUE),
                                  `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)))
             )
            } else if (by == "set") {
-               x %>% dplyr::filter(.data$team %in% team_select, .data$skill == "Attack") %>% group_by(.data$set_number) %>%
+               bind_rows(
+                   x %>% dplyr::filter(.data$team %in% team_select, .data$skill == "Attack") %>% group_by(.data$set_number) %>%
                    dplyr::summarize(Tot = n(),
                                     Err = sum(.data$evaluation %eq% "Error"),
                                     Blo = sum(.data$evaluation %eq% "Blocked"),
-                                    `Pts` = sum(.data$evaluation %eq% "Winning attack"),
+                                    Pts = sum(.data$evaluation %eq% "Winning attack"),
+                                    `Pts%` = prc(round(mean0(.data$evaluation %in% "Winning attack"), 2)*100),
+                                    `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)),
+                                    On2 = sum(.data$on2, na.rm = TRUE),
+                                    `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100))) %>%
+                  mutate(set_number = as.character(.data$set_number)),
+                   ## total
+                   x %>% dplyr::filter(.data$team %in% team_select, .data$skill == "Attack") %>%
+                   dplyr::summarize(set_number = "Total", Tot = n(),
+                                    Err = sum(.data$evaluation %eq% "Error"),
+                                    Blo = sum(.data$evaluation %eq% "Blocked"),
+                                    Pts = sum(.data$evaluation %eq% "Winning attack"),
                                     `Pts%` = prc(round(mean0(.data$evaluation %in% "Winning attack"), 2)*100),
                                     `attEff%` = prc(round(attack_eff(.data$evaluation) * 100)),
                                     On2 = sum(.data$on2, na.rm = TRUE),
                                     `On2 K%` = as.character(prc(round(sum(.data$evaluation %eq% "Winning attack" & .data$on2, na.rm = TRUE) %/n/% sum(.data$on2, na.rm = TRUE), 2)*100)))
-
+               )
            }
     if (!(grepl("beach", file_type) && style %in% c("ov1"))) {
         out <- dplyr::select(out, -"On2", -"On2 K%")
@@ -637,7 +673,12 @@ vr_block <- function(x, team, by = "player", style = "default") {
                     dplyr::summarize(player_id = "Team total", Tot = sum(.data$evaluation %eq% "Winning block" & .data$skill %eq% "Block"))
             )
     } else if (by == "set") {
-        x %>% dplyr::filter(.data$team %in% team_select) %>% group_by(.data$set_number) %>%
-            dplyr::summarize(Tot = sum(.data$evaluation %eq% "Winning block" & .data$skill %eq% "Block"))
+        bind_rows(
+            x %>% dplyr::filter(.data$team %in% team_select) %>% group_by(.data$set_number) %>%
+            dplyr::summarize(Tot = sum(.data$evaluation %eq% "Winning block" & .data$skill %eq% "Block")) %>% mutate(set_number = as.character(.data$set_number)),
+            ## total
+            x %>% dplyr::filter(.data$team %in% team_select) %>%
+            dplyr::summarize(set_number = "Total", Tot = sum(.data$evaluation %eq% "Winning block" & .data$skill %eq% "Block"))
+        )
     }
 }
