@@ -433,7 +433,7 @@ vr_content_team_set_summary <- function(vsx, kable_format, which_team = "home") 
         column_spec(1, border_left = vsx$css$border) %>%
         column_spec(ncol(thisSS), border_right = vsx$css$border)
     if (length(bcols) > 0) out <- out %>% column_spec(bcols, border_right = "1px solid #CCC")
-    if ("Total" %in% thisSS$set_number) out <- out %>% row_spec(which(thisSS$set_number == "Total"), background = "lightgrey")
+    if ("Total" %in% thisSS$set_number) out <- out %>% row_spec(which(thisSS$set_number == "Total"), background = "lightgrey", bold = TRUE)
     row_spec(out, nrow(thisSS), extra_css = paste0("border-bottom:", vsx$css$border))
 }
 
