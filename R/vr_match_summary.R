@@ -11,6 +11,8 @@
 #' @param style string: can be
 #' * "default" - the standard FIVB match report
 #' * "ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes
+#' @param home_players logical: include a table with individual player statistics for the home team?
+#' @param visiting_players logical: include a table with individual player statistics for the visiting team?
 #' @param base_font_size numeric: the base font size (the font sizes in different parts of the report are scaled relative to this)
 #' @param court_plots_function string or function: a function, or name of a function, that takes a datavolley object and produces a plot object. Supply your own function here to override the court plots that are included in the report for some values of `style`
 #' @param court_plots_args list: named list of arguments to pass to the court plot function
@@ -28,7 +30,7 @@
 #'   if (interactive()) browseURL(f)
 #' }
 #' @export
-vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", base_font_size = 11, court_plots_function = "vr_court_plots", court_plots_args = list(), plot_icons, skill_evaluation_decode = "guess", single_page_tries = 1L, shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
+vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", home_players = TRUE, visiting_players = TRUE, base_font_size = 11, court_plots_function = "vr_court_plots", court_plots_args = list(), plot_icons, skill_evaluation_decode = "guess", single_page_tries = 1L, shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
     if (is.string(x) && file.exists(x)) {
         if (grepl("\\.(dvw|vsm|xml)$", x, ignore.case = TRUE)) {
             x <- datavolley::dv_read(x, skill_evaluation_decode = skill_evaluation_decode)
@@ -242,12 +244,13 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     ## so use_plot_icons tells us whether to include plot icons, and plot_icons are the actual icons (in a df)
     ## cheap and nasty parameterisation
     vsx <- list(x = x, meta = meta, refx = refx, footnotes = footnotes, vote = vote, format = if (grepl("paged_", format)) "html" else format, style = style,
-                shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying, base_font_size = base_font_size,
-                plot_summary = style %in% c("ov1"), ## but modified in loop below
+                shiny_progress = shiny_progress, file_type = file_type, icon = icon, css = css, remove_nonplaying = remove_nonplaying,
+                home_players = isTRUE(home_players), visiting_players = isTRUE(visiting_players),
+                base_font_size = base_font_size, plot_summary = style %in% c("ov1"), ## but modified in loop below
                 plot_icons = plot_icons, use_plot_icons = use_plot_icons, court_plots_fun = court_plots_function, court_plots_args = court_plots_args)
     vsx <- c(vsx, dots) ## extra parms
 
-    rm(x, meta, refx, vote, shiny_progress, file_type, icon, remove_nonplaying)
+    rm(x, meta, refx, vote, shiny_progress, file_type, icon, remove_nonplaying, home_players, visiting_players)
 
     ## generate report
     output_options <- NULL

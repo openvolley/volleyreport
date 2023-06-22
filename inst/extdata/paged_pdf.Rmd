@@ -84,7 +84,11 @@ if (beach) cat("<div style=\"height:3mm\"></div>\n")
 ```{r mr2_home_html, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
 cat("<td width=\"100%\">")
-volleyreport:::vr_content_team_table(vsx, kable_format, which_team = "home")
+if (isTRUE(vsx$home_players)) {
+    volleyreport:::vr_content_team_table(vsx, kable_format, which_team = "home")
+} else {
+    cat("<div style=\"font-size:", vsx$base_font_size * 11/12, "px; font-weight:bold;\">", datavolley::home_team(vsx$x), "</div>\n", sep ="")
+}
 cat("</td>\n")
 cat("</tr></table>\n")
 
@@ -127,7 +131,11 @@ if (!is.null(p)) {
 ```{r mr2_visiting_html, warning = FALSE, results = "asis"}
 cat("<table class=\"mtbl\"><tr>\n")
 cat("<td width=\"100%\">")
-volleyreport:::vr_content_team_table(vsx, kable_format, which_team = "visiting")
+if (isTRUE(vsx$visiting_players)) {
+    volleyreport:::vr_content_team_table(vsx, kable_format, which_team = "visiting")
+} else {
+    cat("<div style=\"font-size:", vsx$base_font_size * 11/12, "px; font-weight:bold;\">", datavolley::visiting_team(vsx$x), "</div>\n", sep ="")
+}
 cat("</td>\n")
 cat("</tr></table>\n")
 
@@ -216,7 +224,7 @@ if (vsx$style %in% c("ov1")) {
 cat0("<td width=\"42%\" style=\"border-right:", vsx$css$border, "; border-left:", vsx$css$border, ";\">\n")
 volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "both", rec_trans = "rec", kable_format = kable_format, eval_codes = c("#", "+", "#+"), hdr = "1st attack after pos. reception (R+#)")
 volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "both", rec_trans = "rec", kable_format = kable_format, eval_codes = c("-", "!", "-/"), hdr = "1st attack after neg. reception (R-!)")
-volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "both", rec_trans = "trans", kable_format = kable_format, hdr = "Attack on dig")
+volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "both", rec_trans = "trans", kable_format = kable_format, hdr = "Attack in transition")
 cat("</td>\n")
 ```
 

@@ -15,6 +15,8 @@ vr_match_summary(
   css = vr_css(),
   remove_nonplaying = TRUE,
   style = "default",
+  home_players = TRUE,
+  visiting_players = TRUE,
   base_font_size = 11,
   court_plots_function = "vr_court_plots",
   court_plots_args = list(),
@@ -50,6 +52,10 @@ vr_css()
 \item "default" - the standard FIVB match report
 \item "ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes
 }}
+
+\item{home_players}{logical: include a table with individual player statistics for the home team?}
+
+\item{visiting_players}{logical: include a table with individual player statistics for the visiting team?}
 
 \item{base_font_size}{numeric: the base font size (the font sizes in different parts of the report are scaled relative to this)}
 
