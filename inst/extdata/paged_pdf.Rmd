@@ -114,7 +114,7 @@ volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "home", rec_trans = "
 cat0("</td>\n<td width=\"", if (!is.null(stf)) 27 else 30, "%\">")
 volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "home", rec_trans = "rec", kable_format = kable_format, eval_codes = c("-", "!", "-/"), hdr = "1st attack after neg. reception (R-!)")
 cat0("</td>\n<td width=\"", if (!is.null(stf)) 27 else 30, "%\">")
-volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "home", rec_trans = "trans", kable_format = kable_format, hdr = "Attack on dig")
+volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "home", rec_trans = "trans", kable_format = kable_format, hdr = "Attack in transition")
 cat("</td></tr></table>\n")
 
 ```
@@ -161,7 +161,7 @@ volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "visiting", rec_trans
 cat0("</td>\n<td width=\"", if (!is.null(stf)) 27 else 30, "%\">")
 volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "visiting", rec_trans = "rec", kable_format = kable_format, eval_codes = c("-", "!", "-/"), hdr = "1st attack after neg. reception (R-!)")
 cat0("</td>\n<td width=\"", if (!is.null(stf)) 27 else 30, "%\">")
-volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "visiting", rec_trans = "trans", kable_format = kable_format, hdr = "Attack on dig")
+volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "visiting", rec_trans = "trans", kable_format = kable_format, hdr = "Attack in transition")
 cat("</td></tr></table>\n")
 
 ```
