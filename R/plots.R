@@ -186,7 +186,11 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
                                            fill = NA, label.color = NA, label.padding = grid::unit(rep(0, 4), "pt")) ## remove background and outline, no padding
             }
         }
+        ## ensure that the y limits are sufficient to show the summary text without clipping
+        ## (this set of rules is all rather ad-hoc, would be nice to replace with something simpler ...)
         yr <- c(min(yr[1], yr0[1] - 6L - (!sets2) * 3), max(yr[2], yr0[2] + 6L + (!sets2) * 3))
+        if (yr[1] < -12) yr[1] <- yr[1] * 1.1
+        if (yr[2] > 12) yr[2] <- yr[2] * 1.1
     }
     icon_names <- character()
     if (use_icons && !all(is.na(sc$icon_event))) {
