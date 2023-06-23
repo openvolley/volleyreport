@@ -374,6 +374,10 @@ vr_content_team_staff <- function(vsx, kable_format, which_team = "home") {
         mutate(name = str_to_title(.data$name))
     ## if no staff details, return NULL
     if (nrow(thisC) < 1 || all(is.na(thisC$value) | !nzchar(thisC$value))) return(NULL)
+    ## no head coach, return NULL
+    if (!any(thisC$name %eq% "Coach") || is.na(thisC$value[thisC$name %eq% "Coach"]) || !nzchar(thisC$value[thisC$name %eq% "Coach"])) return(NULL)
+    ## if no assistant, remove that row
+    if (any(thisC$name %eq% "Assistant") && (is.na(thisC$value[thisC$name %eq% "Assistant"]) || !nzchar(thisC$value[thisC$name %eq% "Assistant"]))) thisC <- dplyr::filter(thisC, .data$name != "Assistant")
     kable(thisC, format = "html", escape = FALSE, col.names = c("Staff", ""), table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = TRUE, font_size = vsx$base_font_size * 10/12) %>%
         row_spec(0, bold = TRUE, color = vsx$css$header_colour, background = vsx$css$header_background)  %>%
