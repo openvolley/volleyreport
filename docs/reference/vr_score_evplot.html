@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">volleyreport</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.12</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,7 +53,8 @@
 <span class="fu">vr_score_evplot</span><span class="op">(</span>
   <span class="va">x</span>,
   with_summary <span class="op">=</span> <span class="cn">FALSE</span>,
-  icons <span class="op">=</span> <span class="cn">FALSE</span>,
+  use_icons <span class="op">=</span> <span class="cn">FALSE</span>,
+  <span class="va">icons</span>,
   home_colour <span class="op">=</span> <span class="st">"darkblue"</span>,
   visiting_colour <span class="op">=</span> <span class="st">"darkred"</span>,
   low_colour <span class="op">=</span> <span class="st">"#800000"</span>,
@@ -69,8 +70,10 @@
 <dd><p>datavolley or string: as returned by <code><a href="https://datavolley.openvolley.org/reference/read_dv.html" class="external-link">datavolley::dv_read</a></code>, or the path to such a file</p></dd>
 <dt>with_summary</dt>
 <dd><p>logical: if <code>TRUE</code>, show team summary statistics. For beach, this is by end; for indoor summaries will be by set</p></dd>
+<dt>use_icons</dt>
+<dd><p>logical: add icons for ace/error/block kill?. Note that timeout icons are always added</p></dd>
 <dt>icons</dt>
-<dd><p>logical or data.frame: either <code>FALSE</code> for no icons, <code>TRUE</code> to use the icons specified by <code>vr_plot_icons()</code>, or a data.frame as returned by <code>vr_plot_icons()</code>. Note that only (free) fontawesome icons are supported</p></dd>
+<dd><p>data.frame: a data.frame as returned by <code>vr_plot_icons()</code>. Note that only (free) fontawesome icons are supported</p></dd>
 <dt>home_colour</dt>
 <dd><p>string: colour for home team</p></dd>
 <dt>visiting_colour</dt>
@@ -85,13 +88,6 @@
     <p>A ggplot object</p>
     </div>
 
-    <div class="section level2">
-    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span class="fu">vr_score_evplot</span><span class="op">(</span><span class="fu"><a href="https://datavolley.openvolley.org/reference/dv_example_file.html" class="external-link">dv_example_file</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span class="r-plt img"><img src="vr_score_evplot-1.png" alt="" width="700" height="433"></span>
-<span class="r-in"></span>
-</code></pre></div>
-    </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside></div>
 

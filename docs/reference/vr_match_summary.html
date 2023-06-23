@@ -10,7 +10,7 @@
     
     <a class="navbar-brand me-2" href="../index.html">volleyreport</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.7.12</small>
 
     
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -58,10 +58,14 @@
   css <span class="op">=</span> <span class="fu">vr_css</span><span class="op">(</span><span class="op">)</span>,
   remove_nonplaying <span class="op">=</span> <span class="cn">TRUE</span>,
   style <span class="op">=</span> <span class="st">"default"</span>,
+  home_players <span class="op">=</span> <span class="cn">TRUE</span>,
+  visiting_players <span class="op">=</span> <span class="cn">TRUE</span>,
+  base_font_size <span class="op">=</span> <span class="fl">11</span>,
   court_plots_function <span class="op">=</span> <span class="st">"vr_court_plots"</span>,
   court_plots_args <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,
   <span class="va">plot_icons</span>,
   skill_evaluation_decode <span class="op">=</span> <span class="st">"guess"</span>,
+  single_page_tries <span class="op">=</span> <span class="fl">1L</span>,
   shiny_progress <span class="op">=</span> <span class="cn">FALSE</span>,
   chrome_print_extra_args <span class="op">=</span> <span class="cn">NULL</span>,
   <span class="va">...</span>
@@ -92,14 +96,22 @@
 <dd><p>string: can be</p><ul><li><p>"default" - the standard FIVB match report</p></li>
 <li><p>"ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes</p></li>
 </ul></dd>
+<dt>home_players</dt>
+<dd><p>logical: include a table with individual player statistics for the home team?</p></dd>
+<dt>visiting_players</dt>
+<dd><p>logical: include a table with individual player statistics for the visiting team?</p></dd>
+<dt>base_font_size</dt>
+<dd><p>numeric: the base font size (the font sizes in different parts of the report are scaled relative to this)</p></dd>
 <dt>court_plots_function</dt>
 <dd><p>string or function: a function, or name of a function, that takes a datavolley object and produces a plot object. Supply your own function here to override the court plots that are included in the report for some values of <code>style</code></p></dd>
 <dt>court_plots_args</dt>
 <dd><p>list: named list of arguments to pass to the court plot function</p></dd>
 <dt>plot_icons</dt>
-<dd><p>logical or data.frame: some values of <code>style</code> will include plots of various kinds in the report. Currently <code>plot_icons</code> defaults to <code>TRUE</code> for <code>style = "ov1"</code>, otherwise <code>FALSE</code>. Set <code>plot_icons</code> to <code>FALSE</code> for no icons, <code>TRUE</code> to use the icons specified by <code><a href="vr_score_evplot.html">vr_plot_icons()</a></code>, or a data.frame as returned by <code><a href="vr_score_evplot.html">vr_plot_icons()</a></code> to control the icons that will be used. Note that only (free) fontawesome icons are supported</p></dd>
+<dd><p>logical or data.frame: some values of <code>style</code> will include plots of various kinds in the report. Currently <code>plot_icons</code> defaults to <code>TRUE</code> for <code>style = "ov1"</code> on a beach match, otherwise <code>FALSE</code> (plot icons generally tend to be visually distracting with indoor, particularly the error icons). Set <code>plot_icons</code> to <code>FALSE</code> for no icons, <code>TRUE</code> to use the icons specified by <code><a href="vr_score_evplot.html">vr_plot_icons()</a></code>, or a data.frame as returned by <code><a href="vr_score_evplot.html">vr_plot_icons()</a></code> to control the icons that will be used. Note that only (free) fontawesome icons are supported</p></dd>
 <dt>skill_evaluation_decode</dt>
 <dd><p>: as for <code><a href="https://datavolley.openvolley.org/reference/read_dv.html" class="external-link">datavolley::dv_read()</a></code></p></dd>
+<dt>single_page_tries</dt>
+<dd><p>integer: experimental! Ideally we want a single-page report, but until the report is rendered to PDF we don't know for sure whether it will fit on one page. If <code>single_page_tries</code> is greater than 1, we will try re-rendering the report (trying up to this many times). If it does not fit on a single page, the <code>base_font_size</code> will be progressively reduced on each try. Note that this only applies to <code>format</code> "paged_pdf"</p></dd>
 <dt>shiny_progress</dt>
 <dd><p>logical: if <code>TRUE</code>, the report generation process will issue <code><a href="https://rdrr.io/pkg/shiny/man/withProgress.html" class="external-link">shiny::setProgress()</a></code> calls. The call to <code>vr_match_summary</code> should therefore be wrapped in a <code><a href="https://rdrr.io/pkg/shiny/man/withProgress.html" class="external-link">shiny::withProgress()</a></code> scope</p></dd>
 <dt>chrome_print_extra_args</dt>
