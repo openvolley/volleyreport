@@ -11,6 +11,7 @@
 #' @param style string: can be
 #' * "default" - the standard FIVB match report
 #' * "ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes
+#' @param update_meta logical: should we update the match metadata before generating the report? Updating the match metadata will recalculate details such as set scores, player starting positions and substitution summaries, and set durations from the scouted play-by-play data
 #' @param home_players logical: include a table with individual player statistics for the home team?
 #' @param visiting_players logical: include a table with individual player statistics for the visiting team?
 #' @param base_font_size numeric: the base font size (the font sizes in different parts of the report are scaled relative to this)
@@ -30,7 +31,7 @@
 #'   if (interactive()) browseURL(f)
 #' }
 #' @export
-vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", home_players = TRUE, visiting_players = TRUE, base_font_size = 11, court_plots_function = "vr_court_plots", court_plots_args = list(), plot_icons, skill_evaluation_decode = "guess", single_page_tries = 1L, shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
+vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", icon = NULL, css = vr_css(), remove_nonplaying = TRUE, style = "default", update_meta = FALSE, home_players = TRUE, visiting_players = TRUE, base_font_size = 11, court_plots_function = "vr_court_plots", court_plots_args = list(), plot_icons, skill_evaluation_decode = "guess", single_page_tries = 1L, shiny_progress = FALSE, chrome_print_extra_args = NULL, ...) {
     if (is.string(x) && file.exists(x)) {
         if (grepl("\\.(dvw|vsm|xml)$", x, ignore.case = TRUE)) {
             x <- datavolley::dv_read(x, skill_evaluation_decode = skill_evaluation_decode)
@@ -68,6 +69,10 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     } else {
         footnotes <- c()
     }
+
+    ## update the metadata section?
+    if (isTRUE(update_meta)) x <- vscoututils::dv_update_meta(x)
+
     if (style %in% c("ov1")) {
         if (missing(vote)) vote <- FALSE
         if (!missing(refx)) {

@@ -15,6 +15,7 @@ vr_match_summary(
   css = vr_css(),
   remove_nonplaying = TRUE,
   style = "default",
+  update_meta = FALSE,
   home_players = TRUE,
   visiting_players = TRUE,
   base_font_size = 11,
@@ -52,6 +53,8 @@ vr_css()
 \item "default" - the standard FIVB match report
 \item "ov1" - modified version of "default" with score evolution plot, different breakdown by rotation, and other changes
 }}
+
+\item{update_meta}{logical: should we update the match metadata before generating the report? Updating the match metadata will recalculate details such as set scores, player starting positions and substitution summaries, and set durations from the scouted play-by-play data}
 
 \item{home_players}{logical: include a table with individual player statistics for the home team?}
 

@@ -1,6 +1,6 @@
 Package: volleyreport
 Title: Reports from Volleyball Match Files
-Version: 0.7.12
+Version: 0.7.13
 Authors@R: c(person("Adrien", "Ickowicz", email = "ickowicz.adrien@gmail.com", role = c("aut", "cre")),
              person("Ben", "Raymond", role = "aut"),
              person("Tyler", "Widdison", role = "aut"),
@@ -34,6 +34,7 @@ Imports:
   stringr,
   tidyr,
   tidyselect,
+  vscoututils,
   webshot (>= 0.5.2)
 Suggests:
   shiny,
@@ -43,4 +44,4 @@ Encoding: UTF-8
 LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.2.1
-Remotes: openvolley/datavolley, openvolley/ovlytics, openvolley/ovpaged
+Remotes: openvolley/datavolley, openvolley/ovlytics, openvolley/ovpaged, openvolley/vscoututils
