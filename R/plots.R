@@ -206,7 +206,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
                                           .data$icon_event == "Winning block" ~ "block",
                                           .data$icon_event == "Unforced error" ~ "error",
                                           .data$icon_event == "Timeout" ~ "timeout"),
-                   pid = if_else(.data$icon_event == "timeout", .data$pid + 0.5, .data$pid), ## shift half a point to the right to indicate that the timeout was called after this point ended
+                   pid = if_else(.data$icon_event == "timeout", .data$pid + 0.5, as.numeric(.data$pid)), ## shift half a point to the right to indicate that the timeout was called after this point ended
                    iy = case_when(.data$icon_team == "home" & .data$tempdiff > 0 ~ .data$tempdiff + 0.5,
                                   .data$icon_team == "home" ~ 0.5,
                                   .data$icon_team == "visiting" & .data$tempdiff < 0 ~ .data$tempdiff - 0.5,
