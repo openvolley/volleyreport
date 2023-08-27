@@ -12,8 +12,9 @@ vr_plot_icons <- function() {
                    "block", "hand", "\uf256", "Block kill",
                    "error", "triangle-exclamation", "\uf071", "Error",
                    "in_play", "circle", "\u6f", "In play",
-                   "timeout", "clock", "\uf017", "Timeout")
-    out$svg <- vapply(out$icon_name, function(nm) as.character(fontawesome::fa(nm)), FUN.VALUE = "", USE.NAMES = FALSE)
+                   "timeout", "clock", "\uf017", "Timeout",
+                   "power_play", "stop", "\uf04d", "(On plot) Power play")
+    out$svg <- vapply(out$icon_name, function(nm) as.character(fontawesome::fa(nm, fill = if (nm %in% c("stop")) "darkgrey" else NULL)), FUN.VALUE = "", USE.NAMES = FALSE)
     out
 }
 
@@ -27,6 +28,26 @@ get_plot_icon <- function(what, icons, as = "unicode") {
     }
     if (nrow(this) != 1) return("")
     this[[as]]
+}
+
+## convert indices of power plays into starts and ends of runs
+ppind2plot <- function(pids, score_diffs, y_offset = 1) {
+    if (length(pids) < 1) return(tibble(start = integer(), end = integer()))
+    pids <- sort(pids)
+    ## group into consecutive ids
+    ## NOTE that this won't work with timeouts in power play periods, because the timeout will have its own pid value
+    ## but AVSL does not allow timeouts so ok for the moment at least
+    starts <- 1L; ends <- integer(); scd <- integer()
+    for (i in seq_along(pids)[-1]) {
+        if (pids[i] != (pids[i - 1] + 1L)) {
+            ends <- c(ends, i - 1L)
+            scd <- c(scd, max(pmax(0, score_diffs[tail(starts, 1):tail(ends, 1)])) + y_offset)
+            starts <- c(starts, i) ## next one
+        }
+    }
+    ends <- c(ends, i)
+    scd <- c(scd, max(pmax(0, score_diffs[tail(starts, 1):tail(ends, 1)])) + y_offset)
+    tibble(start = pids[starts], end = pids[ends], max_score_diff = scd)
 }
 
 #' Score evolution plot
@@ -54,8 +75,15 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
     file_type <- x$file_meta$file_type
     if (is.null(file_type) || !file_type %in% c("indoor", "beach", "perana_indoor", "perana_beach")) file_type <- guess_data_type(px)
     beach <- grepl("beach", file_type)
-    sc <- px %>% group_by(.data$point_id) %>% dplyr::slice_tail(n = 1) %>% ungroup %>%
-        dplyr::select("point_id", "set_number", "home_team", "home_team_score", "home_score_start_of_point", "visiting_team", "visiting_team_score", "visiting_score_start_of_point") %>% distinct %>% na.omit()
+    ppx <- px %>% dplyr::filter(grepl("^[a\\*]p.*>[a\\*](PWR|PP)", .data$code)) %>% group_by(.data$point_id) %>%
+        ## a given rally can be part of a power play for both teams simultaneously
+        dplyr::summarize(home_power_play = any(grepl(">\\*P", .data$code)), visiting_power_play = any(grepl(">aP", .data$code))) %>% ungroup
+    sc <- px %>% left_join(ppx, by = "point_id") %>%
+        group_by(.data$point_id) %>% dplyr::slice_tail(n = 1) %>% ungroup %>%
+        dplyr::select("point_id", "set_number", "home_team", "home_team_score", "home_score_start_of_point", "visiting_team", "visiting_team_score", "visiting_score_start_of_point", "home_power_play", "visiting_power_play") %>%
+        mutate(home_power_play = if_else(is.na(.data$home_power_play), FALSE, as.logical(.data$home_power_play)),
+               visiting_power_play = if_else(is.na(.data$visiting_power_play), FALSE, as.logical(.data$visiting_power_play))) %>%
+        distinct %>% na.omit()
     sc$timeout <- sc$point_id %in% px$point_id[which(px$skill == "Timeout")]
     sc <- sc %>% mutate(ok = .data$home_score_start_of_point != .data$home_team_score | .data$visiting_score_start_of_point != .data$visiting_team_score | .data$timeout)
     ## filter on `ok` to discard e.g. timeouts, subs, and other non-score-change events
@@ -71,11 +99,13 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
                         dplyr::filter(.data$evaluation %in% c("Ace", "Winning block", "Unforced error", "Timeout")) %>%
                         mutate(icon_team = if_else(.data$home_team == .data$team, "home", "visiting")) %>%
                         dplyr::select("point_id", icon_event = "evaluation", "icon_team"), by = "point_id")
-    if (!use_icons) sc <- mutate(sc, icon_event = if_else(.data$icon_event == "Timeout", .data$icon_event, NA_character_)) ## only keep timeouts if use_icons is not TRUE
+    if (!use_icons) sc <- mutate(sc, icon_event = if_else(.data$icon_event == "Timeout", .data$icon_event, NA_character_)) ## if use_icons is not TRUE, only keep timeouts
     use_icons <- TRUE ## set to TRUE now so that timeouts are shown
     setx <- c(0, sc$pid[which(diff(sc$set_number) > 0)]) + 0.5
     sc <- mutate(sc, set_number = paste0("Set ", .data$set_number))
+    with_pp <- any(sc$home_power_play, na.rm = TRUE) || any(sc$visiting_power_play, na.rm = TRUE) ## do we have power plays?
     yr <- c(min(-4, min(sc$diff, na.rm = TRUE)), max(4, max(sc$diff, na.rm = TRUE))) ## y-range, at least -4 to +4
+    if (with_pp) yr <- yr + c(-1, 1) ## expand by 1
     yr0 <- c(min(0, min(sc$diff, na.rm = TRUE)), max(0, max(sc$diff, na.rm = TRUE))) ## data y-range
     blockx <- smx <- NULL
     if (isTRUE(with_summary)) {
@@ -128,8 +158,30 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
         smx <- smx %>% left_join(sc %>% dplyr::distinct(.data$point_id, .data$pid), by = "point_id") ## so we can plot by pid
         blockx <- unique(smx$pid) - 0.5 ## -0.5 so that the vertical line aligns with the left edge of the corresponding bar
     }
+    icon_names <- character()
     p <- ggplot(sc, aes(x = .data$pid, y = .data$diff)) + theme_minimal(base_size = font_size)
     if (with_summary) p <- p + ggplot2::coord_cartesian(clip = "off") ## to stop team names being clipped, see below
+    ## power play indicators as background shading
+    if (with_pp) {
+        idx <- which(sc$home_power_play)
+        if (length(idx) > 0) {
+            this <- ppind2plot(pids = sc$pid[idx], score_diffs = sc$home_team_score[idx] - sc$visiting_team_score[idx])
+            ##p <- p + ggplot2::geom_segment(data = this, aes(x = .data$start - 0.5, xend = .data$end + 0.5, y = .data$max_score_diff, yend = .data$max_score_diff), col = "black", linewidth = 0.75)
+            p <- p + ggplot2::geom_rect(data = this %>% mutate(ymin = 0, ymax = yr[2]),##max(sc$diff, na.rm = TRUE) + 1),
+                                        aes(xmin = .data$start - 0.5, xmax = .data$end + 0.5, ymin = .data$ymin, ymax = .data$ymax), inherit.aes = FALSE, fill = "black", alpha = 0.25)
+            icon_names <- "power_play"
+        }
+        idx <- which(sc$visiting_power_play)
+        if (length(idx) > 0) {
+            this <- ppind2plot(pids = sc$pid[idx], score_diffs = sc$visiting_team_score[idx] - sc$home_team_score[idx])
+            ##p <- p + ggplot2::geom_segment(data = this, aes(x = .data$start - 0.5, xend = .data$end + 0.5, y = -(.data$max_score_diff), yend = -(.data$max_score_diff)), col = "black", linewidth = 0.75)
+            p <- p + ggplot2::geom_rect(data = this %>% mutate(ymin = yr[1], ##min(sc$diff, na.rm = TRUE) - 1,
+                                                               ymax = 0),
+                                        aes(xmin = .data$start - 0.5, xmax = .data$end + 0.5, ymin = .data$ymin, ymax = .data$ymax), inherit.aes = FALSE, fill = "black", alpha = 0.25)
+            icon_names <- "power_play"
+        }
+    }
+
     p <- p + geom_vline(xintercept = setx, col = "black", alpha = 0.5, size = 0.25) +
         geom_hline(yintercept = 0, col = "black", alpha = 0.5, size = 0.25) +
         geom_col(aes(fill = .data$teamcolor), width = 1.0, col = NA, position = "identity")
@@ -192,7 +244,6 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
         if (yr[1] < -12) yr[1] <- yr[1] * 1.1
         if (yr[2] > 12) yr[2] <- yr[2] * 1.1
     }
-    icon_names <- character()
     if (use_icons && !all(is.na(sc$icon_event))) {
         sysfonts::font_add("fa6s", regular = system.file("fontawesome/webfonts/fa-solid-900.ttf", package = "fontawesome", mustWork = TRUE))
         ex <- sc %>%
