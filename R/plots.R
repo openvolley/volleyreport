@@ -75,9 +75,9 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
     file_type <- x$file_meta$file_type
     if (is.null(file_type) || !file_type %in% c("indoor", "beach", "perana_indoor", "perana_beach")) file_type <- guess_data_type(px)
     beach <- grepl("beach", file_type)
-    ppx <- px %>% dplyr::filter(grepl("^[a\\*]p.*>[a\\*](PWR|PP)", .data$code)) %>% group_by(.data$point_id) %>%
-        ## a given rally can be part of a power play for both teams simultaneously
-        dplyr::summarize(home_power_play = any(grepl(">\\*P", .data$code)), visiting_power_play = any(grepl(">aP", .data$code))) %>% ungroup
+    ppx <- px %>% dplyr::filter(grepl("^[a\\*]p.*>[a\\*]+PWR", .data$code)) %>% group_by(.data$point_id) %>%
+        ## a given rally can be part of a power play for both teams simultaneously, which will be marked as >*aPWR (but also allow >a*PWR)
+        dplyr::summarize(home_power_play = any(grepl(">a?\\*a?PWR", .data$code)), visiting_power_play = any(grepl(">\\*?a\\*?PWR", .data$code))) %>% ungroup
     sc <- px %>% left_join(ppx, by = "point_id") %>%
         group_by(.data$point_id) %>% dplyr::slice_tail(n = 1) %>% ungroup %>%
         dplyr::select("point_id", "set_number", "home_team", "home_team_score", "home_score_start_of_point", "visiting_team", "visiting_team_score", "visiting_score_start_of_point", "home_power_play", "visiting_power_play") %>%
