@@ -241,7 +241,17 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     if (grepl("beach", file_type)) vote <- FALSE
 
     ## report icon image
-    if (!is.null(icon)) icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
+    temp_icon_file <- NULL ## clean up on exit
+    if (!is.null(icon) && !grepl("^https?://", icon, ignore.case = TRUE)) {
+        icon <- normalizePath(icon, winslash = "/", mustWork = FALSE)
+        ## if the icon path has non-ascii characters, render will fail because of URL encoding, so copy icon file to temp dir as horrible workaround
+        temp_icon_file <- tempfile(fileext = paste0(".", tools::file_ext(icon)))
+        icon <- tryCatch({
+            file.copy(icon, temp_icon_file)
+            temp_icon_file
+        }, error = function(e) icon)
+    }
+    if (!is.null(temp_icon_file)) on.exit(try(unlink(temp_icon_file)), add = TRUE)
     ## other plot icons
     if (missing(plot_icons)) plot_icons <- style %in% c("ov1") && grepl("beach", file_type)
     use_plot_icons <- is.data.frame(plot_icons) || (is.logical(plot_icons) && isTRUE(plot_icons))
