@@ -310,7 +310,9 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
 #' @return A ggplot object
 #'
 #' @examples
-#' vr_court_plots(dv_example_file())
+#' \dontrun{
+#'   vr_court_plots(dv_example_file())
+#' }
 #'
 #' @export
 vr_court_plots <- function(x, ...) {

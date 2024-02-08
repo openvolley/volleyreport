@@ -18,6 +18,8 @@ A ggplot object
 Court plots
 }
 \examples{
-vr_court_plots(dv_example_file())
+\dontrun{
+  vr_court_plots(dv_example_file())
+}
 
 }
