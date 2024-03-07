@@ -72,6 +72,8 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
     }
     assert_that(inherits(x, c("datavolley", "peranavolley")), msg = "x should be a datavolley object")
     px <- datavolley::plays(x)
+    ## remove lineup codes
+    px <- px %>% dplyr::filter(!grepl(">LUp", .data$code, ignore.case = TRUE))
     file_type <- x$file_meta$file_type
     if (is.null(file_type) || !file_type %in% c("indoor", "beach", "perana_indoor", "perana_beach")) file_type <- guess_data_type(px)
     beach <- grepl("beach", file_type)
