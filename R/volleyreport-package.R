@@ -20,4 +20,4 @@
 #' @importFrom tidyr pivot_longer pivot_wider
 #' @importFrom tidyselect where
 #' @importFrom utils adist tail
-NULL
+"_PACKAGE"

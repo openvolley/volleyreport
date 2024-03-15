@@ -2,8 +2,38 @@
 % Please edit documentation in R/volleyreport-package.R
 \docType{package}
 \name{volleyreport}
+\alias{volleyreport-package}
 \alias{volleyreport}
 \title{\pkg{volleyreport}}
 \description{
 Reporting of volleyball statistics
+}
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://volleyreport.openvolley.org}
+  \item \url{https://github.com/openvolley/volleyreport}
+  \item Report bugs at \url{https://github.com/openvolley/volleyreport/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Adrien Ickowicz \email{ickowicz.adrien@gmail.com}
+
+Authors:
+\itemize{
+  \item Ben Raymond
+  \item Tyler Widdison
+}
+
+Other contributors:
+\itemize{
+  \item Francesco Oleni [contributor]
+  \item Willem de Wit [contributor]
+  \item Marco Chiapello [contributor]
+  \item Felipe Aparecido Lima [contributor]
+  \item Mark Lebedew [contributor]
+  \item openvolley.org [originator]
+}
+
 }
