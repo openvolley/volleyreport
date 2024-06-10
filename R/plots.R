@@ -286,7 +286,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
             scale_colour_manual(values = c(ace = "#008000", error = "#800000", block = "#008000", timeout = "#707070"), guide = "none")
     }
     p <- p + scale_fill_manual(values = c(home_colour, visiting_colour), guide = "none") + labs(x = NULL, y = "Score\ndifference") +
-        scale_x_continuous(labels = paste0("Set ", seq_along(setx)), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005)) +
+        scale_x_continuous(labels = paste0("Set ", seq_along(setx)), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005), limits = c(0, max(50, max(sc$pid, na.rm = TRUE)))) +
         scale_y_continuous(breaks = function(z) c(rev(seq(0, yr[1], by = -4)), seq(0, yr[2], by = 4)[-1]), limits = yr, labels = abs)
     ## team names
     if (with_summary) {
