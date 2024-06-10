@@ -120,8 +120,12 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
             px <- px %>% group_by(.data$set_number) %>%
                 mutate(score_tot = .data$home_team_score + .data$visiting_team_score,
                        set_score_tot = max(.data$score_tot, na.rm = TRUE),
-                       ## 3 per set, evenly spaced, 2 in 5+th set. TODO could probably fit 4 per set in 3-set matches?
-                       block = floor((.data$score_tot - 1) / .data$set_score_tot * if_else(.data$set_number < 5, 3, 2)) + 1L) %>%
+                       ## 3 per set, evenly spaced, 2 in 5+th set.
+                       ## but if the set is incomplete, 3 might be too many - so also impose a minimum width of 10 units
+                       ## TODO could probably fit 4 per set in 3-set matches?
+                       ## previously was block = floor((.data$score_tot - 1) / .data$set_score_tot * if_else(.data$set_number < 5, 3, 2)) + 1L) %>%
+                       ## block width is pmax(.data$set_score_tot / if_else(.data$set_number < 5, 3, 2), 10)
+                       block = floor((.data$score_tot - 1) / pmax(.data$set_score_tot / if_else(.data$set_number < 5, 3, 2), 10)) + 1L) %>%
                 ungroup %>% mutate(block = as.integer(as.factor(paste0("S", .data$set_number, "E", .data$block)))) ## block within set
         }
         ## calculate summary stats by block and team
