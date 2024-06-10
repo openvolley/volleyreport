@@ -192,7 +192,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
         geom_hline(yintercept = 0, col = "black", alpha = 0.5, size = 0.25) +
         geom_col(aes(fill = .data$teamcolor), width = 1.0, col = NA, position = "identity")
     if (!is.null(blockx)) p <- p + geom_vline(xintercept = setdiff(blockx, setx), col = "#555555", linetype = "dashed", alpha = 0.5, size = 0.25)
-    p <- p + theme(strip.background = element_rect(fill = "white"), axis.text.x = element_text(hjust = 0))
+    p <- p + theme(strip.background = element_rect(fill = "white"), axis.text.x = element_text(hjust = 0, face = "bold"))
     sets2 <- length(unique(na.omit(px$set_number))) < 3 ## only 2 sets
     if (!is.null(smx)) {
         sysfonts::font_add("condensedfont",
