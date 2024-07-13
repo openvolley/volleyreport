@@ -12,7 +12,7 @@ vr_plot_icons <- function() {
                    "block", "hand", "\uf256", "Block kill",
                    "error", "triangle-exclamation", "\uf071", "Error",
                    "in_play", "circle", "\u6f", "In play",
-                   "timeout", "clock", "\uf017", "Timeout",
+                   "timeout", "clock", "\uf017", "Timeout", ## or straight unicode, not fontawesome: "\u23f2"
                    "power_play", "stop", "\uf04d", "(On plot) Power play")
     out$svg <- vapply(out$icon_name, function(nm) as.character(fontawesome::fa(nm, fill = if (nm %in% c("stop")) "darkgrey" else NULL)), FUN.VALUE = "", USE.NAMES = FALSE)
     out
@@ -103,7 +103,10 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
                         dplyr::select("point_id", icon_event = "evaluation", "icon_team"), by = "point_id")
     if (!use_icons) sc <- mutate(sc, icon_event = if_else(.data$icon_event == "Timeout", .data$icon_event, NA_character_)) ## if use_icons is not TRUE, only keep timeouts
     use_icons <- TRUE ## set to TRUE now so that timeouts are shown
-    setx <- c(0, sc$pid[which(diff(sc$set_number) > 0)]) + 0.5
+    tempidx <- which(diff(sc$set_number) > 0)
+    setx <- c(0, sc$pid[tempidx]) + 0.5
+    setx_labels <- sc$set_number[c(1, tempidx + 1L)]
+    if (any(is.na(setx_labels) | duplicated(setx_labels)) || length(setx_labels) != length(setx)) setx_labels <- seq_along(setx) ## fallback, but will be incorrect if somehow the data did not start from the first set, or is selected sets
     sc <- mutate(sc, set_number = paste0("Set ", .data$set_number))
     with_pp <- any(sc$home_power_play, na.rm = TRUE) || any(sc$visiting_power_play, na.rm = TRUE) ## do we have power plays?
     yr <- c(min(-4, min(sc$diff, na.rm = TRUE)), max(4, max(sc$diff, na.rm = TRUE))) ## y-range, at least -4 to +4
@@ -286,7 +289,7 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
             scale_colour_manual(values = c(ace = "#008000", error = "#800000", block = "#008000", timeout = "#707070"), guide = "none")
     }
     p <- p + scale_fill_manual(values = c(home_colour, visiting_colour), guide = "none") + labs(x = NULL, y = "Score\ndifference") +
-        scale_x_continuous(labels = paste0("Set ", seq_along(setx)), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005), limits = c(0, max(50, max(sc$pid, na.rm = TRUE)))) +
+        scale_x_continuous(labels = paste0("Set ", setx_labels), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005), limits = c(0, max(50, max(sc$pid, na.rm = TRUE)))) +
         scale_y_continuous(breaks = function(z) c(rev(seq(0, yr[1], by = -4)), seq(0, yr[2], by = 4)[-1]), limits = yr, labels = abs)
     ## team names
     if (with_summary) {
