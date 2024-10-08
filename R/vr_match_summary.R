@@ -129,29 +129,29 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     if (shiny_progress) try(shiny::setProgress(value = 0.1, message = "Preprocessing data"), silent = TRUE)
     ## some data fixes
     for (col in c("start_zone", "end_zone", "end_subzone", "start_coordinate", "start_coordinate_x", "start_coordinate_y", "end_coordinate", "end_coordinate_x", "end_coordinate_y")) { ## also do for coords
-        idx <- which(x$skill %eq% "Reception" & is.na(x[[col]]) & lag(x$skill) %eq% "Serve")
+        idx <- which(x$skill == "Reception" & is.na(x[[col]]) & lag(x$skill) == "Serve")
         if (length(which) > 0) x[[col]][idx] <- lag(x[[col]])[idx]
-        idx <- which(x$skill %eq% "Serve" & is.na(x[[col]]) & lead(x$skill) %eq% "Reception")
+        idx <- which(x$skill == "Serve" & is.na(x[[col]]) & lead(x$skill) == "Reception")
         if (length(which) > 0) x[[col]][idx] <- lead(x[[col]])[idx]
     }
     ## add some extra cols
     if (!"phase" %in% names(x)) x$phase <- datavolley::play_phase(x)
     if (!"end_cone" %in% names(x)) x$end_cone <- NA_integer_
     if (!"receiving_team" %in% names(x)) {
-        x <- mutate(x, receiving_team = case_when(.data$serving_team %eq% .data$home_team ~ .data$visiting_team,
-                                                  .data$serving_team %eq% .data$visiting_team ~ .data$home_team))
+        x <- mutate(x, receiving_team = case_when(.data$serving_team == .data$home_team ~ .data$visiting_team,
+                                                  .data$serving_team == .data$visiting_team ~ .data$home_team))
     }
     if (!"breakpoint/sideout" %in% names(x)) {
-        x <- mutate(x, `breakpoint/sideout` = case_when(.data$team %eq% .data$receiving_team ~ "Sideout",
-                                                        .data$team %eq% .data$serving_team ~ "Breakpoint"))
+        x <- mutate(x, `breakpoint/sideout` = case_when(.data$team == .data$receiving_team ~ "Sideout",
+                                                        .data$team == .data$serving_team ~ "Breakpoint"))
     }
     if (!"setter_position" %in% names(x)) {
-        x <- mutate(x, setter_position = case_when(.data$team %eq% .data$home_team ~ .data$home_setter_position,
-                                                   .data$team %eq% .data$visiting_team ~ .data$visiting_setter_position))
+        x <- mutate(x, setter_position = case_when(.data$team == .data$home_team ~ .data$home_setter_position,
+                                                   .data$team == .data$visiting_team ~ .data$visiting_setter_position))
     }
     if (!"opposing_team" %in% names(x)) {
-        x <- mutate(x, opposing_team = case_when(.data$team %eq% .data$home_team ~ .data$visiting_team,
-                                                 .data$team %eq% .data$visiting_team ~ .data$home_team))
+        x <- mutate(x, opposing_team = case_when(.data$team == .data$home_team ~ .data$visiting_team,
+                                                 .data$team == .data$visiting_team ~ .data$home_team))
     }
     if (!"freeball_over" %in% names(x)) {
         ## "Freeball" skill can be used both for sending a freeball to the opposition as well as receiving one, so disambiguate these usages

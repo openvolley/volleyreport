@@ -451,14 +451,14 @@ vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
             dplyr::arrange(dplyr::desc(.data$home_setter_position))
         if (vsx$style %in% c("ov1")) {
             out <- left_join(out, vsx$x %>% dplyr::filter(.data$skill == "Serve" & .data$team == .data$home_team) %>% group_by(.data$home_setter_position) %>%
-                                  dplyr::summarize(`N srv` = n(), `BP%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
+                                  dplyr::summarize(`N srv` = n(), `BP%` = prc(round(mean0(.data$point_won_by == .data$team, na.rm = TRUE) * 100)),
                                                    `srvEff%` = prc(round(serve_eff(.data$evaluation) * 100)),
-                                                   `expBP%` = prc(round(mean0(.data$expBP) * 100))),
+                                                   `expBP%` = prc(round(mean0(.data$expBP, na.rm = TRUE) * 100))),
                              by = "home_setter_position")
             out <- left_join(out, vsx$x %>% dplyr::filter(.data$skill == "Reception" & .data$team == .data$home_team) %>% group_by(.data$home_setter_position) %>%
-                                  dplyr::summarize(`N rec` = n(), `modSO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
+                                  dplyr::summarize(`N rec` = n(), `modSO%` = prc(round(mean0(.data$point_won_by == .data$team, na.rm = TRUE) * 100)),
                                                    `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
-                                                   `expSO%` = prc(round(mean0(.data$expSO) * 100))),
+                                                   `expSO%` = prc(round(mean0(.data$expSO, na.rm = TRUE) * 100))),
                              by = "home_setter_position")
         }
         out <- dplyr::rename(out, `S in` = "home_setter_position")
@@ -468,14 +468,14 @@ vr_content_points_by_rot <- function(vsx, kable_format, which_team = "home") {
             dplyr::arrange(dplyr::desc(.data$visiting_setter_position))
         if (vsx$style %in% c("ov1")) {
             out <- left_join(out, vsx$x %>% dplyr::filter(.data$skill == "Serve" & .data$team == .data$visiting_team) %>% group_by(.data$visiting_setter_position) %>%
-                                  dplyr::summarize(`N srv` = n(), `BP%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
+                                  dplyr::summarize(`N srv` = n(), `BP%` = prc(round(mean0(.data$point_won_by == .data$team, na.rm = TRUE) * 100)),
                                                    `srvEff%` = prc(round(serve_eff(.data$evaluation) * 100)),
-                                                   `expBP%` = prc(round(mean0(.data$expBP) * 100))),
+                                                   `expBP%` = prc(round(mean0(.data$expBP, na.rm = TRUE) * 100))),
                              by = "visiting_setter_position")
             out <- left_join(out, vsx$x %>% dplyr::filter(.data$skill == "Reception" & .data$team == .data$visiting_team) %>% group_by(.data$visiting_setter_position) %>%
-                                  dplyr::summarize(`N rec` = n(), `modSO%` = prc(round(mean0(.data$point_won_by == .data$team) * 100)),
+                                  dplyr::summarize(`N rec` = n(), `modSO%` = prc(round(mean0(.data$point_won_by == .data$team, na.rm = TRUE) * 100)),
                                                    `recEff%` = prc(round(reception_eff(.data$evaluation) * 100)),
-                                                   `expSO%` = prc(round(mean0(.data$expSO) * 100))),
+                                                   `expSO%` = prc(round(mean0(.data$expSO, na.rm = TRUE) * 100))),
                              by = "visiting_setter_position")
         }
         out <- dplyr::rename(out, `S in` = "visiting_setter_position")
