@@ -169,6 +169,7 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
                                                        .data$visiting_setter_position == 5 ~ .data$visiting_player_id5,
                                                        .data$visiting_setter_position == 6 ~ .data$visiting_player_id6)) %>% ungroup
         }
+        if (nrow(ss) < 1) stop("set-by-set lineups failed: does the input file have starting lineup codes?")
         for (si in seq_len(min(nsets, nrow(ss)))) {
             idx <- players$player_id %eq% ss$setter_id[si]
             if (sum(idx) == 1) {
