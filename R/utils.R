@@ -18,7 +18,7 @@ mean0 <- function(x, ...) {
 
 ## convert to string with "%", but not if NA
 prc <- function(z, before = "", after = "%") {
-    if (length(z) < 1) z else ifelse(is.na(z), z, paste0(before, z, after))
+    if (length(z) < 1) NA_character_ else ifelse(is.na(z), NA_character_, paste0(before, z, after))
 }
 
 ## guess data type given plays data.frame
