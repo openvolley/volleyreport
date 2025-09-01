@@ -329,11 +329,11 @@ vr_content_team_table <- function(vsx, kable_format, which_team = "home") {
             for (k in seq_along(set_col_hdr)) {
                 if (fss[k] %eq% which_team) {
                     ## team served first, so use circled number with font size and layout adjustment
-                    set_col_hdr[k] <- paste0("<span style='font-size:125%; vertical-align:top;'>", circled1to6[k], "</span>")
-                    ## or could just underline the set number
-                    ##set_col_hdr[k] <- paste0("<span style='text-decoration:underline;'>", set_col_hdr[k], "</span>")
+                    ## set_col_hdr[k] <- paste0("<span style='font-size:125%; vertical-align:top;'>", circled1to6[k], "</span>")
+                    ## that doesn't work well, positioning is off and the font style is different to the non-circled. Do circles with css instead
+                    set_col_hdr[k] <- paste0("<span style='display:inline-block; min-width:1.3em; border:1px solid; border-radius:50%; text-align:center;'>", k, "</span>")
                 } else {
-                    set_col_hdr[k] <- paste0("<span style='vertical-align:-5%;'>", set_col_hdr[k], "</span>")
+                    set_col_hdr[k] <- paste0("<span style='padding-right:0.35em;'>", set_col_hdr[k], "</span>")
                 }
             }
         })
