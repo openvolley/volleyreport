@@ -12,20 +12,20 @@ vr_content_match_outcome <- function(vsx, kable_format) {
 vr_content_match_date <- function(vsx, kable_format) {
     temp <- vsx$meta$match
     temp$time <- tryCatch(format(temp$date + temp$time, "%H:%M"), error = function(e) temp$time)
-    ## do we need to enforce max nchars in league, season?
-    kable(temp %>% dplyr::select("date", "time", "season", "league") %>% mutate_all(to_char_noNA) %>% pivot_longer(cols = 1:4) %>%
-          mutate(name = str_to_title(.data$name)),
-          format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>%
+    temp <- temp %>% dplyr::select("date", "time", "season", "league") %>% mutate(across(everything(), to_char_noNA)) %>% pivot_longer(cols = 1:4) %>% mutate(name = str_to_title(.data$name)) %>%
+        mutate(name = paste0("<strong>", .data$name, ":</strong> ", .data$value)) %>% dplyr::select(-"value")
+    kable(temp, format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("condensed"), full_width = TRUE, font_size = vsx$base_font_size * 9/12) %>%
-        column_spec(1, bold = TRUE)
+        column_spec(1, extra_css = "text-indent:7.5% hanging;")
 }
 
 vr_content_match_refs <- function(vsx, kable_format) {
     this <- tibble(referees = if ("referees" %in% names(vsx$meta$more)) vsx$meta$more$referees else "", city = if ("city" %in% names(vsx$meta$more)) vsx$meta$more$city else "", arena = if ("arena" %in% names(vsx$meta$more)) vsx$meta$more$arena else "", scout = if ("scout" %in% names(vsx$meta$more)) vsx$meta$more$scout else "")
-    kable(this %>% mutate_all(to_char_noNA) %>% pivot_longer(cols = 1:4) %>% mutate(name = str_to_title(.data$name)),
-          format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>%
+    this <- this %>% mutate(across(everything(), to_char_noNA)) %>% pivot_longer(cols = 1:4) %>% mutate(name = str_to_title(.data$name)) %>%
+        mutate(name = paste0("<strong>", .data$name, ":</strong> ", .data$value)) %>% dplyr::select(-"value")
+    kable(this, format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("condensed"), full_width = TRUE, font_size = vsx$base_font_size * 9/12) %>%
-        column_spec(1, bold = TRUE)
+        column_spec(1, extra_css = "text-indent:7.5% hanging;")
 }
 
 vr_content_partial_scores <- function(vsx, kable_format) {
