@@ -40,7 +40,7 @@ vr_css()
 
 \item{vote}{logical: include vote report component? If not explicitly specified, \code{vote} might be set to FALSE depending on \code{style}}
 
-\item{format}{string: "pdf" (using latex-based PDF), "paged_pdf" (using pagedown-based PDF), "png", "paged_png", or "html"}
+\item{format}{string: "pdf", "png" (both rendered to html and then converted to pdf or png using webshot), "paged_pdf" (using pagedown-based PDF), "paged_png", or "html"}
 
 \item{icon}{string: (optional) filename of icon image to use}
 

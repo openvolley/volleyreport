@@ -16,7 +16,7 @@ vr_content_match_date <- function(vsx, kable_format) {
         mutate(name = paste0("<strong>", .data$name, ":</strong> ", .data$value)) %>% dplyr::select(-"value")
     kable(temp, format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("condensed"), full_width = TRUE, font_size = vsx$base_font_size * 9/12) %>%
-        column_spec(1, extra_css = "text-indent:7.5% hanging;")
+        column_spec(1, extra_css = "text-indent:-1em; padding-left:1em;") ## previously text-indent:1em hanging but that is not supported by chrome
 }
 
 vr_content_match_refs <- function(vsx, kable_format) {
@@ -25,7 +25,7 @@ vr_content_match_refs <- function(vsx, kable_format) {
         mutate(name = paste0("<strong>", .data$name, ":</strong> ", .data$value)) %>% dplyr::select(-"value")
     kable(this, format = kable_format, escape = FALSE, align = "l", col.names = NULL, table.attr = "class=\"widetable\"") %>%
         kable_styling(bootstrap_options = c("condensed"), full_width = TRUE, font_size = vsx$base_font_size * 9/12) %>%
-        column_spec(1, extra_css = "text-indent:7.5% hanging;")
+        column_spec(1, extra_css = "text-indent:-1em; padding-left:1em;")
 }
 
 vr_content_partial_scores <- function(vsx, kable_format) {

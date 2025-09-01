@@ -20,6 +20,8 @@ if (isTRUE(vsx$plot_summary) || isTRUE(vsx$use_plot_icons)) showtext::showtext_o
 
 icon_names_for_key <- character()
 
+section_spacer <- if (!"section_spacing" %in% names(vsx) || isTRUE(vsx$section_spacing == 0)) "" else paste0("<div style=\"height:", vsx$section_spacing, "vh;\"></div>\n")
+
 ```
 
 <style>
@@ -44,7 +46,7 @@ if (vsx$shiny_progress) try(shiny::setProgress(value = 0.3, message = "Generatin
 
 if (!is.null(vsx$header_extra_pre)) cat(vsx$header_extra_pre, "\n")
 
-cat("<div style=\"max-height:20mm; overflow-y:hidden;\">\n") ## otherwise e.g. long text entries in the header (e.g. league name) cause the page to overflow to a second
+cat("<div>\n")
 if (!is.null(vsx$icon)) {
     cat("<table class=\"mtbl\"><tr><td width=\"15%\">\n")
     cat("<p style=\"margin:0;\"><img src=\"", vsx$icon, "\" style=\"max-width:90%; max-height:18mm;\" /></p>\n", sep = "")
@@ -73,6 +75,7 @@ if (!is.null(vsx$icon)) {
     cat("</td></tr></table>\n")
 }
 cat("</div>\n")
+cat(section_spacer)
 
 ```
 
@@ -91,6 +94,7 @@ if (isTRUE(vsx$home_players)) {
 }
 cat("</td>\n")
 cat("</tr></table>\n")
+cat(section_spacer)
 
 ```
 
@@ -103,6 +107,7 @@ if (!is.null(stf)) stf
 cat0("</td>\n<td width=\"", if (!is.null(stf)) 81 else 91, "%\">")
 volleyreport:::vr_content_team_set_summary(vsx, kable_format, which_team = "home")
 cat("</td></tr></table>\n")
+cat(section_spacer)
 
 ```
 
@@ -116,6 +121,7 @@ volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "home", rec_trans = "
 cat0("</td>\n<td width=\"", if (!is.null(stf)) 27 else 30, "%\">")
 volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "home", rec_trans = "trans", kable_format = kable_format, hdr = "Attack in transition")
 cat("</td></tr></table>\n")
+cat(section_spacer)
 
 ```
 
@@ -125,6 +131,7 @@ if (!is.null(p)) {
     if (length(attr(p, "icon_names")) > 0) icon_names_for_key <- c(icon_names_for_key, attr(p, "icon_names"))
     print(p)
 }
+cat(section_spacer)
 
 ```
 
@@ -138,6 +145,7 @@ if (isTRUE(vsx$visiting_players)) {
 }
 cat("</td>\n")
 cat("</tr></table>\n")
+cat(section_spacer)
 
 ```
 
@@ -150,6 +158,7 @@ if (!is.null(stf)) stf
 cat0("</td>\n<td width=\"", if (!is.null(stf)) 81 else 91, "%\">")
 volleyreport:::vr_content_team_set_summary(vsx, kable_format, which_team = "visiting")
 cat("</td>\n</tr></table>\n")
+cat(section_spacer)
 
 ```
 
@@ -163,6 +172,7 @@ volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "visiting", rec_trans
 cat0("</td>\n<td width=\"", if (!is.null(stf)) 27 else 30, "%\">")
 volleyreport:::vr_content_kill_rec_trans(vsx, which_team = "visiting", rec_trans = "trans", kable_format = kable_format, hdr = "Attack in transition")
 cat("</td></tr></table>\n")
+cat(section_spacer)
 
 ```
 
@@ -258,7 +268,10 @@ cat("</tr></table>\n</div>\n")
 ```
 
 ```{r footnotes, warning = FALSE, results = "asis"}
-if (length(vsx$footnotes) > 0) cat0("<div style=\"float:right; font-size:", vsx$base_font_size * 8/12, "px;\">", paste(footnotes, collapse = " "), "</p>")
+if (length(vsx$footnotes) > 0) {
+    cat(section_spacer)
+    cat0("<div style=\"float:right; font-size:", vsx$base_font_size * 8/12, "px;\">", paste(footnotes, collapse = " "), "</div>")
+}
 ```
 
 `r if (vsx$shiny_progress) try(shiny::setProgress(value = 0.95, message = "Rendering"), silent = TRUE)`

@@ -4,7 +4,7 @@
 #' @param outfile string: path to file to produce (if not specified, will create a file in the temporary directory)
 #' @param refx data.frame: some choices of `style` require a reference data set to calculate e.g. expected SO. This should be from comparison matches (e.g. all matches from the same league), and should be a data.frame of the plays components from those matches. If missing, expected SO and BP will be replaced by reception and serve efficiency
 #' @param vote logical: include vote report component? If not explicitly specified, `vote` might be set to FALSE depending on `style`
-#' @param format string: "pdf" (using latex-based PDF), "paged_pdf" (using pagedown-based PDF), "png", "paged_png", or "html"
+#' @param format string: "pdf", "png" (both rendered to html and then converted to pdf or png using webshot), "paged_pdf" (using pagedown-based PDF), "paged_png", or "html"
 #' @param icon string: (optional) filename of icon image to use
 #' @param css list: css specifications for some elements, giving (currently fairly limited) control over appearance. See the output of \code{\link{vr_css}} for an example. Note that some styling does not seem to be applied when exporting to PDF
 #' @param remove_nonplaying logical: if \code{TRUE}, remove players from the team summaries that did not take to the court
@@ -271,11 +271,18 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
     output_options <- NULL
     if (isTRUE(vsx$plot_summary) || isTRUE(vsx$use_plot_icons)) showtext::showtext_auto()
     max_tries <- if (format == "paged_pdf" && isTRUE(single_page_tries > 1)) single_page_tries else 1L
+    ## how many section breaks do we have?
+    n_sections <- 5 + 2 * isTRUE(grepl("beach", vsx$file_type)) + (vsx$style %in% c("ov1")) + (length(vsx$footnotes) > 0) ## 1 for header + 2 sections for teams, plus 2 more if beach, plus one if ov1 style, plus one if we have footnotes
     for (try_with_full_plot in unique(c(style %in% c("ov1"), FALSE))) {
         ok <- FALSE
+        whitespace_ok <- FALSE ## amount of whitespace is OK
+        pages_ok <- FALSE ## number of pages is OK
         vsx$plot_summary <- try_with_full_plot
+        font_size_to_use <- base_font_size ## start with this
+        section_spacing_to_use <- 0 ## start with this
         for (this_try in seq_len(max_tries)) {
-            vsx$base_font_size <- base_font_size * (0.95^(this_try - 1)) ## progressively smaller font
+            vsx$base_font_size <- font_size_to_use
+            vsx$section_spacing <- section_spacing_to_use
             if (vsx$shiny_progress) try(shiny::setProgress(value = 0.1, message = "Generating report"), silent = TRUE)
             blah <- knitr::knit_meta(class = NULL, clean = TRUE) ## may help stop memory allocation error
             f <- if (format == "paged_html") {
@@ -297,12 +304,49 @@ vr_match_summary <- function(x, outfile, refx, vote = TRUE, format = "html", ico
                          out
                      }
                  }
-            if (tryCatch(pdftools::pdf_info(f)$pages < 2, error = function(e) TRUE)) {
-                ok <- TRUE
-                break ## bail out if we've achieved a single page
+            ## check the result. If max_tries > 1 we can fiddle with font size and section spacing to achieve a single-page result, and/or we can drop the score plot (for ov1 style)
+            npages <- if (format == "paged_pdf") tryCatch(pdftools::pdf_info(f)$pages, error = function(e) NA_integer_) else NA_integer_ ## only do this for pdf
+            if (isTRUE(npages == 1)) {
+                pages_ok <- TRUE
+                ## we have a single page, but check that we don't have too much whitespace in one block
+                pn <- tryCatch(pdftools::pdf_render_page(f, page = 1, dpi = 120), error = function(e) NULL) ## rendered to raw bitmap
+                if (is.null(pn)) {
+                    ## unknown failure, just stop trying
+                    ok <- TRUE
+                } else {
+                    pn <- apply(pn, length(dim(pn)), function(z) all(z == 0xff)) ## apply across the last margin, that should be the vertical axis of the bitmap
+                    chk <- rle(pn)
+                    maxws <- max(chk$len[chk$values]) / length(pn)
+                    ## cat("WHITESPACE:", maxws, "\n")
+                    if (maxws < 0.08) {
+                        ## less than 8% of the page as whitespace in any one block
+                        whitespace_ok <- TRUE
+                    } else {
+                        totws <- mean(pn, na.rm = TRUE) ## we have this much whitespace total
+                        section_spacing_to_use <- section_spacing_to_use + round(100 * (totws - 0.06) / n_sections, 1) ## enough whitespace to get us to 6%, units are vh css units
+                        ## cat("SETTING SECTION SPACING TO:", section_spacing_to_use, "\n")
+                    }
+                }
+            } else if (isTRUE(npages == 2) && this_try < max_tries) {
+                ## two pages - how much stuff have we got on page 2? We can reduce font size for the next pass (so don't bother doing this on the last loop iteration)
+                pn <- tryCatch(pdftools::pdf_render_page(f, page = 2, dpi = 120), error = function(e) NULL) ## rendered to raw bitmap
+                if (is.null(pn)) {
+                    ## unknown failure, just stop trying
+                    ok <- TRUE
+                } else {
+                    pn <- apply(pn, 3, function(z) all(z == 0xff))
+                    tot_cont <- 2 - mean(pn, na.rm = TRUE) ## we have this much content (should be 1.x pages)
+                    font_size_to_use <- font_size_to_use * (1 / (tot_cont) - 0.02) ## scale down, with a bit of extra
+                    ## cat("SCALING FONT SIZE BY:", (1 / (tot_cont) - 0.02), "\n")
+                }
+            } else {
+                ## non-pdf or pdf with zero or >2 pages or we could not figure the number of pages out ... wut?
+                pages_ok <- ok <- TRUE
             }
+            if (ok || (whitespace_ok && pages_ok)) break ## bail out of the inner loop if we've achieved a suitable single page for paged_pdf
         }
-        if (ok) break
+        ## if we still have more than one page we can try removing the score plot (if we are using it)
+        if (pages_ok) break
     }
     if (isTRUE(vsx$plot_summary) || isTRUE(vsx$use_plot_icons)) showtext::showtext_auto(enable = FALSE)
     f
