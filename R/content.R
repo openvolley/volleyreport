@@ -11,7 +11,7 @@ vr_content_match_outcome <- function(vsx, kable_format) {
 
 vr_content_match_date <- function(vsx, kable_format) {
     temp <- vsx$meta$match
-    temp$time <- tryCatch(format(temp$date + temp$time, "%H:%M:%S"), error = function(e) temp$time)
+    temp$time <- tryCatch(format(temp$date + temp$time, "%H:%M"), error = function(e) temp$time)
     ## do we need to enforce max nchars in league, season?
     kable(temp %>% dplyr::select("date", "time", "season", "league") %>% mutate_all(to_char_noNA) %>% pivot_longer(cols = 1:4) %>%
           mutate(name = str_to_title(.data$name)),
