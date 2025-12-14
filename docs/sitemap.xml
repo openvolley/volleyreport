@@ -1,51 +1,19 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url>
-    <loc>/404.html</loc>
-  </url>
-  <url>
-    <loc>/LICENSE-text.html</loc>
-  </url>
-  <url>
-    <loc>/authors.html</loc>
-  </url>
-  <url>
-    <loc>/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/index.html</loc>
-  </url>
-  <url>
-    <loc>/reference/reexports.html</loc>
-  </url>
-  <url>
-    <loc>/reference/volleyreport.html</loc>
-  </url>
-  <url>
-    <loc>/reference/vr_attack.html</loc>
-  </url>
-  <url>
-    <loc>/reference/vr_block.html</loc>
-  </url>
-  <url>
-    <loc>/reference/vr_court_plots.html</loc>
-  </url>
-  <url>
-    <loc>/reference/vr_match_summary.html</loc>
-  </url>
-  <url>
-    <loc>/reference/vr_points.html</loc>
-  </url>
-  <url>
-    <loc>/reference/vr_reception.html</loc>
-  </url>
-  <url>
-    <loc>/reference/vr_score_evplot.html</loc>
-  </url>
-  <url>
-    <loc>/reference/vr_serve.html</loc>
-  </url>
-  <url>
-    <loc>/reference/vr_vote.html</loc>
-  </url>
+<urlset xmlns = 'http://www.sitemaps.org/schemas/sitemap/0.9'>
+<url><loc>/404.html</loc></url>
+<url><loc>/LICENSE-text.html</loc></url>
+<url><loc>/authors.html</loc></url>
+<url><loc>/index.html</loc></url>
+<url><loc>/reference/index.html</loc></url>
+<url><loc>/reference/reexports.html</loc></url>
+<url><loc>/reference/volleyreport.html</loc></url>
+<url><loc>/reference/vr_attack.html</loc></url>
+<url><loc>/reference/vr_block.html</loc></url>
+<url><loc>/reference/vr_court_plots.html</loc></url>
+<url><loc>/reference/vr_match_summary.html</loc></url>
+<url><loc>/reference/vr_points.html</loc></url>
+<url><loc>/reference/vr_reception.html</loc></url>
+<url><loc>/reference/vr_score_evplot.html</loc></url>
+<url><loc>/reference/vr_serve.html</loc></url>
+<url><loc>/reference/vr_vote.html</loc></url>
 </urlset>
+
