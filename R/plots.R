@@ -299,9 +299,18 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
     ## team names
     if (with_summary) {
         ## put them vertically along the y-axis, use linebreaks to shift leftwards of the y-axis, and rely on the margin to stop them being cropped
-        p <- p + annotate(geom = "text", label = paste0(datavolley::home_team(x), "\n\n\n"), x = 0, y = yr[2], angle = 90, hjust = 1, vjust = 0, size = font_size * 0.35278, fontface = "bold") +
-            annotate(geom = "text", label = paste0(datavolley::visiting_team(x), "\n\n\n"), x = 0, y = yr[1], angle = 90, hjust = 0, vjust = 0, size = font_size * 0.35278, fontface = "bold") +
-            theme(plot.margin = ggplot2::margin(0, 0, 0, 2, unit = "lines"))
+        ## split long team names
+        htsplit <- strwrap(datavolley::home_team(x), 12)
+        vtsplit <- strwrap(datavolley::visiting_team(x), 12)
+        ## pad with empty strings so they are the same length vectors, that makes them align
+        if (length(htsplit) > length(vtsplit)) {
+            vtsplit <- c(vtsplit, rep("", length(htsplit) - length(vtsplit)))
+        } else if (length(vtsplit) > length(htsplit)) {
+            htsplit <- c(htsplit, rep("", length(vtsplit) - length(htsplit)))
+        }
+        p <- p + annotate(geom = "text", label = paste0(paste(htsplit, collapse = "\n"), "\n\n\n"), x = 0, y = yr[2], angle = 90, hjust = 1, vjust = 0, size = font_size * 0.35278, fontface = "bold") +
+            annotate(geom = "text", label = paste0(paste(vtsplit, collapse = "\n"), "\n\n\n"), x = 0, y = yr[1], angle = 90, hjust = 0, vjust = 0, size = font_size * 0.35278, fontface = "bold") +
+            theme(plot.margin = ggplot2::margin(0, 0, 0, length(htsplit) + 1, unit = "lines"))
     } else {
         ## put them above/below the plot
         p <- p + annotate(geom = "text", label = datavolley::home_team(x), x = 1, y = if (!is.null(smx)) yr[2] else diff(yr) * 0.9 + yr[1], hjust = 0, size = font_size * 0.35278, fontface = "bold") +
