@@ -169,7 +169,6 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
     }
     icon_names <- character()
     p <- ggplot(sc, aes(x = .data$pid, y = .data$diff)) + theme_minimal(base_size = font_size)
-    if (with_summary) p <- p + ggplot2::coord_cartesian(clip = "off") ## to stop team names being clipped, see below
     ## power play indicators as background shading
     if (with_pp) {
         idx <- which(sc$home_power_play)
@@ -197,6 +196,31 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
     if (!is.null(blockx)) p <- p + geom_vline(xintercept = setdiff(blockx, setx), col = "#555555", linetype = "dashed", alpha = 0.5, linewidth = 0.25)
     p <- p + theme(strip.background = element_rect(fill = "white"), axis.text.x = element_text(hjust = 0, face = "bold"))
     sets2 <- length(unique(na.omit(px$set_number))) < 3 ## only 2 sets
+
+    frac2col <- function(n, N, side = 0L, lthresh = 0.4, uthresh = 1 - lthresh, cl_thr = 0.8, low = low_colour, mid = mid_colour, high = high_colour) {
+        ## function to colour text, so we can highlight particularly good or poor performance in blocks
+        ## side = 0 => low is bad, high is good;
+        ##       -1 => higher is bad but ignore lower (i.e. errors)
+        ##        1 => higher is good but ignore lower (i.e. aces, blocks)
+        ## thresh is performance threshold, used for N > 3
+        ## cl_thresh is confidence limit threshold
+        tryCatch({
+            if (N == 3) {
+                if ((n < 1 && side == 0) || (n > 2 && side < 0)) return(low) else if (n > 2 && side > -1) return(high)
+            } else if (N < 4) {
+                return(mid)
+            }
+            cl <- diff(suppressWarnings(prop.test(n, N)$conf.int))
+            if (((n/N < lthresh && side == 0L) || (n/N > uthresh && side < 0)) && cl < cl_thr) {
+                low
+            } else if (n/N > uthresh && side > -1 && cl < cl_thr) {
+                high
+            } else {
+                mid
+            }
+        }, error = function(e) mid)
+    }
+
     if (!is.null(smx)) {
         sysfonts::font_add("condensedfont",
                            regular = system.file("extdata/fonts/RobotoCondensed-Light.ttf", package = "volleyreport", mustWork = TRUE),
@@ -206,31 +230,10 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
         thinspc <- intToUtf8(2^13 + 6) ## thin space, or +10 is thinner
         slash <- "\u200b/" ## if we use "/" characters in fractions, pandoc tries to convert e.g. 1/4 to the unicode one-quarter character, which we don't want. So insert a zero-width space ("\u200b") as a workaround
         for (tm in c("home", "visiting")) {
+            ## add the summary text for each block one by one. For some reason if we use geom_richtext to add them all at once, the colours get lost
+            ## if we have less than 3 sets, put two text elements per line, else one element per line
             for (thispid in unique(smx$pid[smx$team_hv == tm])) {
                 tbx <- smx %>% dplyr::filter(.data$pid == thispid, .data$team_hv == tm)
-                frac2col <- function(n, N, side = 0L, lthresh = 0.4, uthresh = 1 - lthresh, cl_thr = 0.8, low = low_colour, mid = mid_colour, high = high_colour) {
-                    ## function to colour text, so we can highlight particularly good or poor performance in blocks
-                    ## side = 0 => low is bad, high is good;
-                    ##       -1 => higher is bad but ignore lower (i.e. errors)
-                    ##        1 => higher is good but ignore lower (i.e. aces, blocks)
-                    ## thresh is performance threshold, used for N > 3
-                    ## cl_thresh is confidence limit threshold
-                    tryCatch({
-                        if (N == 3) {
-                            if ((n < 1 && side == 0) || (n > 2 && side < 0)) return(low) else if (n > 2 && side > -1) return(high)
-                        } else if (N < 4) {
-                            return(mid)
-                        }
-                        cl <- diff(suppressWarnings(prop.test(n, N)$conf.int))
-                        if (((n/N < lthresh && side == 0L) || (n/N > uthresh && side < 0)) && cl < cl_thr) {
-                            low
-                        } else if (n/N > uthresh && side > -1 && cl < cl_thr) {
-                            high
-                        } else {
-                            mid
-                        }
-                    }, error = function(e) mid)
-                }
                 txt <- paste0("<span style=\"color:", frac2col(tbx$BPw, tbx$Nsrv), ";\">BP", thinspc, tbx$BPw, slash, tbx$Nsrv, "</span>",
                               if (sets2) ", " else "<br />",
                               "<span style=\"color:", frac2col(tbx$SOw, tbx$Nsrv_opp), ";\">SO", thinspc, tbx$SOw, slash, tbx$Nsrv_opp,
@@ -243,15 +246,16 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
                               if (sets2) ", " else "<br />",
                               "<span style=\"color:", frac2col(tbx$errs, tbx$err_opps, side = -1L, uthresh = 0.35), ";\">Err", thinspc, tbx$errs) ## slash, tbx$err_opps,
                 p <- p + annotate(GeomRichText, label = txt, x = thispid - sets2 * 0.3, y = if (tm == "visiting") yr0[1] - 1.5 else yr0[2] + 1.5,
-                                           hjust = 0, vjust = if (tm == "visiting") "top" else "bottom", size = 2, lineheight = 1.0, family = "condensedfont",
-                                           fill = NA, label.color = NA, label.padding = grid::unit(rep(0, 4), "pt")) ## remove background and outline, no padding
+                                  hjust = 0, vjust = if (tm == "visiting") "top" else "bottom", size = 2, lineheight = 1.0, family = "condensedfont",
+                                  fill = NA, label.color = NA, label.padding = grid::unit(rep(0, 4), "pt")) ## remove background and outline, no padding
             }
         }
         ## ensure that the y limits are sufficient to show the summary text without clipping
-        ## (this set of rules is all rather ad-hoc, would be nice to replace with something simpler ...)
-        yr <- c(min(yr[1], yr0[1] - 6L - (!sets2) * 3), max(yr[2], yr0[2] + 6L + (!sets2) * 3))
-        if (yr[1] < -12) yr[1] <- yr[1] * 1.1
-        if (yr[2] > 12) yr[2] <- yr[2] * 1.1
+        res <- tryCatch(tail(grDevices::dev.size("px") / grDevices::dev.size("in"), 1), error = function(e) 300)
+        ## text blocks take ~30% of the plot height for 6 lines of text at 300dpi and font size 8
+        ## leaving 10% for spacing etc, the remaining 90% of the plot height is (lower text block) + (data range) + (upper text block)
+        txth <- min(max(0.1, (if (sets2) 0.15 else 0.3) * res / 300 * font_size / 8), 0.4)
+        yr <- yr0 + c(-0.5, 0.5) * diff(yr0) / (0.9 - txth * 2)
     }
     if (use_icons && !all(is.na(sc$icon_event))) {
         sysfonts::font_add("fa6s", regular = system.file("fontawesome/webfonts/fa-solid-900.ttf", package = "fontawesome", mustWork = TRUE))
@@ -290,7 +294,8 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
     }
     p <- p + scale_fill_manual(values = c(home_colour, visiting_colour), guide = "none") + labs(x = NULL, y = "Score\ndifference") +
         scale_x_continuous(labels = paste0("Set ", setx_labels), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005), limits = c(0, max(50, max(sc$pid, na.rm = TRUE)))) +
-        scale_y_continuous(breaks = function(z) c(rev(seq(0, yr[1], by = -4)), seq(0, yr[2], by = 4)[-1]), limits = yr, labels = abs)
+        scale_y_continuous(breaks = function(z) c(rev(seq(0, yr[1], by = -4)), seq(0, yr[2], by = 4)[-1]), labels = abs) + ## don't impose limits here, because they are treated as hard limits (with clipping), specify the limits in coord_cartesian instead
+        coord_cartesian(ylim = yr, clip = "off") ## to help stop e.g. team names being clipped, but note that if they extend beyond the plot panel they get clipped anyway
     ## team names
     if (with_summary) {
         ## put them vertically along the y-axis, use linebreaks to shift leftwards of the y-axis, and rely on the margin to stop them being cropped
