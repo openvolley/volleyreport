@@ -292,10 +292,15 @@ vr_score_evplot <- function(x, with_summary = FALSE, use_icons = FALSE, icons, h
         p <- p + geom_text(data = ex, aes(y = .data$iy, label = .data$icon, colour = .data$icon_event, vjust = .data$vju), family = "fa6s", size = 1.75) +
             scale_colour_manual(values = c(ace = "#008000", error = "#800000", block = "#008000", timeout = "#707070"), guide = "none")
     }
+    ## heuristic for selecting y-axis breaks. Choose a spacing that gives 4 values, preferring ticks at spacing of 4, 5, 2, ...
+    chk_yticks <- sapply(c(4, 5, 2, 1, 6, 3, 8, 7), function(step) {
+        c(rev(seq(0, floor(yr0[1] / step) * step, by = -step)), seq(0, ceiling(yr0[2] / step) * step, by = step)[-1])
+    })
+    chk_yticks <- chk_yticks[[head(which(abs(sapply(chk_yticks, length) - 4) == min(abs(sapply(chk_yticks, length) - 4))), 1)]]
     p <- p + scale_fill_manual(values = c(home_colour, visiting_colour), guide = "none") + labs(x = NULL, y = "Score\ndifference") +
-        scale_x_continuous(labels = paste0("Set ", setx_labels), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005), limits = c(0, max(50, max(sc$pid, na.rm = TRUE)))) +
-        scale_y_continuous(breaks = function(z) c(rev(seq(0, yr[1], by = -4)), seq(0, yr[2], by = 4)[-1]), labels = abs) + ## don't impose limits here, because they are treated as hard limits (with clipping), specify the limits in coord_cartesian instead
-        coord_cartesian(ylim = yr, clip = "off") ## to help stop e.g. team names being clipped, but note that if they extend beyond the plot panel they get clipped anyway
+        scale_x_continuous(labels = paste0("Set ", setx_labels), breaks = setx, minor_breaks = NULL, expand = c(0.005, 0.005)) +
+        scale_y_continuous(breaks = function(z) chk_yticks, minor_breaks = NULL, labels = abs) + ## don't impose limits here, because they are treated as hard limits (with clipping), specify the limits in coord_cartesian instead
+        coord_cartesian(xlim = c(0, max(50, max(sc$pid, na.rm = TRUE) + 2)), ylim = yr, clip = "off") ## to help stop e.g. team names being clipped, but note that if they extend beyond the plot panel they get clipped anyway
     ## team names
     if (with_summary) {
         ## put them vertically along the y-axis, use linebreaks to shift leftwards of the y-axis, and rely on the margin to stop them being cropped

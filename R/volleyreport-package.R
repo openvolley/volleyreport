@@ -19,5 +19,5 @@
 #' @importFrom stringr str_to_title
 #' @importFrom tidyr pivot_longer pivot_wider
 #' @importFrom tidyselect where
-#' @importFrom utils adist tail
+#' @importFrom utils adist head tail
 "_PACKAGE"
