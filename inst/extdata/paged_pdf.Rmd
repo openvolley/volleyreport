@@ -125,7 +125,7 @@ cat(section_spacer)
 
 ```
 
-```{r mr_score_ev, warning = FALSE, eval = vsx$style %in% c("ov1"), results = "asis", fig.height = (20 + vsx$plot_summary * 40) / 25.4, fig.width = 210 / 25.4}
+```{r mr_score_ev, warning = FALSE, eval = vsx$style %in% c("ov1"), results = "asis", fig.height = (20 + vsx$plot_summary * 35) / 25.4, fig.width = 210 / 25.4}
 p <- volleyreport:::vr_content_score_evplot(vsx, with_summary = vsx$plot_summary)
 if (!is.null(p)) {
     if (length(attr(p, "icon_names")) > 0) icon_names_for_key <- c(icon_names_for_key, attr(p, "icon_names"))
