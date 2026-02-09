@@ -282,9 +282,11 @@ vr_content_team_summary <- function(vsx, kable_format, which_team = "home") {
 
 
 first_serve <- function(x, file_type) {
-    temp <- x %>% dplyr::filter(.data$skill == "Serve") %>% group_by(.data$set_number) %>% slice(1L) %>% ungroup %>% dplyr::summarize(srv = case_when(.data$team == .data$home_team ~ "H", .data$team == .data$visiting_team ~ "V", TRUE ~ "U")) %>% dplyr::pull(.data$srv)
+    temp <- x %>% dplyr::filter(.data$skill == "Serve") %>% group_by(.data$set_number) %>% slice(1L) %>% ungroup %>%
+        mutate(srv = case_when(.data$team == .data$home_team ~ "H", .data$team == .data$visiting_team ~ "V", TRUE ~ "U")) %>% dplyr::pull(.data$srv)
     ## in some cases we might not have the first serve of a set, either because the scout missed it or it was e.g. a rotation error and not scouted
     ## for beach we can't do much about this but for indoor we can correct one such error in the first 4 sets (not set 5 or 6/golden set)
+    ## note that this won't work if all serves in a set have been missed, but that is a pretty extreme case and probably various things will go wrong in that scenario
     if (!grepl("beach", file_type)) {
         smax <- min(4, length(temp)) ## which sets are we looking at here
         opts <- substr(c("HVHV", "VHVH"), 1, smax)
